@@ -1,11 +1,11 @@
 import React from "react";
 import Connect from "./Connect";
-import { motion, AnimatePresence } from "framer-motion";
-import { useCarousel } from "../context/CarouselContext";
-import { carouselItems } from "./ScrollCarousel";
+// import { motion, AnimatePresence } from "framer-motion";
+// import { useCarousel } from "../context/CarouselContext";
+// import { carouselItems } from "./ScrollCarousel";
 
 const BottomBar: React.FC = () => {
-  const { activeIndex } = useCarousel();
+  // const { activeIndex } = useCarousel();
   
   return (
     <div className="mt-2 md:mt-0 flex flex-col-reverse md:flex-row justify-start items-start md:absolute md:top-[82%]">
@@ -14,7 +14,7 @@ const BottomBar: React.FC = () => {
       </div>
       
       <div className="text-slate flex-1 mx-4 md:ml-8">
-        <AnimatePresence mode="wait">
+        {/* <AnimatePresence mode="wait">
           <motion.div
             key={`title-${activeIndex}`}
             className="text-[12px] md:text-[20px] text-blackboard-black dark:text-white"
@@ -38,7 +38,7 @@ const BottomBar: React.FC = () => {
           >
             {carouselItems[activeIndex].description}
           </motion.div>
-        </AnimatePresence>
+        </AnimatePresence> */}
       </div>
     </div>
   );

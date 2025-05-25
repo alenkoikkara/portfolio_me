@@ -9,7 +9,7 @@ const images = [
   }
 ];
 
-const AnchalMaria: React.FC = () => {
+const ShreyaKumar: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -83,7 +83,7 @@ const AnchalMaria: React.FC = () => {
         transition={{ duration: 1.2 }}
       >
         <h2 className="text-3xl text-whitefont-regular mb-2">Portfolio Website</h2>
-        <div className="text-slate text-sm">for Anchal Maria</div>
+        <div className="text-slate text-sm">for Shreya Kumar</div>
       </motion.div>
       
       <AnimatePresence initial={false} custom={direction}>
@@ -105,7 +105,7 @@ const AnchalMaria: React.FC = () => {
           src={images[currentIndex].url}
           muted
           playsInline
-          className="h-[65%] md:h-[105%] absolute md:bottom-auto bottom-[-10px] md:right-20 object-contain"
+          className="h-[80%] md:h-[105%] absolute md:bottom-auto bottom-[-10px] md:right-20 object-contain"
         />
         </motion.div>
       </AnimatePresence>
@@ -128,4 +128,4 @@ const AnchalMaria: React.FC = () => {
   );
 };
 
-export default AnchalMaria;
+export default ShreyaKumar;

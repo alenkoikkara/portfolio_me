@@ -5,7 +5,7 @@ import MobileLayout from "../layout/homelayout/MobileLayout";
 
 const Home: React.FC = () => {
   return (
-    <div className="md:h-full h-[50%] w-full overflow-hidden">
+    <div className="md:h-full h-[60%] w-full overflow-hidden">
       {/* Mobile Layout (default) */}
       <div className="md:hidden h-full w-full">
         <MobileLayout>
