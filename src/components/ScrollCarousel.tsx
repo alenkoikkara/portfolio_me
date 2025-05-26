@@ -90,35 +90,6 @@ const ScrollCarousel: React.FC = () => {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [setActiveIndex]);
 
-  // Handle wheel events from anywhere on the page
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (containerRef.current) {
-        // Prevent default scrolling behavior
-        e.preventDefault();
-
-        // Scroll the container based on wheel delta
-        containerRef.current.scrollTop += e.deltaY;
-
-        // Update active index
-        const scrollPosition = containerRef.current.scrollTop;
-        const itemHeight = containerRef.current.clientHeight;
-        const newIndex = Math.round(scrollPosition / itemHeight);
-
-        if (newIndex >= 0 && newIndex < carouselItems.length) {
-          setActiveIndex(newIndex);
-        }
-      }
-    };
-
-    // Add event listener to the window
-    window.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-    };
-  }, [setActiveIndex]);
-
   // Scroll to a specific slide
   const scrollToSlide = (index: number) => {
     if (containerRef.current) {
@@ -140,12 +111,19 @@ const ScrollCarousel: React.FC = () => {
           scrollSnapType: "y mandatory",
           scrollBehavior: "smooth",
           height: "100%",
+          overscrollBehavior: "contain",
+          scrollPadding: "0px"
         }}
       >
         {carouselItems.map((item) => (
           <div
             key={item.id}
-            className="w-full h-full flex items-center justify-center snap-start"
+            className="w-full h-full flex items-center justify-center"
+            style={{
+              scrollSnapAlign: "start",
+              scrollSnapStop: "always",
+              height: "100%"
+            }}
           >
             {item.component ? (
               <motion.div

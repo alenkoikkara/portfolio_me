@@ -2,10 +2,11 @@ import React from 'react'
 import { motion } from 'framer-motion'
 const LandingCard: React.FC = () => {
   return (
-    <div className="flex py-[30px] flex-col justify-center items-start gap-[10%] text-4xl h-full w-full font-bold bg-image bg-blackboard-black dark:bg-white">
+    <div className="flex py-[30px] flex-col justify-center items-start gap-[10%] text-4xl h-full w-full bg-image bg-blackboard-black dark:bg-white">
         <div className="w-full flex flex-col justify-center items-start gap-2 md:gap-4 text-white dark:text-blackboard-black text-[clamp(2.3rem,11.5vw,20rem)] md:text-[clamp(2rem,6vw,7rem)] font-[300] transition-all duration-300 relative">
           <div className="px-[30px] leading-[1] flex gap-2 md:gap-4 flex-wrap">
             <motion.span
+              className=''
               initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ duration: .8 }}
@@ -64,7 +65,7 @@ const LandingCard: React.FC = () => {
             </motion.span>
           </div>
         </div>
-        <div className="px-[30px] text-slate text-[clamp(.9rem,1.3vw,1.3rem)] font-[300] transition-all duration-300">
+        <div className="px-[30px] text-slate text-[clamp(.9rem,1.2vw,1.3rem)] font-[300] transition-all duration-300">
           <motion.span
             initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
