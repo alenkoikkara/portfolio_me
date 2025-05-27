@@ -20,7 +20,7 @@ const Navigation: React.FC = () => {
                 {isActive ? `[${children}]` : children}
               </motion.span>
               <motion.span
-                className={`absolute inset-0 z-20 hidden md:block ${isActive ? "text-blackboard-black dark:text-white" : "text-white"}`}
+                className={`absolute inset-0 z-20 hidden md:block ${isActive ? "text-blackboard-black dark:text-white" : "text-blackboard-black dark:text-white"}`}
                 initial={{ clipPath: "inset(0 100% 0 0)" }}
                 animate={{ clipPath: hoveredItem === to ? "inset(0 0 0 0)" : "inset(0 100% 0 0)" }}
                 transition={{ duration: 0.6 }}

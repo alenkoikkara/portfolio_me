@@ -39,11 +39,11 @@ const Connect: React.FC = () => {
         {/* Web version - with animations */}
         <div className="hidden md:flex items-center gap-4">
           <motion.div className="relative overflow-hidden">
-            <motion.span className="relative z-10 text-slate">
+            <motion.span className="relative z-10 text-slate text-sm">
               Let's Connect
             </motion.span>
             <motion.span
-              className="absolute inset-0 z-20 text-white"
+              className="absolute top-[2px] inset-0 z-20 dark:text-white text-blackboard-black text-sm"
               initial={{ clipPath: "inset(0 100% 0 0)" }}
               animate={{
                 clipPath: isHovered ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
@@ -81,7 +81,7 @@ const Connect: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.5 }}
-              className="text-white absolute"
+              className="dark:text-white text-blackboard-black absolute text-sm"
             >
               {email}
             </motion.div>

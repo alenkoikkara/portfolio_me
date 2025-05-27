@@ -157,7 +157,7 @@ const ScrollCarousel: React.FC = () => {
       </div>
 
       {/* Navigation dots on the right side */}
-      <div className="absolute right-1 md:right-50 top-1/2 md:top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-10">
+      <div className="absolute right-1 md:right-60 top-1/2 md:top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-10">
         {carouselItems.map((item, idx) => (
           <button
             key={item.id}

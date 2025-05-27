@@ -91,7 +91,7 @@ const Aglet: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2 }}
       >
-        <h2 className="text-3xl font-regular mb-2">aglet</h2>
+        <div className="text-5xl font-regular mb-2">aglet</div>
         <div className="text-aglet text-sm">Full stack e-commerce platform</div>
       </motion.div>
 

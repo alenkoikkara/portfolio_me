@@ -82,7 +82,7 @@ const ShreyaKumar: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2 }}
       >
-        <h2 className="text-3xl text-whitefont-regular mb-2">Portfolio Website</h2>
+        <div className="text-5xl font-regular mb-2">Portfolio</div>
         <div className="text-slate text-sm">for Shreya Kumar</div>
       </motion.div>
       

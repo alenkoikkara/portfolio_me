@@ -84,9 +84,7 @@ const Ketto: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2 }}
       >
-        <h2 className="text-3xl text-blackboard-black dark:text-white font-regular mb-2">
-          Ketto
-        </h2>
+        <div className="text-5xl font-regular mb-2 text-blackboard-black dark:text-white">Ketto</div>
         <div className="text-ketto text-sm">Crowdfunding platform</div>
       </motion.div>
 

@@ -8,7 +8,7 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, [])
 
   return (
-    <div className='py-[12%] px-[250px] h-full relative'>
+    <div className='py-[12%] px-[300px] h-full relative'>
       <div 
         className={`z-10 fixed left-0 h-[.5px] w-0 bg-slate transition-all duration-2000 ease-out ${
           isLoaded ? 'w-full' : ''
@@ -26,7 +26,7 @@ const WebLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         }`}
       />
       <div 
-        className={`z-10 absolute top-0 right-[250px] h-0 w-[.5px] bg-slate transition-all duration-2000 ease-out ${
+        className={`z-10 absolute top-0 right-[300px] h-0 w-[.5px] bg-slate transition-all duration-2000 ease-out ${
           isLoaded ? 'h-full' : ''
         }`}
       />
