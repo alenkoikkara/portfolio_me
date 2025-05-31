@@ -1,34 +1,18 @@
-import React from "react";
-import ScrollCarousel from "../components/ScrollCarousel";
-import WebLayout from "../layout/homelayout/WebLayout";
-import MobileLayout from "../layout/homelayout/MobileLayout";
+import React from 'react'
+import CarouselHome from '../components/CarouselHome'
+import { motion } from 'framer-motion'
 
 const Home: React.FC = () => {
   return (
-    <div className="md:h-full h-[50%] w-full overflow-hidden">
-      {/* Mobile Layout (default) */}
-      <div className="md:hidden h-full w-full">
-        <MobileLayout>
-          <div className="flex flex-col h-full overflow-hidden">
-            <div className="w-full h-full overflow-hidden">
-              <ScrollCarousel />
-            </div>
-          </div>{" "}
-        </MobileLayout>
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+    >
+      <CarouselHome />
+    </motion.div>
+  )
+}
 
-      {/* Web Layout (md and up) */}
-      <div className="hidden md:block h-full w-full">
-        <WebLayout>
-          <div className="flex flex-col h-full overflow-hidden">
-            <div className="h-screen w-full overflow-hidden">
-              <ScrollCarousel />
-            </div>
-          </div>
-        </WebLayout>
-      </div>
-    </div>
-  );
-};
-
-export default Home;
+export default Home

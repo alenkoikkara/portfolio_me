@@ -2,7 +2,7 @@ import React from "react";
 
 const Footer: React.FC = () => {
   return (
-    <div className="flex justify-between items-center gap-4 md:gap-8 absolute bottom-5 right-4 text-black dark:text-white text-center">
+    <div className="flex justify-between items-center gap-4 md:gap-10 absolute bottom-6 right-8 text-black dark:text-white text-center">
       <div className="flex text-xs md:text-md gap-2">
         <div className="cursor-pointer hover:text-linkedin transition-all duration-300">
           <a href="https://www.linkedin.com/in/alenkoikkara/" target="_blank" rel="noopener noreferrer">LI</a>

@@ -1,11 +1,15 @@
 import React from "react";
-import PhotographyCarousel from "../components/PhotographyCarousel";
+import PhotographyCarousel, { carouselItems } from "../components/PhotographyCarouselv1";
 import WebLayout from "../layout/photographylayout/WebLayout";
 import MobileLayout from "../layout/photographylayout/MobileLayout";
+import CarouselInfo from "../components/CarouselInfo";
+import { useCarousel } from "../context/CarouselContext";
 
 const Photography: React.FC = () => {
+  const { activeIndex, isTableView } = useCarousel();
+
   return (
-    <div className="md:h-full h-[60%] w-full overflow-hidden">
+    <div className="md:h-[100vh] h-[75vh] w-full md:overflow-hidden">
       {/* Mobile Layout (default) */}
       <div className="md:hidden h-full w-full">
         <MobileLayout>
@@ -13,7 +17,20 @@ const Photography: React.FC = () => {
             <div className="w-full h-full overflow-hidden">
               <PhotographyCarousel />
             </div>
-          </div>{" "}
+            {/* Title and Date Display */}
+            {!isTableView && (
+              <div className="px-4 py-8">
+                <CarouselInfo
+                  title={carouselItems[activeIndex].title}
+                  date={carouselItems[activeIndex].date}
+                  location={carouselItems[activeIndex].location}
+                  focalLength={carouselItems[activeIndex].focalLength}
+                  fNumber={carouselItems[activeIndex].fNumber}
+                  activeIndex={activeIndex}
+                />
+              </div>
+            )}
+          </div>
         </MobileLayout>
       </div>
 

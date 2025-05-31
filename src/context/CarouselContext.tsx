@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface CarouselContextType {
   activeIndex: number;
   setActiveIndex: (index: number) => void;
+  isTableView: boolean;
+  setIsTableView: (isTableView: boolean) => void;
 }
 
 const CarouselContext = createContext<CarouselContextType | undefined>(undefined);
@@ -21,9 +23,10 @@ interface CarouselProviderProps {
 
 export const CarouselProvider: React.FC<CarouselProviderProps> = ({ children }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isTableView, setIsTableView] = useState(false);
 
   return (
-    <CarouselContext.Provider value={{ activeIndex, setActiveIndex }}>
+    <CarouselContext.Provider value={{ activeIndex, setActiveIndex, isTableView, setIsTableView }}>
       {children}
     </CarouselContext.Provider>
   );

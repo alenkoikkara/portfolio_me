@@ -1,15 +1,15 @@
-import React, { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import kettocursor from "../assets/cursor/kettocursor.cur";
-import kettoi3g from "../assets/images/kettoi3g.png";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import shreyaimac from '../assets/images/shreyaimac.png';
+import defaultcursor from '../assets/cursor/defaultcursor.cur';
 
 const images = [
   {
-    url: kettoi3g,
+    url: shreyaimac,
   }
 ];
 
-const Ketto: React.FC = () => {
+const ShreyaKumar: React.FC = () => {
   const [currentIndex] = useState(0);
   const [direction] = useState(0);
 
@@ -34,7 +34,7 @@ const Ketto: React.FC = () => {
     <div 
       className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center"
       style={{ 
-        cursor: `url(${kettocursor}) 4 4, auto`,
+        cursor: `url(${defaultcursor}) 4 4, auto`,
         // backgroundImage: `url("${noise}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -42,7 +42,7 @@ const Ketto: React.FC = () => {
         opacity: 1
       }}
       onClick={() => {
-        window.open("https://ketto.org/", "_blank");
+        window.open("https://www.net.shreyauxfolio.com/", "_blank");
       }}
     >
       {/* Mobile - Show only first image */}
@@ -73,7 +73,7 @@ const Ketto: React.FC = () => {
             <img
               src={images[currentIndex].url}
               alt="Anchal Maria"
-              className="w-[40%] h-[40%] object-cover transition-all duration-500 group-hover:scale-210 group-hover:translate-y-[30%]"
+              className="w-[40%] h-[40%] object-cover transition-all duration-500 group-hover:scale-210 group-hover:translate-y-[25%]"
             />
           </motion.div>
         </AnimatePresence>
@@ -82,4 +82,4 @@ const Ketto: React.FC = () => {
   );
 };
 
-export default Ketto;
+export default ShreyaKumar;

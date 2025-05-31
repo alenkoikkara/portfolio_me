@@ -84,9 +84,7 @@ const SplitSense: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2 }}
       >
-        <h2 className="text-3xl text-center text-blackboard-black dark:text-white font-regular mb-2">
-          SplitSense
-        </h2>
+        <div className="text-5xl font-regular mb-2 text-blackboard-black dark:text-white">SplitSense</div>
         <div className="text-splitSense text-sun text-sm">
           Expense and budget tracking app
         </div>
