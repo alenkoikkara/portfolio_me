@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState, useEffect } from "react";
-import noiseSvg from "../assets/noise.svg";
 import transformGif from "../assets/gif/transform.gif";
 
 interface AnimatedTextProps {
@@ -17,11 +16,11 @@ const AnimatedText = ({ words, className = "" }: AnimatedTextProps) => (
     style={{ gap: 0 }}
   >
     {words.map((word: string, wordIndex: number) => (
-      <span key={`word-${wordIndex}`} className="mr-2">
+      <span key={`word-${wordIndex}`} className="mr-2 hover:text-blackboard-black">
         {word.split('').map((letter: string, letterIndex: number) => (
           <motion.span
             key={`letter-${wordIndex}-${letterIndex}`}
-            className="inline-block transition-colors duration-300 hover:text-blackboard-black"
+            className="inline-block transition-colors duration-300"
           >
             {letter}
           </motion.span>
@@ -107,7 +106,7 @@ const LandingInfo = () => {
     <div 
       className="flex flex-col items-start justify-center md:p-14 p-4 gap-4 font-light text-4xl text-[clamp(1.5rem,14vw,12rem)] md:text-[clamp(2rem,6vw,7rem)] text-silver-dark transition-all duration-300 h-full w-full bg-image bg-silver relative"
       style={{
-        backgroundImage: `url("${noiseSvg}")`,
+        // backgroundImage: `url("${noiseSvg}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

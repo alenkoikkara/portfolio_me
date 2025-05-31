@@ -227,8 +227,9 @@ const PhotographyCarousel: React.FC = () => {
   // Handle wheel events from anywhere on the page
   useEffect(() => {
     let accumulatedScroll = 0;
-    const SCROLL_THRESHOLD = 100;
+    const SCROLL_THRESHOLD = 50; // Reduced threshold for more responsive scrolling
     let isScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
 
     const handleWheel = (e: WheelEvent) => {
       if (containerRef.current && !isScrolling) {
@@ -245,10 +246,11 @@ const PhotographyCarousel: React.FC = () => {
           }
           accumulatedScroll = 0;
 
-          // Reset scrolling flag after animation
-          setTimeout(() => {
+          // Reset scrolling flag after animation with smoother timing
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
             isScrolling = false;
-          }, 300);
+          }, 200); // Reduced timeout for more responsive scrolling
         }
       }
     };
@@ -256,6 +258,7 @@ const PhotographyCarousel: React.FC = () => {
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
       window.removeEventListener("wheel", handleWheel);
+      clearTimeout(scrollTimeout);
     };
   }, [activeIndex, setActiveIndex]);
 
@@ -375,10 +378,10 @@ const PhotographyCarousel: React.FC = () => {
                   animate={{ x }}
                   transition={{
                     type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    mass: 1,
-                    velocity: 0,
+                    stiffness: 200, // Reduced stiffness for smoother movement
+                    damping: 25, // Adjusted damping for better control
+                    mass: 1.2, // Slightly increased mass for more momentum
+                    restDelta: 0.001, // Added rest delta for smoother end of animation
                   }}
                 >
                   {carouselItems.map((item, index) => (
@@ -494,10 +497,11 @@ const PhotographyCarousel: React.FC = () => {
                   animate={{ x: -activeIndex * 160 }}
                   transition={{
                     type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    mass: 1,
+                    stiffness: 200,
+                    damping: 25,
+                    mass: 1.2,
                     velocity: 0,
+                    restDelta: 0.001,
                   }}
                 >
                   {carouselItems.map((_, index) => {
@@ -508,7 +512,7 @@ const PhotographyCarousel: React.FC = () => {
                     return (
                       <div
                         key={index}
-                        className={`absolute transition-all duration-300 ${
+                        className={`absolute transition-all duration-300 cursor-pointer ${
                           isActive
                             ? "opacity-100"
                             : isAdjacent
@@ -519,6 +523,15 @@ const PhotographyCarousel: React.FC = () => {
                           left: `${index * 160}px`,
                           transform: "translateX(-50%)",
                           visibility: isVisible ? "visible" : "hidden",
+                        }}
+                        onClick={() => {
+                          if (index === activeIndex) {
+                            setIsModalOpen(true);
+                          } else if (
+                            Math.abs(index - activeIndex) === 1
+                          ) {
+                            setActiveIndex(index);
+                          }
                         }}
                       >
                         <span className="text-sm text-blackboard-black dark:text-white font-regular">

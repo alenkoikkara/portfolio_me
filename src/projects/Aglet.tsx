@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import agletcursor from "../assets/cursor/agletcursor.cur";
 import agletipad from "../assets/images/agletipad.png";
-import noise from "../assets/noise.svg";
 
 const images = [
   {
@@ -36,7 +35,7 @@ const Aglet: React.FC = () => {
       className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center"
       style={{ 
         cursor: `url(${agletcursor}) 4 4, auto`,
-        backgroundImage: `url("${noise}")`,
+        // backgroundImage: `url("${noise}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

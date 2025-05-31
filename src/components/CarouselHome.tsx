@@ -24,6 +24,8 @@ const CarouselHome = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const slidesRef = useRef<HTMLDivElement[]>([]);
   const isAnimating = useRef(false);
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
 
   const slides: Slide[] = [
     {
@@ -191,17 +193,46 @@ const CarouselHome = () => {
       }
     };
 
+    // Touch event handlers
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isAnimating.current) return;
+
+      const touchEndY = e.touches[0].clientY;
+      const touchEndX = e.touches[0].clientX;
+      const deltaY = touchEndY - touchStartY.current;
+      const deltaX = touchEndX - touchStartX.current;
+
+      // Only handle vertical swipes if the vertical movement is greater than horizontal
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        e.preventDefault(); // Prevent page scroll when swiping vertically
+        if (deltaY > 50) {
+          goToPrevSlide();
+        } else if (deltaY < -50) {
+          goToNextSlide();
+        }
+      }
+    };
+
     window.addEventListener("wheel", handleScroll, { passive: false });
     window.addEventListener("keydown", handleKeyDown);
+    element.addEventListener("touchstart", handleTouchStart, { passive: true });
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
 
     return () => {
       window.removeEventListener("wheel", handleScroll);
       window.removeEventListener("keydown", handleKeyDown);
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
     };
   }, [goToNextSlide, goToPrevSlide]);
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-blackboard-black perspective-1000 overflow-hidden">
+    <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-blackboard-black perspective-1000 overflow-hidden overscroll-none touch-none">
       <div className="flex flex-row items-start justify-center gap-8 relative">
         <div className="absolute md:top-0 md:-left-24 -left-[0%] -top-20 z-30 flex flex-col md:items-end items-start justify-between h-full">
           <Navigation />
@@ -228,11 +259,15 @@ const CarouselHome = () => {
             </motion.div>
           </div>
         </div>
-        <div className="relative md:w-[60vw] md:h-[60vh] w-[90vw] h-[50vh] flex items-center justify-center">
+        <div className="relative md:w-[60vw] md:h-[60vh] w-[90vw] h-[50vh] flex items-center justify-center overscroll-none touch-none">
           <div
             ref={carouselRef}
-            className="relative w-full h-full preserve-3d cursor-pointer flex items-center justify-center"
-            style={{ transformStyle: "preserve-3d" }}
+            className="relative w-full h-full preserve-3d cursor-pointer flex items-center justify-center overscroll-none touch-none"
+            style={{ 
+              transformStyle: "preserve-3d",
+              touchAction: "none",
+              overscrollBehavior: "none"
+            }}
           >
             {slides.map((slide, index) => (
               <div

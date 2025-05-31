@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import kettocursor from "../assets/cursor/kettocursor.cur";
 import kettoi3g from "../assets/images/kettoi3g.png";
-import noise from "../assets/noise.svg";
 
 const images = [
   {
@@ -36,7 +35,7 @@ const Ketto: React.FC = () => {
       className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center"
       style={{ 
         cursor: `url(${kettocursor}) 4 4, auto`,
-        backgroundImage: `url("${noise}")`,
+        // backgroundImage: `url("${noise}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

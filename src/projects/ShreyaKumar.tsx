@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import shreyaimac from '../assets/images/shreyaimac.png';
 import defaultcursor from '../assets/cursor/defaultcursor.cur';
-import noise from "../assets/noise.svg";
 
 const images = [
   {
@@ -36,7 +35,7 @@ const ShreyaKumar: React.FC = () => {
       className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center"
       style={{ 
         cursor: `url(${defaultcursor}) 4 4, auto`,
-        backgroundImage: `url("${noise}")`,
+        // backgroundImage: `url("${noise}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
