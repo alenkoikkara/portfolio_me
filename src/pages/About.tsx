@@ -6,13 +6,10 @@ const About: React.FC = () => {
       <h1 className="text-4xl font-bold mb-6">About Me</h1>
       <div className="max-w-2xl">
         <p className="text-lg mb-4">
-          Welcome to my about page. Here you'll learn more about who I am,
-          my background, and what drives me.
+          Welcome to my portfolio! I'm a passionate developer and photographer.
         </p>
         <p className="text-lg">
-          I'm passionate about creating meaningful experiences through technology
-          and design. This portfolio showcases my journey and the projects I've
-          worked on.
+          This is where you can learn more about my journey, skills, and interests.
         </p>
       </div>
     </div>

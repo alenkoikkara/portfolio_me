@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { carouselItems } from "./PhotographyCarousel";
 import { motion, AnimatePresence } from "framer-motion";
+import { carouselItems } from "./PhotographyCarouselv1";
 
 const PhotographyTable: React.FC = () => {
   const [hoveredItem, setHoveredItem] = useState<number | null>(null);
@@ -13,7 +13,7 @@ const PhotographyTable: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto px-4 scrollbar-hide">
+    <div className="w-full md:h-full h-[65vh] md:mt-0 mt-40 overflow-y-auto px-4 scrollbar-hide relative">
       <table className="w-full">
         <tbody>
           {carouselItems.map((item) => (
@@ -24,15 +24,6 @@ const PhotographyTable: React.FC = () => {
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
             >
-              {/* <td className="py-2 px-1">
-                <div className="w-10 h-10 overflow-hidden rounded">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </td> */}
               <td>
                 <p className="text-slate text-[10px] md:text-xs">{item.date}</p>
               </td>
@@ -57,7 +48,7 @@ const PhotographyTable: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed z-50 top-1/2 right-1 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[300px] rounded-lg overflow-hidden shadow-lg z-10 pointer-events-none hidden md:block"
+            className="fixed top-1/2 right-1 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[300px] rounded-lg overflow-hidden shadow-lg z-10 pointer-events-none hidden md:block"
           >
             <motion.img
               key={hoveredItem}
@@ -96,7 +87,7 @@ const PhotographyTable: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="relative w-[90vw] h-[90vh]"
+              className="relative w-[90vw] md:w-max md:h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               <img
@@ -108,7 +99,7 @@ const PhotographyTable: React.FC = () => {
                 style={{ transform: "translateZ(0)" }}
               />
               <button
-                className="absolute top-0 right-4 text-white text-2xl hover:text-gray-300 cursor-pointer"
+                className="absolute md:top-0 -top-10 md:-right-8 right-0 text-white text-2xl hover:text-gray-300 cursor-pointer"
                 onClick={() => setIsModalOpen(false)}
               >
                 ×
