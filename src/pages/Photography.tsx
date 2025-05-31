@@ -9,9 +9,9 @@ const Photography: React.FC = () => {
   const { activeIndex, isTableView } = useCarousel();
 
   return (
-    <div className="md:h-[100vh] h-[75vh] w-full md:overflow-hidden">
+    <div className="md:h-[100vh] h-[75vh] w-full md:overflow-hidden overscroll-none">
       {/* Mobile Layout (default) */}
-      <div className="md:hidden h-full w-full">
+      <div className="md:hidden h-full w-full overscroll-none">
         <MobileLayout>
           <div className="flex flex-col h-full overflow-hidden">
             <div className="w-full h-full overflow-hidden">
