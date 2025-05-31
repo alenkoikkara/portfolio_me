@@ -37,11 +37,11 @@ const carouselItems: CarouselItem[] = [
   {
     id: 0,
     imageUrl: img1,
-    title: "The 1000th Day",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
-    location: "Adler Planetarium, Chicago",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    title: "Render",
+    date: "Friday, May 30, 2025 at 8:05 PM",
+    location: "Madison, Chicago",
+    focalLength: "250mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 1,
@@ -64,11 +64,11 @@ const carouselItems: CarouselItem[] = [
   {
     id: 3,
     imageUrl: img4,
-    title: "Symmetry",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
+    title: "Lonely Docks",
+    date: "Saturday, May 24, 2025 at 6:50 PM",
     location: "New York, NY",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    focalLength: "26mm",
+    fNumber: "f/1.6",
   },
   {
     id: 4,
@@ -101,54 +101,55 @@ const carouselItems: CarouselItem[] = [
     id: 7,
     imageUrl: img8,
     title: "Damen | Madison",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
+    date: "Tuesday, May 17, 2024 at 11:22 AM",
     location: "Damen & Madison, Chicago",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    focalLength: "96mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 8,
     imageUrl: img9,
     title: "Christmas",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
+    date: "Friday, December 30, 2024 at 6:06 PM",
     location: "New York, NY",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    focalLength: "55mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 9,
     imageUrl: img10,
-    title: "Photo 10",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
-    location: "New York, NY",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    title: "Little Sailor",
+    date: "Friday, May 5, 2023 at 4:07 PM",
+    location: "Fort Kochi, Kerala",
+    focalLength: "26mm",
+    fNumber: "f/1.6",
   },
   {
     id: 10,
     imageUrl: img11,
     title: "Undisclosed Location",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
+    date: "Friday, January 1, 2025 at 2:58 PM",
     location: "New York, NY",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    focalLength: "208mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 11,
     imageUrl: img12,
     title: "Shy",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
-    location: "New York, NY",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    date: "Friday, August 30, 2025 at 7:45 PM",
+    location: "Cherry Blossom, Chicago",
+    focalLength: "250mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 12,
     imageUrl: img13,
     title: "Bridges & Tunnels",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
-    location: "New York, NY",
-    focalLength: "100mm",
+    date: "Friday, August 30, 2025 at 7:57 PM",
+    location: "Cherry Blossom, Chicago",
+    focalLength: "135mm",
+    fNumber: "f4-5.6 IS II",
   },
   {
     id: 13,
@@ -163,10 +164,10 @@ const carouselItems: CarouselItem[] = [
     id: 14,
     imageUrl: img15,
     title: "Goodbyes & Goodnights",
-    date: "Saturday, May 17, 2025 at 7:58 PM",
+    date: "Sunday, May 17, 2025 at 11:58 AM",
     location: "Damen Greenline, Chicago",
-    focalLength: "100mm",
-    fNumber: "f/1.4",
+    focalLength: "163mm",
+    fNumber: "f4-5.6 IS II",
   },
 ];
 
@@ -216,20 +217,32 @@ const PhotographyCarousel: React.FC = () => {
 
   // Drag end handler for gallery
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
-    const threshold = containerWidth / 4;
-    if (info.offset.x < -threshold && activeIndex < carouselItems.length - 1) {
-      setActiveIndex(activeIndex + 1);
-    } else if (info.offset.x > threshold && activeIndex > 0) {
-      setActiveIndex(activeIndex - 1);
+    const threshold = containerWidth / 3; // Reduced threshold for better responsiveness
+    const velocity = info.offset.x / 16; // Calculate velocity for momentum scrolling
+    
+    if (Math.abs(velocity) > 0.5) {
+      // If there's significant velocity, use it to determine direction
+      if (velocity < 0 && activeIndex < carouselItems.length - 1) {
+        setActiveIndex(activeIndex + 1);
+      } else if (velocity > 0 && activeIndex > 0) {
+        setActiveIndex(activeIndex - 1);
+      }
+    } else if (Math.abs(info.offset.x) > threshold) {
+      // If no significant velocity but past threshold, snap to next/prev
+      if (info.offset.x < 0 && activeIndex < carouselItems.length - 1) {
+        setActiveIndex(activeIndex + 1);
+      } else if (info.offset.x > 0 && activeIndex > 0) {
+        setActiveIndex(activeIndex - 1);
+      }
     }
   };
 
   // Handle wheel events from anywhere on the page
   useEffect(() => {
     let accumulatedScroll = 0;
-    const SCROLL_THRESHOLD = 50; // Reduced threshold for more responsive scrolling
+    const SCROLL_THRESHOLD = 30; // Reduced threshold for more responsive scrolling
     let isScrolling = false;
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setTimeout>;
 
     const handleWheel = (e: WheelEvent) => {
       if (containerRef.current && !isScrolling) {
@@ -246,11 +259,10 @@ const PhotographyCarousel: React.FC = () => {
           }
           accumulatedScroll = 0;
 
-          // Reset scrolling flag after animation with smoother timing
           clearTimeout(scrollTimeout);
           scrollTimeout = setTimeout(() => {
             isScrolling = false;
-          }, 200); // Reduced timeout for more responsive scrolling
+          }, 150); // Reduced timeout for more responsive scrolling
         }
       }
     };
@@ -271,7 +283,7 @@ const PhotographyCarousel: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overscroll-none touch-none">
       {/* Toggle Button */}
       <button
         onClick={handleViewToggle}
@@ -337,9 +349,9 @@ const PhotographyCarousel: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="w-full h-full flex relative"
+            className="w-full h-full flex relative overscroll-none touch-none"
           >
-            <div className="absolute md:top-0 -bottom-18 md:-left-[270px] left-[4%] z-50 flex flex-col justify-between h-full">
+            <div className="absolute md:top-0 -bottom-18 md:-left-[270px] left-[4%] z-50 flex flex-col justify-between h-full overscroll-none touch-none">
               {/* Navigation */}
               <Navigation />
 
@@ -357,31 +369,41 @@ const PhotographyCarousel: React.FC = () => {
             </div>
 
             {/* Image Carousel */}
-            <div className="flex-1 w-full md:h-full h-[70vh] relative overflow-visible">
+            <div className="flex-1 w-full md:h-full h-[70vh] relative overflow-visible overscroll-none touch-none">
               <div
                 ref={containerRef}
-                className="w-full h-full relative overflow-visible"
+                className="w-full h-full relative overflow-visible overscroll-none touch-none"
+                style={{ 
+                  transformStyle: "preserve-3d",
+                  touchAction: "none",
+                  overscrollBehavior: "none"
+                }}
               >
                 <motion.div
-                  className="absolute md:top-0 top-40 left-0 h-full flex will-change-transform"
+                  className="absolute md:top-0 top-40 left-0 h-full flex will-change-transform overscroll-none touch-none"
                   style={{
                     width: `${carouselItems.length * 100}%`,
                     transform: `translate3d(${x}px, 0, 0)`,
+                    touchAction: "pan-x",
+                    overscrollBehavior: "none",
+                    WebkitOverflowScrolling: "touch"
                   }}
                   drag="x"
                   dragConstraints={{
                     left: -(carouselItems.length - 1) * containerWidth,
                     right: 0,
                   }}
-                  dragElastic={0.1}
+                  dragElastic={0.2}
+                  dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
                   onDragEnd={handleDragEnd}
                   animate={{ x }}
                   transition={{
                     type: "spring",
-                    stiffness: 200, // Reduced stiffness for smoother movement
-                    damping: 25, // Adjusted damping for better control
-                    mass: 1.2, // Slightly increased mass for more momentum
-                    restDelta: 0.001, // Added rest delta for smoother end of animation
+                    stiffness: 300,
+                    damping: 30,
+                    mass: 0.8,
+                    velocity: 0,
+                    restDelta: 0.001,
                   }}
                 >
                   {carouselItems.map((item, index) => (

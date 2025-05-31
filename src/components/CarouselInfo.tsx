@@ -26,14 +26,14 @@ const CarouselInfo: React.FC<CarouselInfoProps> = ({
         exit={{ opacity: 0}}
         transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
       >
-        <h2 className="text-lg font-regular italic text-blackboard-black dark:text-white">
+        <h2 className="md:text-lg text-sm font-regular italic text-blackboard-black dark:text-white">
           {title}
         </h2>
-        <p className="text-slate text-sm">{date}</p>
+        <p className="text-slate md:text-sm text-xs">{date}</p>
         <p className="text-slate text-xs mt-1">{location}</p>
         <div className="flex items-end md:justify-end font-light justify-start gap-2 text-red-500">
-          <p className="text-xs">{focalLength}</p>
-          <p className="text-xs">{fNumber}</p>
+          <p className="md:text-xs text-[12px]">{focalLength}</p>
+          <p className="md:text-xs text-[12px]">{fNumber}</p>
         </div>
       </motion.div>
     </div>
