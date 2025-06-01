@@ -233,10 +233,10 @@ const CarouselHome = () => {
 
   return (
     <div className="h-screen w-full flex items-center justify-center bg-white dark:bg-blackboard-black perspective-1000 overflow-hidden overscroll-none touch-none">
-      <div className="flex flex-row items-start justify-center gap-8 relative">
+      <div className="flex flex-row items-start justify-center gap-8 relative mb-15 md:mb-0">
         <div className="absolute md:top-0 md:-left-24 -left-[0%] -top-20 z-30 flex flex-col md:items-end items-start justify-between h-full">
           <Navigation />
-          <div className="text-white flex flex-col md:items-end items-start justify-between text-end mb-10 absolute -bottom-[56%] md:bottom-[0px]">
+          <div className="text-white flex flex-col md:items-end items-start justify-between text-end absolute -bottom-[58%] md:bottom-[0px]">
             <motion.div
               key={currentIndex}
               initial={{ opacity: 0, y: 20 }}
@@ -259,7 +259,7 @@ const CarouselHome = () => {
             </motion.div>
           </div>
         </div>
-        <div className="relative md:w-[60vw] md:h-[60vh] w-[90vw] h-[50vh] flex items-center justify-center overscroll-none touch-none">
+        <div className="relative md:w-[60vw] md:h-[60vh] w-[90vw] h-[45vh] flex items-center justify-center overscroll-none touch-none">
           <div
             ref={carouselRef}
             className="relative w-full h-full preserve-3d cursor-pointer flex items-center justify-center overscroll-none touch-none"

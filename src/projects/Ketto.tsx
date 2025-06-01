@@ -46,7 +46,7 @@ const Ketto: React.FC = () => {
       }}
     >
       {/* Mobile - Show only first image */}
-      <div className="md:hidden w-full h-full">
+      <div className="md:hidden w-full h-full p-4">
         <img
           src={images[0].url}
           alt="Anchal Maria"
