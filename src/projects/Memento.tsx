@@ -41,7 +41,7 @@ const Memento: React.FC = () => {
         opacity: 1
       }}
       onClick={() => {
-        window.open("https://memento.alenkoikkara.com/", "_blank");
+        window.open("https://memorygraph.alenkoikkara.com/", "_blank");
       }}
     >
       {/* Desktop - Show carousel */}
