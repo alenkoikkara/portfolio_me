@@ -59,3 +59,11 @@
     transform-style: preserve-3d;
   }
 }
+
+canvas {
+  width: 100% !important;
+  height: 100% !important ;
+  position: absolute;
+  top: 0;
+  left: 0;
+}

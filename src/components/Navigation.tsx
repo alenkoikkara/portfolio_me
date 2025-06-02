@@ -36,11 +36,11 @@ const Navigation: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col text-black dark:text-white gap-6 z-50">
-      <div className="text-xs md:text-md text-slate md:text-end text-start space-y-2">
+      <div className="text-xs md:text-md text-slate md:text-end text-start space-y-2 z-50">
         <NavItem to="/">Home</NavItem>
         {/* <NavItem to="/blogs">Blogs</NavItem> */}
         <NavItem to="/photography">Photography</NavItem>
-        {/* <NavItem to="/about">About</NavItem> */}
+        <NavItem to="/about">About</NavItem>
       </div>
     </div>
   );
