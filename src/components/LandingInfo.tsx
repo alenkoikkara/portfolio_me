@@ -104,7 +104,7 @@ const LandingInfo = () => {
 
   return (
     <div 
-      className="flex flex-col items-start justify-center md:p-14 p-4 gap-4 font-light text-4xl text-[clamp(1.5rem,14vw,12rem)] md:text-[clamp(2rem,6vw,7rem)] text-silver-dark transition-all duration-300 h-full w-full bg-image bg-silver relative"
+      className="flex flex-col items-start justify-center md:p-14 p-4 gap-4 font-light text-4xl md:text-[clamp(2rem,6vw,7rem)] text-silver-dark transition-all duration-300 h-full w-full bg-image bg-silver relative"
       style={{
         // backgroundImage: `url("${noiseSvg}")`,
         backgroundSize: 'cover',
@@ -126,7 +126,7 @@ const LandingInfo = () => {
               <img 
                 src={transformGif} 
                 alt="Transform" 
-                className="h-[100%] object-contain grayscale rounded-top-[40px] rounded-t-[50px]"
+                className="h-[100%] object-contain grayscale rounded-t-[30px] md:rounded-t-[50px] transition-all duration-300"
                 onLoad={() => setGifLoaded(true)}
               />
             </motion.div>
