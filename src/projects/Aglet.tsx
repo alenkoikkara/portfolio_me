@@ -42,7 +42,7 @@ const Aglet: React.FC = () => {
         opacity: 1
       }}
       onClick={() => {
-        window.open("https://aglet.alenkoikkara.com/", "_blank");
+        window.open("", "_blank");
       }}
     >
       {/* Desktop - Show carousel */}

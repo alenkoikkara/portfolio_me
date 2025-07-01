@@ -3,7 +3,7 @@ import Connect from "./Connect";
 
 const Footer: React.FC = () => {
   return (
-    <div className="flex justify-between items-center px-4 gap-4 md:gap-10 absolute bottom-8 right-0 left-0 text-black dark:text-white text-center">
+    <div className="flex justify-between items-center px-4 gap-4 md:gap-10 absolute bottom-[2%] right-0 left-0 text-black dark:text-white text-center">
       <div>
         <Connect />
       </div>
