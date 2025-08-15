@@ -32,12 +32,12 @@ const CarouselHome = () => {
       content: <LandingInfo />,
       bgColor: "bg-blackboard-black",
     },
-    {
-      content: <Aglet/>,
-      bgColor: "bg-silver",
-      title: "aglet",
-      description: "e-commerce website",
-    },
+    // {
+    //   content: <Aglet/>,
+    //   bgColor: "bg-silver",
+    //   title: "aglet",
+    //   description: "e-commerce website",
+    // },
     {
       content: <Ketto/>,
       bgColor: "bg-silver",
