@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import gsap from "gsap";
 import Navigation from "./Navigation";
 import LandingInfo from "./LandingInfo";
-import Aglet from "../projects/Aglet";
+// import Aglet from "../projects/Aglet";
 import AnchalMaria from "../projects/AnchalMaria";
 import Ketto from "../projects/Ketto";
 // import ParishonNet from "../projects/ParishonNet";
