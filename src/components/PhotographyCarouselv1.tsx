@@ -446,13 +446,9 @@ const PhotographyCarousel: React.FC = () => {
                         >
                           {item.imageUrl && (
                             <div className="relative w-full h-full bg-gray-900">
-                              <img
-                                key={item.imageUrl}
-                                src={item.imageUrl}
-                                alt={item.title}
-                                className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-300"
-                                loading="eager"
-                                decoding="async"
+                              <button
+                                type="button"
+                                className="w-full h-full p-0 m-0 border-none bg-transparent cursor-pointer"
                                 style={{ display: "block" }}
                                 onClick={() => {
                                   if (index === activeIndex) {
@@ -463,7 +459,22 @@ const PhotographyCarousel: React.FC = () => {
                                     setActiveIndex(index);
                                   }
                                 }}
-                              />
+                                aria-label={
+                                  index === activeIndex
+                                    ? `Open modal for ${item.title}`
+                                    : `Go to slide ${item.title}`
+                                }
+                              >
+                                <img
+                                  key={item.imageUrl}
+                                  src={item.imageUrl}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-300"
+                                  loading="eager"
+                                  decoding="async"
+                                  style={{ display: "block" }}
+                                />
+                              </button>
                             </div>
                           )}
                         </motion.div>
@@ -496,7 +507,7 @@ const PhotographyCarousel: React.FC = () => {
                       src={carouselItems[activeIndex].imageUrl}
                       alt={carouselItems[activeIndex].title}
                       className="w-full h-full object-contain"
-                      loading="eager"
+                      loading="lazy"
                       decoding="async"
                       style={{ transform: "translateZ(0)" }}
                     />
