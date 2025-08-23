@@ -24,7 +24,7 @@ const CarouselInfo: React.FC<CarouselInfoProps> = ({
         initial={{ opacity: 0}}
         animate={{ opacity: 1}}
         exit={{ opacity: 0}}
-        transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
+        transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
       >
         <h2 className="md:text-lg text-sm font-regular italic text-blackboard-black dark:text-white">
           {title}
