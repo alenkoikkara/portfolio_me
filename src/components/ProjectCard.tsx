@@ -7,12 +7,14 @@ interface ProjectCardProps {
     externalLink?: string;
     className?: string;
     title?: string;
+    onClick?: () => void;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
     image,
     cursor,
     externalLink,
+    onClick,
     title = "Project"
 }) => {
     const [currentIndex] = useState(0);
@@ -35,9 +37,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         })
     };
 
+    const handleClick = () => {
+        if (onClick) {
+            onClick();
+        } else if (externalLink) {
+            window.open(externalLink, "_blank");
+        }
+    };
+
     return (
         <div
-            className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center"
+            className="relative w-full h-full overflow-hidden bg-silver grayscale hover:grayscale-0 transition-all duration-300 flex items-center justify-center cursor-pointer"
             style={{
                 cursor: `url(${cursor}) 4 4, auto`,
                 backgroundSize: 'cover',
@@ -45,11 +55,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 backgroundRepeat: 'no-repeat',
                 opacity: 1
             }}
-            onClick={() => {
-                if (externalLink) {
-                    window.open(externalLink, "_blank");
-                }
-            }}
+            onClick={handleClick}
         >
             {/* Mobile - Show only image */}
             <div className="md:hidden w-full h-full p-4">

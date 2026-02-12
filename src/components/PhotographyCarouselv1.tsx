@@ -219,7 +219,7 @@ const PhotographyCarousel: React.FC = () => {
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     const threshold = containerWidth / 3; // Reduced threshold for better responsiveness
     const velocity = info.offset.x / 16; // Calculate velocity for momentum scrolling
-    
+
     if (Math.abs(velocity) > 0.5) {
       // If there's significant velocity, use it to determine direction
       if (velocity < 0 && activeIndex < carouselItems.length - 1) {
@@ -287,7 +287,7 @@ const PhotographyCarousel: React.FC = () => {
       {/* Toggle Button */}
       <button
         onClick={handleViewToggle}
-        className="absolute bottom-14 right-8 z-50 px-4 py-2 rounded-full transition-all duration-300 cursor-pointer"
+        className="fixed bottom-18 right-8 z-50 px-4 py-2 transition-all duration-300 cursor-pointer"
       >
         {isTableView ? (
           <div className="flex items-center gap-2">
@@ -355,17 +355,17 @@ const PhotographyCarousel: React.FC = () => {
               {/* Navigation */}
               <Navigation />
 
-            <div className="hidden md:block">
-              {/* Title and Date Display */}
-              <CarouselInfo
-                title={carouselItems[activeIndex].title}
-                date={carouselItems[activeIndex].date}
-                location={carouselItems[activeIndex].location}
-                focalLength={carouselItems[activeIndex].focalLength}
-                fNumber={carouselItems[activeIndex].fNumber}
-                activeIndex={activeIndex}
-              />
-            </div>
+              <div className="hidden md:block">
+                {/* Title and Date Display */}
+                <CarouselInfo
+                  title={carouselItems[activeIndex].title}
+                  date={carouselItems[activeIndex].date}
+                  location={carouselItems[activeIndex].location}
+                  focalLength={carouselItems[activeIndex].focalLength}
+                  fNumber={carouselItems[activeIndex].fNumber}
+                  activeIndex={activeIndex}
+                />
+              </div>
             </div>
 
             {/* Image Carousel */}
@@ -373,7 +373,7 @@ const PhotographyCarousel: React.FC = () => {
               <div
                 ref={containerRef}
                 className="w-full h-full relative overflow-visible overscroll-none touch-none"
-                style={{ 
+                style={{
                   transformStyle: "preserve-3d",
                   touchAction: "none",
                   overscrollBehavior: "none"
@@ -409,11 +409,10 @@ const PhotographyCarousel: React.FC = () => {
                   {carouselItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className={`w-full h-full flex-shrink-0 flex items-center justify-center snap-start transition-opacity duration-300 ${
-                        index === activeIndex || index === activeIndex + 1
+                      className={`w-full h-full flex-shrink-0 flex items-center justify-center snap-start transition-opacity duration-300 ${index === activeIndex || index === activeIndex + 1
                           ? "opacity-100"
                           : "opacity-0"
-                      }`}
+                        }`}
                       style={{ width: containerWidth }}
                     >
                       {item.component ? (
@@ -436,8 +435,8 @@ const PhotographyCarousel: React.FC = () => {
                               index === activeIndex
                                 ? 1
                                 : index === activeIndex + 1
-                                ? 0.2
-                                : 0,
+                                  ? 0.2
+                                  : 0,
                             scale: index === activeIndex ? 1 : 0.95,
                             filter:
                               index === activeIndex ? "none" : "blur(1px)",
@@ -523,7 +522,7 @@ const PhotographyCarousel: React.FC = () => {
             </AnimatePresence>
 
             {/* Scale Carousel */}
-            <div className="absolute hidden md:flex px-[20%] -bottom-40 left-0 w-full h-32 items-center justify-center">
+            <div className="absolute hidden md:flex px-[20%] -bottom-[20%] left-0 w-full h-32 items-center justify-center">
               <div className="relative w-48 h-12 flex items-center justify-center">
                 <motion.div
                   className="absolute flex items-center justify-center will-change-transform"
@@ -545,13 +544,12 @@ const PhotographyCarousel: React.FC = () => {
                     return (
                       <div
                         key={index}
-                        className={`absolute transition-all duration-300 cursor-pointer ${
-                          isActive
+                        className={`absolute transition-all duration-300 cursor-pointer ${isActive
                             ? "opacity-100"
                             : isAdjacent
-                            ? "opacity-70"
-                            : "opacity-0"
-                        }`}
+                              ? "opacity-70"
+                              : "opacity-0"
+                          }`}
                         style={{
                           left: `${index * 160}px`,
                           transform: "translateX(-50%)",
@@ -575,24 +573,21 @@ const PhotographyCarousel: React.FC = () => {
                           {Array.from({ length: 4 }).map((_, i) => (
                             <div
                               key={`left-${i}`}
-                              className={`h-1 w-[.5px] transition-all duration-300 ${
-                                isActive ? "bg-red-500" : "bg-gray-400"
-                              }`}
+                              className={`h-1 w-[.5px] transition-all duration-300 ${isActive ? "bg-red-500" : "bg-gray-400"
+                                }`}
                             />
                           ))}
                           {/* Active line */}
                           <div
-                            className={`h-3 w-[.5px] transition-all duration-300 ${
-                              isActive ? "bg-red-500" : "bg-gray-400"
-                            }`}
+                            className={`h-3 w-[.5px] transition-all duration-300 ${isActive ? "bg-red-500" : "bg-gray-400"
+                              }`}
                           />
                           {/* Right small lines */}
                           {Array.from({ length: 4 }).map((_, i) => (
                             <div
                               key={`right-${i}`}
-                              className={`h-1 w-[.5px] transition-all duration-300 ${
-                                isActive ? "bg-red-500" : "bg-gray-400"
-                              }`}
+                              className={`h-1 w-[.5px] transition-all duration-300 ${isActive ? "bg-red-500" : "bg-gray-400"
+                                }`}
                             />
                           ))}
                         </div>

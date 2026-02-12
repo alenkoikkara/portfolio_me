@@ -48,6 +48,7 @@ const Navigation: React.FC = () => {
         {/* <NavItem to="/blogs" hoveredItem={hoveredItem} setHoveredItem={setHoveredItem}>Blogs</NavItem> */}
         <NavItem to="/photography" hoveredItem={hoveredItem} setHoveredItem={setHoveredItem}>Photography</NavItem>
         {/* <NavItem to="/about" hoveredItem={hoveredItem} setHoveredItem={setHoveredItem}>About</NavItem> */}
+        <NavItem to="/graphicdesign" hoveredItem={hoveredItem} setHoveredItem={setHoveredItem}>Graphic Design</NavItem>
       </div>
     </div>
   );
