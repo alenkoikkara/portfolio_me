@@ -7,7 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'Montaga': ['Montaga', 'serif'],
+        'sans': ['Satoshi', 'sans-serif'],
+
       },
     },
   },

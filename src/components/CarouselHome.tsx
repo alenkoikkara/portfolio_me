@@ -1,23 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { ReactNode } from "react";
 import gsap from "gsap";
 import Navigation from "./Navigation";
-import LandingInfo from "./LandingInfo";
-// import Aglet from "../projects/Aglet";
-import AnchalMaria from "../projects/AnchalMaria";
-import Ketto from "../projects/Ketto";
-// import ParishonNet from "../projects/ParishonNet";
-import ShreyaKumar from "../projects/ShreyaKumar";
-import Memento from "../projects/Memento";
-import SplitSense from "../projects/SplitSense";
+import { slides } from "../data/slidesConfig";
 import { motion } from "framer-motion";
-
-interface Slide {
-  content: ReactNode;
-  title?: string;
-  description?: string;
-  bgColor: string;
-}
 
 const CarouselHome = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -27,113 +12,68 @@ const CarouselHome = () => {
   const touchStartY = useRef(0);
   const touchStartX = useRef(0);
 
-  const slides: Slide[] = [
-    {
-      content: <LandingInfo />,
-      bgColor: "bg-blackboard-black",
-    },
-    // {
-    //   content: <Aglet/>,
-    //   bgColor: "bg-silver",
-    //   title: "aglet",
-    //   description: "e-commerce website",
-    // },
-    {
-      content: <Ketto/>,
-      bgColor: "bg-silver",
-      title: "ketto",
-      description: "crowdfunding website",
-    },
-    {
-      content: <AnchalMaria/>,
-      bgColor: "bg-silver",
-      title: "anchal maria",
-      description: "portfolio website",
-    },
-    // {
-    //   content: <ParishonNet/>,
-    //   bgColor: "bg-silver",
-    //   title: "parishonnet",
-    //   description: "dashboard management",
-    // },
-    {
-      content: <ShreyaKumar/>,
-      bgColor: "bg-silver",
-      title: "shreya kumar",
-      description: "portfolio website",
-    },
-    {
-      content: <Memento/>,
-      bgColor: "bg-silver",
-      title: "memento",
-      description: "knowledge base",
-    },
-    {
-      content: <SplitSense/>,
-      bgColor: "bg-silver",
-      title: "split sense",
-      description: "expense & budget tracker",
-    },
-  ];
-
   const updateCarousel = useCallback(() => {
     if (!carouselRef.current) return;
 
-    slidesRef.current.forEach((slide, index) => {
-      if (!slide) return;
+    const ctx = gsap.context(() => {
+      slidesRef.current.forEach((slide, index) => {
+        if (!slide) return;
 
-      const offset = index - currentIndex;
+        const offset = index - currentIndex;
 
-      if (offset === 0) {
-        // Current slide
-        slide.style.transformOrigin = "center center";
-        gsap.to(slide, {
-          y: 0,
-          scale: 1,
-          opacity: 1,
-          rotateZ: 0,
-          z: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      } else if (offset > 0) {
-        // Slides below
-        slide.style.transformOrigin = "center center";
-        gsap.to(slide, {
-          y: offset * 25,
-          scale: 1 - offset * 0.05,
-          opacity: 1 - offset * 0.2,
-          rotateZ: 0,
-          z: -offset * 50,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      } else if (offset === -1) {
-        // Only the immediate top slide gets the rotation
-        slide.style.transformOrigin = "right center";
-        gsap.to(slide, {
-          y: -800,
-          scale: 0.8,
-          opacity: 0,
-          rotateZ: 30,
-          z: 100,
-          duration: 0.3,
-          ease: "power2.in",
-        });
-      } else {
-        // Other slides above just fade out
-        slide.style.transformOrigin = "center center";
-        gsap.to(slide, {
-          y: -100,
-          scale: 0.8,
-          opacity: 0,
-          rotateZ: 0,
-          z: 100,
-          duration: 0.3,
-          ease: "power2.in",
-        });
-      }
-    });
+        if (offset === 0) {
+          // Current slide
+          slide.style.transformOrigin = "center center";
+          gsap.to(slide, {
+            y: 0,
+            scale: 1,
+            opacity: 1,
+            rotateZ: 0,
+            z: 0,
+            duration: 0.3,
+            ease: "power2.out",
+          });
+        } else if (offset > 0) {
+          // Slides below
+          slide.style.transformOrigin = "center center";
+          gsap.to(slide, {
+            y: offset * 25,
+            scale: 1 - offset * 0.05,
+            opacity: 1 - offset * 0.2,
+            rotateZ: 0,
+            z: -offset * 50,
+            duration: 0.3,
+            ease: "power2.out",
+          });
+        } else if (offset === -1) {
+          // Only the immediate top slide gets the rotation
+          slide.style.transformOrigin = "right center";
+          gsap.to(slide, {
+            y: -800,
+            scale: 0.8,
+            opacity: 0,
+            rotateZ: 30,
+            z: 100,
+            duration: 0.3,
+            ease: "power2.in",
+          });
+        } else {
+          // Other slides above just fade out
+          slide.style.transformOrigin = "center center";
+          gsap.to(slide, {
+            y: -100,
+            scale: 0.8,
+            opacity: 0,
+            rotateZ: 0,
+            z: 100,
+            duration: 0.3,
+            ease: "power2.in",
+          });
+        }
+      });
+    }, carouselRef); // Scope to carouselRef
+
+    return () => ctx.revert();
   }, [currentIndex]);
 
   const goToNextSlide = useCallback(() => {
@@ -145,7 +85,7 @@ const CarouselHome = () => {
         isAnimating.current = false;
       }, 300);
     }
-  }, [currentIndex, slides.length]);
+  }, [currentIndex]);
 
   const goToPrevSlide = useCallback(() => {
     if (isAnimating.current) return;
@@ -263,7 +203,7 @@ const CarouselHome = () => {
           <div
             ref={carouselRef}
             className="relative w-full h-full preserve-3d cursor-pointer flex items-center justify-center overscroll-none touch-none"
-            style={{ 
+            style={{
               transformStyle: "preserve-3d",
               touchAction: "none",
               overscrollBehavior: "none"
@@ -289,7 +229,7 @@ const CarouselHome = () => {
             ))}
           </div>
         </div>
-        
+
       </div>
     </div>
   );
