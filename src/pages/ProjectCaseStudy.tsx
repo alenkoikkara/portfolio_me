@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { caseStudies } from "../data/caseStudies";
 import Footer from "../components/Footer";
 
@@ -27,7 +27,6 @@ const ProjectCaseStudy: React.FC = () => {
   const projectKeys = Object.keys(caseStudies);
   const currentIndex = projectKeys.indexOf(project.id);
   const nextProjectKey = projectKeys[(currentIndex + 1) % projectKeys.length];
-  // const prevProjectKey = projectKeys[(currentIndex - 1 + projectKeys.length) % projectKeys.length];
 
   return (
     <motion.div
