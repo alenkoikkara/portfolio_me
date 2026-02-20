@@ -3,8 +3,7 @@ import kettoi3g from "../assets/images/kettoi3g.png";
 import kettohand from "../assets/images/kettohand.png";
 import anchalmain from "../assets/images/anchalmain.png";
 import anchalimac from "../assets/images/anchalimac.png";
-import agletmain from "../assets/images/agletmain.png";
-import agletipad from "../assets/images/agletipad.png";
+import shreyaimac from "../assets/images/shreyaimac.png";
 import mementomain from "../assets/images/mementoipad.png"; // Using iPad as main for Memento as placeholder if main missing
 // impoer parishonnet images if available, otherwise skip for now
 
@@ -52,20 +51,6 @@ export const caseStudies: Record<string, CaseStudy> = {
         challenges: "Creating a unique navigation system that felt intuitive but distinct from standard portfolio sites.",
         solution: "Developed a custom cursor-based navigation and seamless page transitions using Framer Motion."
     },
-    "aglet": {
-        id: "aglet",
-        title: "Aglet",
-        subtitle: "Sneaker Culture App",
-        description: "An app for sneakerheads to explore, collect, and trade virtual sneakers based on real-world location data.",
-        heroImage: agletipad,
-        mainImage: agletmain,
-        role: "Developer & UI Engineer",
-        timeline: "2024",
-        stack: ["React", "TypeScript", "Tailwind CSS", "Node.js", "Docker", "Express", "MongoDB"],
-        liveLink: "https://aglet.app",
-        challenges: "Optimizing map rendering performance with thousands of interactive markers.",
-        solution: "Implemented clustering and lazy loading for map markers, significantly improving frame rates."
-    },
     "memento": {
         id: "memento",
         title: "Memento",
@@ -75,20 +60,21 @@ export const caseStudies: Record<string, CaseStudy> = {
         mainImage: mementomain,
         role: "Solo Developer",
         timeline: "2025",
-        stack: ["React", "TypeScript", "Tailwind CSS", "FastAPI", "Docker", "Python", "MongoDB", "Supabase"],
+        stack: ["React", "TypeScript", "Tailwind CSS", "FastAPI", "Docker", "Python", "MongoDB"],
+        liveLink: "https://memorygraph.alenkoikkara.com/",
         challenges: "Designing a schema that allows for flexible, graph-like connections between notes.",
         solution: "Used a graph database approach within a relational structure to enable bi-directional linking."
     },
     "shreya-kumar": {
         id: "shreya-kumar",
         title: "Shreya Kumar",
-        subtitle: "Architecture Portfolio",
+        subtitle: "Portfolio Website",
         description: "A clean, grid-based portfolio for an architect to display high-resolution project images.",
-        heroImage: anchalimac,
-        mainImage: anchalmain,
+        heroImage: shreyaimac,
+        mainImage: shreyaimac,
         role: "Developer & Designer",
         timeline: "2025",
         stack: ["React", "Framer", "Figma"],
-        liveLink: "#"
+        liveLink: "https://www.net.shreyauxfolio.com/"
     }
 };
