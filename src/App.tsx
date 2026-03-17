@@ -1,11 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-// import Home from "./pages/Home";
+import Home from "./pages/Home";
 import Photography from "./pages/Photography";
 import About from "./pages/About";
 import Footer from "./components/Footer";
 import { CarouselProvider } from "./context/CarouselContext";
 import ProjectCaseStudy from "./pages/ProjectCaseStudy";
-import UnderRenovation from "./pages/UnderRenovation";
 import { useLocation, Link } from "react-router-dom";
 
 function AppContent() {
@@ -21,8 +20,7 @@ function AppContent() {
         </Link>
         <main>
           <Routes>
-            {/* <Route path="/" element={<Home />} /> */}
-            <Route path="/" element={<UnderRenovation />} />
+            <Route path="/" element={<Home />} />
             <Route path="/photography" element={<Photography />} />
             <Route path="/about" element={<About />} />
             <Route path="/case-study/:id" element={<ProjectCaseStudy />} />
