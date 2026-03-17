@@ -61,7 +61,7 @@ export const caseStudies: Record<string, CaseStudy> = {
         role: "Solo Developer",
         timeline: "2025",
         stack: ["React", "TypeScript", "Tailwind CSS", "FastAPI", "Docker", "Python", "MongoDB"],
-        liveLink: "https://memorygraph.alenkoikkara.com/",
+        liveLink: "https://github.com/alenkoikkara/memorygraph.git",
         challenges: "Designing a schema that allows for flexible, graph-like connections between notes.",
         solution: "Used a graph database approach within a relational structure to enable bi-directional linking."
     },
