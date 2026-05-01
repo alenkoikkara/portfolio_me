@@ -327,7 +327,7 @@ const PhotographyCarousel: React.FC = () => {
       </button>
 
       <AnimatePresence mode="wait">
-        {isTableView ? (
+        {!isTableView ? (
           <motion.div
             key="table"
             initial={{ opacity: 0 }}
