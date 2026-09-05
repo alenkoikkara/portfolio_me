@@ -5,7 +5,12 @@ import * as THREE from 'three'
 
 function App() {
   return (
-    <div className="w-full h-screen bg-transparent">
+    <div className="w-full h-screen bg-transparent relative">
+      <div className="absolute top-8 left-10 z-50 pointer-events-none">
+        <h1 className="text-gray-900 text-xs font-bold tracking-[0.0em] lowercase opacity-80">
+          alen koikkara
+        </h1>
+      </div>
       <Canvas 
         shadows 
         dpr={[1, 2]} 
