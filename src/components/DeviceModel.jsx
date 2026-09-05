@@ -92,7 +92,7 @@ function playMechanicalClick() {
 }
 
 // Reusable component to handle individual button state and animation
-function DeviceButton({ position, description, labelDirection = 'down', children, onClick, name, introDone }) {
+function DeviceButton({ position, description, labelDirection = 'down', children, onClick, name, introDone, isExploded = false }) {
   const buttonRef = useRef()
   const [clicked, setClicked] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -100,6 +100,9 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   // Base Y is the Y value from the position prop
   const baseY = position[1]
   const pressedY = baseY - 0.005
+  // Generate a persistent random height between 0.035 and 0.065 for the explosion
+  const randomExplodeOffset = React.useMemo(() => 0.035 + Math.random() * 0.03, [])
+  const explodeTargetY = baseY + randomExplodeOffset
 
   const handleClick = (e) => {
     if (!introDone) return // Prevent clicks during intro
@@ -126,11 +129,11 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   useFrame(() => {
     // Only apply manual lerping if the intro animation has finished
     if (buttonRef.current && introDone) {
-      const targetY = clicked ? pressedY : baseY
+      const targetY = isExploded ? explodeTargetY : (clicked ? pressedY : baseY)
       buttonRef.current.position.y = MathUtils.lerp(
         buttonRef.current.position.y,
         targetY,
-        0.3 // Snap speed
+        0.1 // Slower, elegant snap speed for explosions
       )
     }
   })
@@ -209,7 +212,12 @@ function DeviceButton({ position, description, labelDirection = 'down', children
 
 export default function DeviceModel() {
   const group = useRef()
+  const bodyRef = useRef()
+  const screenRef = useRef()
   const introElapsedRef = useRef(0)
+  
+  const [isExploded, setIsExploded] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   
   // Keep Blender's horizontal FOV regardless of window shape
   const { size, camera } = useThree()
@@ -275,6 +283,39 @@ export default function DeviceModel() {
       // Ensure the emissive color is white
       materials.ScreenText.emissive.setHex(0xffffff)
     }
+
+    // 3. Elastic Camera Snap-Back
+    if (introDone && !isDragging) {
+      const center = new THREE.Vector3(...CAM_TARGET)
+      const targetPos = new THREE.Vector3(0.22, 0.42, 0.22)
+      
+      const currentOffset = state.camera.position.clone().sub(center)
+      const targetOffset = targetPos.clone().sub(center)
+      
+      const currentSpherical = new THREE.Spherical().setFromVector3(currentOffset)
+      const targetSpherical = new THREE.Spherical().setFromVector3(targetOffset)
+      
+      // Handle the shortest path for theta (azimuth) wrapping around -PI/PI
+      let diff = targetSpherical.theta - currentSpherical.theta
+      if (diff > Math.PI) targetSpherical.theta -= Math.PI * 2
+      if (diff < -Math.PI) targetSpherical.theta += Math.PI * 2
+      
+      currentSpherical.theta = MathUtils.lerp(currentSpherical.theta, targetSpherical.theta, 0.05)
+      currentSpherical.phi = MathUtils.lerp(currentSpherical.phi, targetSpherical.phi, 0.05)
+      currentSpherical.radius = MathUtils.lerp(currentSpherical.radius, targetSpherical.radius, 0.05)
+      
+      state.camera.position.setFromSpherical(currentSpherical).add(center)
+      state.camera.lookAt(center)
+    }
+
+    // 4. Exploded View Animation (Body & Screen)
+    if (bodyRef.current && screenRef.current) {
+      const targetBodyY = isExploded ? -0.015 : 0.007
+      const targetScreenY = isExploded ? 0.025 : 0.011
+      
+      bodyRef.current.position.y = MathUtils.lerp(bodyRef.current.position.y, targetBodyY, 0.1)
+      screenRef.current.position.y = MathUtils.lerp(screenRef.current.position.y, targetScreenY, 0.1)
+    }
   })
 
   return (
@@ -284,6 +325,8 @@ export default function DeviceModel() {
         enablePan={false} 
         target={CAM_TARGET}
         enabled={introDone}
+        onStart={() => setIsDragging(true)}
+        onEnd={() => setIsDragging(false)}
       />
 
       <LightingSetup />
@@ -295,11 +338,11 @@ export default function DeviceModel() {
           <group name="HiChord">
             
             {/* Device Body & Screen */}
-            <group position={[0, 0.007, 0]} name="Body">
+            <group ref={bodyRef} position={[0, 0.007, 0]} name="Body">
               <mesh castShadow receiveShadow geometry={nodes.Cube.geometry} material={materials.BodyPlastic} />
               <mesh castShadow receiveShadow geometry={nodes.Cube_1.geometry} material={materials.Well} />
             </group>
-            <group position={[-0.033, 0.011, -0.036]} name="Body_Details">
+            <group ref={screenRef} position={[-0.033, 0.011, -0.036]} name="Body_Details">
               <mesh castShadow receiveShadow geometry={nodes.Cube001.geometry} material={materials.DisplayFrame} />
               <mesh castShadow receiveShadow geometry={nodes.Cube001_1.geometry} material={materials.Display} />
               <mesh castShadow receiveShadow geometry={nodes.Cube001_2.geometry} material={materials.ScreenText} />
@@ -317,47 +360,47 @@ export default function DeviceModel() {
             />
             
             {/* Top Logo Buttons */}
-            <DeviceButton name="Btn_GH" introDone={introDone} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
+            <DeviceButton name="Btn_GH" introDone={introDone} isExploded={isExploded} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_1.geometry} material={materials.GitHubDark} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_LI" introDone={introDone} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
+            <DeviceButton name="Btn_LI" introDone={introDone} isExploded={isExploded} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_1.geometry} material={materials.LinkedInBlue} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_MD" introDone={introDone} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
+            <DeviceButton name="Btn_MD" introDone={introDone} isExploded={isExploded} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_1.geometry} material={materials.MediumBlack} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
 
             {/* Bottom Keys */}
-            <DeviceButton name="Key_Bot_0" introDone={introDone} position={[-0.033, 0.007, 0.022]} description="Resume" labelDirection="down">
+            <DeviceButton name="Key_Bot_0" introDone={introDone} isExploded={isExploded} onClick={() => setIsExploded(!isExploded)} position={[-0.033, 0.007, 0.022]} description="Explode" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_1" introDone={introDone} position={[-0.011, 0.007, 0.022]} description="Writing" labelDirection="down">
+            <DeviceButton name="Key_Bot_1" introDone={introDone} isExploded={isExploded} position={[-0.011, 0.007, 0.022]} description="Writing" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_2" introDone={introDone} position={[0.011, 0.007, 0.022]} description="Lab" labelDirection="down">
+            <DeviceButton name="Key_Bot_2" introDone={introDone} isExploded={isExploded} position={[0.011, 0.007, 0.022]} description="Lab" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_3" introDone={introDone} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
+            <DeviceButton name="Key_Bot_3" introDone={introDone} isExploded={isExploded} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_1.geometry} material={materials.ContactAmber} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_2.geometry} material={materials.Dark} />
             </DeviceButton>
             
             {/* Top Keys */}
-            <DeviceButton name="Key_Top_0" introDone={introDone} position={[-0.03, 0.007, -0.015]} description="Projects" labelDirection="up">
+            <DeviceButton name="Key_Top_0" introDone={introDone} isExploded={isExploded} position={[-0.03, 0.007, -0.015]} description="Projects" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_1" introDone={introDone} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
+            <DeviceButton name="Key_Top_1" introDone={introDone} isExploded={isExploded} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_2" introDone={introDone} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
+            <DeviceButton name="Key_Top_2" introDone={introDone} isExploded={isExploded} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
