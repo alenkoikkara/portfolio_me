@@ -11,6 +11,8 @@ Your primary directive is to create a high-quality, professional, and visually i
 
 ## 2. Design & Aesthetics
 * **Color Palette & Typography:** The USER will explicitly set and provide the specific fonts and color palettes. Ensure strict adherence to these provided values.
+  * **Design Palette:**
+    * Viewport Background: `#faf9f6`
 * **Icons:** Use Remix Icon for all iconography.
 * **Styling:** Implement rich aesthetics including smooth gradients, glassmorphism where appropriate, and subtle micro-animations for interactive elements (hover states, transitions).
 * **Responsiveness:** All designs MUST be mobile-first and fully responsive across tablet and desktop viewports.
@@ -19,7 +21,7 @@ Your primary directive is to create a high-quality, professional, and visually i
 * **Modularity:** Keep components focused, reusable, and single-purpose.
 * **Core Tech:** This is a React project. Use modern functional components, Hooks (e.g., `useState`, `useEffect`), and modern JavaScript (ES6+).
 * **DOM Manipulation:** Avoid direct DOM manipulation. Rely on React's declarative state and ref system.
-* **CSS Best Practices:** Avoid inline styles. Use an organized `index.css` with a defined design system (variables/tokens for colors, spacing, typography).
+* **CSS Best Practices:** Always use Tailwind CSS utility classes for styling instead of writing custom CSS. Avoid writing custom CSS in stylesheets unless absolutely necessary (e.g., global base styles). Never use inline styles.
 
 ## 4. Linting & Formatting
 * **Strict Mode:** Always write JavaScript in strict mode.
