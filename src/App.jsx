@@ -9,7 +9,7 @@ function App() {
       <Canvas 
         shadows 
         dpr={[1, 2]} 
-        camera={{ position: [0, 4.8, 1.6], fov: 40, near: 0.01, far: 200 }}
+        camera={{ position: [0.22, 0.42, 0.22], fov: 40, near: 0.005, far: 10 }}
         gl={{ 
           antialias: true, 
           toneMapping: THREE.ACESFilmicToneMapping, 

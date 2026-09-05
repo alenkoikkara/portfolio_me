@@ -1,100 +1,124 @@
-import React, { useEffect, useState } from 'react'
+import React, { useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
-import { Environment, ContactShadows } from '@react-three/drei'
-import { useControls, Leva } from 'leva'
+import { Environment, SoftShadows, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 
-const DEFAULT_CONFIG = {
-  exposure: 1.1,
-  envIntensity: 1.5,
-  
-  keyPosition: [-6.0, 5.0, 6.0], // Left, Above, In front
-  keyIntensity: 3.5,
-  keyColor: '#ffffff',
-  
-  fillPosition: [4.0, 0.0, 3.0], // Right side fill
-  fillIntensity: 1.2,
-  fillColor: '#dfe6f0',
-  
-  shadowOpacity: 0.25,
+// Exact 1:1 scale with hichord.js
+const S = 1;
+export const CONFIG = {
+  exposure: 1.15,
+  envIntensity: 1.6,
+
+  studio: {
+    key:  { size: [1.6*S, 1.2*S], pos: [0.55*S, 1.10*S, 0.85*S], intensity: 9.0, color: '#ffffff' },
+    fill: { size: [1.8*S, 1.4*S], pos: [-1.20*S, 0.45*S, 0.35*S], intensity: 1.6, color: '#c9d8ee' },
+    rim:  { size: [1.8*S, 0.35*S], pos: [-0.10*S, 0.55*S, -1.15*S], intensity: 7.0, color: '#fff2dc' },
+    floor: '#0a0a0b',
+    surround: '#131418',
+  },
+
+  keyLight:  { position: [0.16*S, 0.26*S, 0.15*S], intensity: 3.4, color: '#fff6ec' },
+  rimLight:  { position: [-0.10*S, 0.14*S, -0.22*S], intensity: 1.8, color: '#bfd4f2' },
+  fillLight: { position: [-0.22*S, 0.10*S, 0.14*S], intensity: 0.45, color: '#dfe6f0' },
+
+  shadow: {
+    size: 0.34*S,
+    castOpacity: 0.42,
+    contactOpacity: 0.55,
+    contactSpread: 1.35,
+    mapSize: 2048,
+    radius: 4,
+  },
 }
+
+
+
+const EnvPanel = ({ config }) => (
+  <mesh position={config.pos} onUpdate={m => m.lookAt(0,0,0)}>
+    <planeGeometry args={config.size} />
+    <meshBasicMaterial 
+      color={new THREE.Color(config.color).multiplyScalar(config.intensity)} 
+      side={THREE.DoubleSide} 
+      toneMapped={false} 
+    />
+  </mesh>
+)
 
 export default function LightingSetup() {
   const { gl } = useThree()
   
-  // Only mount Leva UI if ?debug is in URL
-  const [showDebug, setShowDebug] = useState(false)
-  useEffect(() => {
-    if (window.location.search.includes('debug')) {
-      setShowDebug(true)
-    }
-  }, [])
-
-  // Create Leva controls
-  const {
-    exposure,
-    envIntensity,
-    keyPosition,
-    keyIntensity,
-    keyColor,
-    fillPosition,
-    fillIntensity,
-    fillColor,
-    shadowOpacity
-  } = useControls('Lighting', {
-    exposure: { value: DEFAULT_CONFIG.exposure, min: 0.1, max: 3, step: 0.1 },
-    envIntensity: { value: DEFAULT_CONFIG.envIntensity, min: 0, max: 5, step: 0.1 },
-    
-    'Key Light': { folder: true, collapsed: false },
-    keyPosition: { value: DEFAULT_CONFIG.keyPosition },
-    keyIntensity: { value: DEFAULT_CONFIG.keyIntensity, min: 0, max: 10, step: 0.1 },
-    keyColor: { value: DEFAULT_CONFIG.keyColor },
-    
-    'Fill Light': { folder: true, collapsed: false },
-    fillPosition: { value: DEFAULT_CONFIG.fillPosition },
-    fillIntensity: { value: DEFAULT_CONFIG.fillIntensity, min: 0, max: 5, step: 0.1 },
-    fillColor: { value: DEFAULT_CONFIG.fillColor },
-    
-    'Shadows': { folder: true, collapsed: false },
-    shadowOpacity: { value: DEFAULT_CONFIG.shadowOpacity, min: 0, max: 1, step: 0.05 }
-  })
-
   // Apply tone mapping exposure
-  useEffect(() => {
-    gl.toneMappingExposure = exposure
-  }, [gl, exposure])
+  gl.toneMappingExposure = CONFIG.exposure
 
   return (
     <>
-      <Leva hidden={!showDebug} />
-
-      {/* Image Based Lighting */}
-      <Environment preset="city" environmentIntensity={envIntensity} />
+      <SoftShadows size={1.5} samples={16} focus={0.5} />
+      <Environment background={false} environmentIntensity={CONFIG.envIntensity} resolution={1024}>
+        <mesh>
+          <sphereGeometry args={[120, 24, 16]} />
+          <meshBasicMaterial color={CONFIG.studio.surround} side={THREE.BackSide} toneMapped={false} />
+        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -18, 0]}>
+          <planeGeometry args={[280, 280]} />
+          <meshBasicMaterial color={CONFIG.studio.floor} toneMapped={false} />
+        </mesh>
+        <EnvPanel config={CONFIG.studio.key} />
+        <EnvPanel config={CONFIG.studio.fill} />
+        <EnvPanel config={CONFIG.studio.rim} />
+      </Environment>
 
       {/* Key Light */}
       <directionalLight
-        position={keyPosition}
-        intensity={keyIntensity}
-        color={keyColor}
+        position={CONFIG.keyLight.position}
+        intensity={CONFIG.keyLight.intensity}
+        color={CONFIG.keyLight.color}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-near={0.1}
-        shadow-camera-far={30}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={6}
-        shadow-camera-bottom={-6}
-        shadow-bias={-0.0005}
-        shadow-radius={4}
+        shadow-mapSize-width={CONFIG.shadow.mapSize}
+        shadow-mapSize-height={CONFIG.shadow.mapSize}
+        shadow-camera-near={0.02}
+        shadow-camera-far={0.9}
+        shadow-camera-left={-0.3}
+        shadow-camera-right={0.3}
+        shadow-camera-top={0.3}
+        shadow-camera-bottom={-0.3}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.002}
+        shadow-radius={CONFIG.shadow.radius}
+      />
+
+      {/* Rim Light */}
+      <directionalLight
+        position={CONFIG.rimLight.position}
+        intensity={CONFIG.rimLight.intensity}
+        color={CONFIG.rimLight.color}
       />
 
       {/* Fill Light */}
       <directionalLight
-        position={fillPosition}
-        intensity={fillIntensity}
-        color={fillColor}
+        position={CONFIG.fillLight.position}
+        intensity={CONFIG.fillLight.intensity}
+        color={CONFIG.fillLight.color}
       />
+
+      {/* Shadows */}
+      <group>
+        {/* Directional drop shadow */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
+          <planeGeometry args={[CONFIG.shadow.size, CONFIG.shadow.size]} />
+          <shadowMaterial opacity={CONFIG.shadow.castOpacity} />
+        </mesh>
+        
+        {/* Realistic shape-matching contact shadow with dispersion */}
+        <ContactShadows 
+          position={[0, 0, 0]} 
+          opacity={0.8} 
+          scale={0.4} 
+          blur={3.5} 
+          far={0.05} 
+          resolution={512}
+          color="#000000"
+        />
+      </group>
     </>
   )
 }

@@ -1,18 +1,18 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { useGLTF, Environment, OrbitControls, Html, useAnimations } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, LoopOnce } from 'three'
 import deviceGlb from '../assets/glb/device.glb'
 import LightingSetup from './LightingSetup'
 import * as THREE from 'three'
 
-const CAM_TARGET = [0, 0, 0]
+const CAM_TARGET = [0, 0.008, 0]
 const CAM_PATH = [
-  { t: 0.00, pos: [5.9562, -6.2696, 1.7900] },
-  { t: 2.60, pos: [4.2238, -5.8664, 2.5066] },
-  { t: 4.33, pos: [1.9956, -4.9890, 3.2532] },
-  { t: 6.83, pos: [0.5922, -3.7016, 4.0468] },
-  { t: 9.17, pos: [0.0000,  0.0000, 5.0500] }, // Pure face-on (Z-axis)
+  { t: 0.00, pos: [0.38, 0.10, 0.42] }, // Start low and wide
+  { t: 2.60, pos: [0.34, 0.18, 0.37] }, // Lifts up
+  { t: 4.33, pos: [0.30, 0.26, 0.32] }, // Sweeps inward
+  { t: 6.83, pos: [0.26, 0.34, 0.27] }, // Continues climbing
+  { t: 9.17, pos: [0.22, 0.42, 0.22] }, // Final isometric shot
 ]
 const CAM_HFOV = 36.24
 
@@ -41,6 +41,56 @@ function sampleCamPath(time, out) {
   return out.fromArray(p[p.length - 1].pos);
 }
 
+// Procedural Mechanical Keyboard Sound (Tactile + Thock)
+let audioCtx = null;
+function playMechanicalClick() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  
+  const time = audioCtx.currentTime;
+  
+  // 1. The High-Frequency Tactile Snap
+  const clickOsc = audioCtx.createOscillator();
+  const clickGain = audioCtx.createGain();
+  clickOsc.type = 'square';
+  // Randomize pitch slightly for organic variation
+  const clickPitch = 2500 + (Math.random() * 800 - 400);
+  clickOsc.frequency.setValueAtTime(clickPitch, time);
+  clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.02);
+  
+  clickGain.gain.setValueAtTime(0.08, time); // Subtle sharp click
+  clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+  
+  clickOsc.connect(clickGain);
+  clickGain.connect(audioCtx.destination);
+  
+  clickOsc.start(time);
+  clickOsc.stop(time + 0.02);
+
+  // 2. The Deep Bottom-Out "Thock"
+  const thockOsc = audioCtx.createOscillator();
+  const thockGain = audioCtx.createGain();
+  thockOsc.type = 'sine';
+  // Deep resonance
+  const thockPitch = 300 + (Math.random() * 40 - 20);
+  thockOsc.frequency.setValueAtTime(thockPitch, time + 0.01);
+  thockOsc.frequency.exponentialRampToValueAtTime(50, time + 0.06);
+  
+  thockGain.gain.setValueAtTime(0, time);
+  thockGain.gain.setValueAtTime(0.5, time + 0.01); // Louder, deeper thud
+  thockGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  
+  thockOsc.connect(thockGain);
+  thockGain.connect(audioCtx.destination);
+  
+  thockOsc.start(time + 0.01);
+  thockOsc.stop(time + 0.08);
+}
+
 // Reusable component to handle individual button state and animation
 function DeviceButton({ position, description, labelDirection = 'down', children, onClick, name, introDone }) {
   const buttonRef = useRef()
@@ -55,6 +105,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
     if (!introDone) return // Prevent clicks during intro
     e.stopPropagation()
     setClicked(true)
+    playMechanicalClick()
     setTimeout(() => setClicked(false), 150)
     if (onClick) onClick(e)
   }
@@ -142,7 +193,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
               style={{
                 ...textPosition,
                 opacity: hovered ? 1 : 0,
-                transitionDelay: hovered ? '1500ms' : '0ms',
+                transitionDelay: hovered ? '800ms' : '0ms',
                 transitionTimingFunction: 'cubic-bezier(0.83, 0, 0.17, 1)'
               }}
             >
@@ -159,6 +210,17 @@ function DeviceButton({ position, description, labelDirection = 'down', children
 export default function DeviceModel() {
   const group = useRef()
   const introElapsedRef = useRef(0)
+  
+  // Keep Blender's horizontal FOV regardless of window shape
+  const { size, camera } = useThree()
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    const hfov = THREE.MathUtils.degToRad(CAM_HFOV);
+    const vfov = 2 * Math.atan(Math.tan(hfov / 2) / Math.max(aspect, 0.0001));
+    camera.fov = THREE.MathUtils.radToDeg(vfov);
+    camera.updateProjectionMatrix();
+  }, [size.width, size.height, camera])
+
   const [introDone, setIntroDone] = useState(false)
   const { nodes, materials, animations } = useGLTF(deviceGlb)
   const { actions, names, mixer } = useAnimations(animations, group)
@@ -224,37 +286,28 @@ export default function DeviceModel() {
         enabled={introDone}
       />
 
-      {/* Lights must be in pure world space to cast natural shadows across the standing device */}
       <LightingSetup />
 
-      {/* Background Shadow Receiver */}
-      <mesh position={[0, 0, -1]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
-        <shadowMaterial opacity={0.25} transparent />
-      </mesh>
-
-      {/* Root group to stand the device upright */}
-      <group rotation={[MathUtils.degToRad(90), 0, 0]}>
-        
-        {/* Main Group scaling the GLB mesh nodes */}
-        <group ref={group} scale={20} dispose={null}>
+      {/* Main Group wrapping the GLB mesh nodes */}
+      <group ref={group} dispose={null}>
         
           <group name="Scene">
           <group name="HiChord">
             
             {/* Device Body & Screen */}
             <group position={[0, 0.007, 0]} name="Body">
-              <mesh geometry={nodes.Cube.geometry} material={materials.BodyPlastic} />
-              <mesh geometry={nodes.Cube_1.geometry} material={materials.Well} />
+              <mesh castShadow receiveShadow geometry={nodes.Cube.geometry} material={materials.BodyPlastic} />
+              <mesh castShadow receiveShadow geometry={nodes.Cube_1.geometry} material={materials.Well} />
             </group>
             <group position={[-0.033, 0.011, -0.036]} name="Body_Details">
-              <mesh geometry={nodes.Cube001.geometry} material={materials.DisplayFrame} />
-              <mesh geometry={nodes.Cube001_1.geometry} material={materials.Display} />
-              <mesh geometry={nodes.Cube001_2.geometry} material={materials.ScreenText} />
+              <mesh castShadow receiveShadow geometry={nodes.Cube001.geometry} material={materials.DisplayFrame} />
+              <mesh castShadow receiveShadow geometry={nodes.Cube001_1.geometry} material={materials.Display} />
+              <mesh castShadow receiveShadow geometry={nodes.Cube001_2.geometry} material={materials.ScreenText} />
             </group>
             
             {/* Solid plug to hide internals during fly-in */}
             <mesh 
+              castShadow receiveShadow
               name="Well_Fill" 
               geometry={nodes.Well_Fill.geometry} 
               material={materials.BodyPlastic} 
@@ -265,50 +318,49 @@ export default function DeviceModel() {
             
             {/* Top Logo Buttons */}
             <DeviceButton name="Btn_GH" introDone={introDone} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
-              <mesh geometry={nodes.Btn_GH_1.geometry} material={materials.GitHubDark} />
-              <mesh geometry={nodes.Btn_GH_2.geometry} material={materials.LegendWhite} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_GH_1.geometry} material={materials.GitHubDark} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_GH_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
             <DeviceButton name="Btn_LI" introDone={introDone} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
-              <mesh geometry={nodes.Btn_LI_1.geometry} material={materials.LinkedInBlue} />
-              <mesh geometry={nodes.Btn_LI_2.geometry} material={materials.LegendWhite} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_LI_1.geometry} material={materials.LinkedInBlue} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_LI_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
             <DeviceButton name="Btn_MD" introDone={introDone} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
-              <mesh geometry={nodes.Btn_MD_1.geometry} material={materials.MediumBlack} />
-              <mesh geometry={nodes.Btn_MD_2.geometry} material={materials.LegendWhite} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_MD_1.geometry} material={materials.MediumBlack} />
+              <mesh castShadow receiveShadow geometry={nodes.Btn_MD_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
 
             {/* Bottom Keys */}
             <DeviceButton name="Key_Bot_0" introDone={introDone} position={[-0.033, 0.007, 0.022]} description="Resume" labelDirection="down">
-              <mesh geometry={nodes.Key_Bot_0_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Bot_0_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
             <DeviceButton name="Key_Bot_1" introDone={introDone} position={[-0.011, 0.007, 0.022]} description="Writing" labelDirection="down">
-              <mesh geometry={nodes.Key_Bot_1_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Bot_1_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
             <DeviceButton name="Key_Bot_2" introDone={introDone} position={[0.011, 0.007, 0.022]} description="Lab" labelDirection="down">
-              <mesh geometry={nodes.Key_Bot_2_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Bot_2_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
             <DeviceButton name="Key_Bot_3" introDone={introDone} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
-              <mesh geometry={nodes.Key_Bot_3_1.geometry} material={materials.ContactAmber} />
-              <mesh geometry={nodes.Key_Bot_3_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_1.geometry} material={materials.ContactAmber} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_2.geometry} material={materials.Dark} />
             </DeviceButton>
             
             {/* Top Keys */}
             <DeviceButton name="Key_Top_0" introDone={introDone} position={[-0.03, 0.007, -0.015]} description="Projects" labelDirection="up">
-              <mesh geometry={nodes.Key_Top_0_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Top_0_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
             <DeviceButton name="Key_Top_1" introDone={introDone} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
-              <mesh geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
             <DeviceButton name="Key_Top_2" introDone={introDone} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
-              <mesh geometry={nodes.Key_Top_2_1.geometry} material={materials.Key} />
-              <mesh geometry={nodes.Key_Top_2_2.geometry} material={materials.Dark} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_1.geometry} material={materials.Key} />
+              <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
-          </group>
           </group>
         </group>
       </group>
