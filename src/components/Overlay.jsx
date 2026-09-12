@@ -51,17 +51,14 @@ export default function Overlay() {
   const project = PROJECTS[focusedIndex]
   const isBrowsing = mode === 'BROWSING'
   const isProjecting = mode === 'PROJECTING'
-  const canGoLeft = focusedIndex > 0
-  const canGoRight = focusedIndex < PROJECTS.length - 1
 
   return (
     <div className="overlay">
       {/* Left arrow — only during BROWSING */}
       {isBrowsing && (
         <button
-          className={`overlay-arrow overlay-arrow-left ${!canGoLeft ? 'overlay-arrow-disabled' : ''}`}
+          className="overlay-arrow overlay-arrow-left"
           onClick={() => focus(focusedIndex - 1)}
-          disabled={!canGoLeft}
           aria-label="Previous project"
         >
           ‹
@@ -71,9 +68,8 @@ export default function Overlay() {
       {/* Right arrow — only during BROWSING */}
       {isBrowsing && (
         <button
-          className={`overlay-arrow overlay-arrow-right ${!canGoRight ? 'overlay-arrow-disabled' : ''}`}
+          className="overlay-arrow overlay-arrow-right"
           onClick={() => focus(focusedIndex + 1)}
-          disabled={!canGoRight}
           aria-label="Next project"
         >
           ›

@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useState, useCallback } from 'react'
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useSpring, animated as a } from '@react-spring/three'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { MathUtils } from 'three'
+import * as THREE from 'three'
 import cartridgeGlb from '../assets/glb/cartridge.glb'
 
 /* ─── Idle rotation (focused cartridge only) ─── */
@@ -53,12 +54,11 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
   const phase = useMemo(() => phaseOf(project.id), [project.id])
 
   // Clone master mesh and materials per instance so color changes don't leak
-  const instance = useMemo(() => {
+  const { instance, labelMat } = useMemo(() => {
     const clone = SkeletonUtils.clone(scene)
+    let foundLabelMat = null
     clone.traverse((o) => {
       if (!o.isMesh) return
-      // No shadow interaction — SoftShadows PCSS patches cause GLSL compile errors
-      // on the Cartridge_Shell material (unpackRGBAToDepth mismatch)
       o.castShadow = false
       o.receiveShadow = false
       o.frustumCulled = false
@@ -70,12 +70,53 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
 
       if (m.name === 'Cartridge_Shell') {
         m.color.set(project.color)
+        m.roughness = 0.88
+        m.metalness = 0.0
+        m.envMapIntensity = 0.3
       } else if (m.name === 'Cartridge_Text') {
         m.color.set(project.inkColor ?? '#181A1C')
+        m.roughness = 0.92
+        m.metalness = 0.0
+      } else if (m.name === 'Cartridge_Label') {
+        foundLabelMat = m
+        m.roughness = 0.75
+        m.metalness = 0.0
       }
     })
-    return clone
+    return { instance: clone, labelMat: foundLabelMat }
   }, [scene, project.id])
+
+  // Load preview texture and apply it to the label area
+  useEffect(() => {
+    if (!labelMat || !project.preview) return
+    let disposed = false
+    const loader = new THREE.TextureLoader()
+    loader.load(
+      project.preview,
+      (tex) => {
+        if (disposed) { tex.dispose(); return }
+        tex.colorSpace = THREE.SRGBColorSpace
+        tex.flipY = false
+        tex.wrapS = THREE.ClampToEdgeWrapping
+        tex.wrapT = THREE.ClampToEdgeWrapping
+        tex.minFilter = THREE.LinearMipmapLinearFilter
+        tex.generateMipmaps = true
+        // Show top portion of the screenshot (most representative)
+        tex.offset.set(0, 0)
+        tex.repeat.set(1, 0.3)
+        labelMat.map = tex
+        labelMat.needsUpdate = true
+      }
+    )
+    return () => {
+      disposed = true
+      if (labelMat.map) {
+        labelMat.map.dispose()
+        labelMat.map = null
+        labelMat.needsUpdate = true
+      }
+    }
+  }, [labelMat, project.preview])
 
   // Spring-animate pose changes; on mount the cartridge fades in and settles
   // down from slightly above its slot.

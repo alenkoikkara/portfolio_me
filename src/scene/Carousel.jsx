@@ -23,11 +23,13 @@ const ACTIVE_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 
 /**
  * Compute pose for cartridge at index i, given which index is focused.
- * Cartridges lie flat (label up, contacts towards the slot); neighbours
- * recede slightly and fan outwards.
+ * Uses shortest circular path so wrapping items slide in from the correct side.
  */
-export function slotPose(i, focusedIndex) {
-  const offset = i - focusedIndex
+export function slotPose(i, focusedIndex, n = PROJECTS.length) {
+  // Raw offset, then take the shortest arc around the ring
+  let offset = i - focusedIndex
+  if (offset > n / 2)  offset -= n
+  if (offset < -n / 2) offset += n
   const isFocused = offset === 0
   return {
     position: [offset * SPACING, CAROUSEL_Y, CAROUSEL_Z - Math.abs(offset) * SIDE_RECEDE],
@@ -80,13 +82,17 @@ export default function Carousel() {
   return (
     <group>
       {PROJECTS.map((project, i) => {
-        const offset = Math.abs(i - focusedIndex)
-        // Skip rendering cartridges beyond ±2 from focus
-        const visible = offset <= 2
-        // During INSERTING/PROJECTING/EJECTING, hide the active cartridge from carousel
-        // (it's being animated independently)
+        const n = PROJECTS.length
+        // Compute circular offset
+        let offset = i - focusedIndex
+        if (offset > n / 2)  offset -= n
+        if (offset < -n / 2) offset += n
+
+        // Only render the focused cartridge and immediate neighbours (3 total)
+        if (Math.abs(offset) > 1) return null
+
         const isActiveCartridge = ACTIVE_MODES.has(mode) && i === focusedIndex
-        const pose = slotPose(i, focusedIndex)
+        const pose = slotPose(i, focusedIndex, n)
 
         return (
           <Cartridge
@@ -95,9 +101,9 @@ export default function Carousel() {
             pose={pose}
             opacity={isActiveCartridge ? 0 : pose.opacity * stripOpacity}
             focused={i === focusedIndex && mode === 'BROWSING'}
-            delay={FADE_IN_DELAY_MS + offset * STAGGER_MS}
+            delay={FADE_IN_DELAY_MS + Math.abs(offset) * STAGGER_MS}
             immediate={crossedHandoff && i === focusedIndex}
-            visible={visible}
+            visible={true}
             onClick={(e) => handleCartridgeClick(e, i)}
           />
         )

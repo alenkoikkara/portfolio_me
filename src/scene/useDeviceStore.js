@@ -42,8 +42,9 @@ const useDeviceStore = create((set, get) => ({
     const { mode } = get()
     if (mode !== 'BROWSING' && mode !== 'PROJECTING') return
     const n = PROJECTS.length
-    const clamped = Math.max(0, Math.min(n - 1, index))
-    set({ focusedIndex: clamped })
+    // Wrap around: after the last cartridge the first one comes next
+    const wrapped = ((index % n) + n) % n
+    set({ focusedIndex: wrapped })
   },
 
   insert: (index) => {

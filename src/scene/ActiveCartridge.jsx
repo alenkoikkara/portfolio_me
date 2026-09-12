@@ -70,9 +70,10 @@ export default function ActiveCartridge({ slotAnchorRef }) {
   }, [activeId])
 
   // Clone & colorize
-  const instance = useMemo(() => {
-    if (!activeProject) return null
+  const { instance, labelMat } = useMemo(() => {
+    if (!activeProject) return { instance: null, labelMat: null }
     const clone = SkeletonUtils.clone(scene)
+    let foundLabelMat = null
     clone.traverse((o) => {
       if (!o.isMesh) return
       o.castShadow = false
@@ -84,12 +85,51 @@ export default function ActiveCartridge({ slotAnchorRef }) {
       o.material.needsUpdate = true
       if (o.material.name === 'Cartridge_Shell') {
         o.material.color.set(activeProject.color)
+        o.material.roughness = 0.88
+        o.material.metalness = 0.0
+        o.material.envMapIntensity = 0.3
       } else if (o.material.name === 'Cartridge_Text') {
         o.material.color.set(activeProject.inkColor ?? '#181A1C')
+        o.material.roughness = 0.92
+        o.material.metalness = 0.0
+      } else if (o.material.name === 'Cartridge_Label') {
+        foundLabelMat = o.material
+        o.material.roughness = 0.75
+        o.material.metalness = 0.0
       }
     })
-    return clone
+    return { instance: clone, labelMat: foundLabelMat }
   }, [scene, activeProject?.id])
+
+  // Apply preview thumbnail to the label area
+  useEffect(() => {
+    if (!labelMat || !activeProject?.preview) return
+    let disposed = false
+    new THREE.TextureLoader().load(
+      activeProject.preview,
+      (tex) => {
+        if (disposed) { tex.dispose(); return }
+        tex.colorSpace = THREE.SRGBColorSpace
+        tex.flipY = false
+        tex.wrapS = THREE.ClampToEdgeWrapping
+        tex.wrapT = THREE.ClampToEdgeWrapping
+        tex.minFilter = THREE.LinearMipmapLinearFilter
+        tex.generateMipmaps = true
+        tex.offset.set(0, 0)
+        tex.repeat.set(1, 0.3)
+        labelMat.map = tex
+        labelMat.needsUpdate = true
+      }
+    )
+    return () => {
+      disposed = true
+      if (labelMat.map) {
+        labelMat.map.dispose()
+        labelMat.map = null
+        labelMat.needsUpdate = true
+      }
+    }
+  }, [labelMat, activeProject?.preview])
 
   // ─── Start insertion animation when mode becomes INSERTING ───
   useEffect(() => {
