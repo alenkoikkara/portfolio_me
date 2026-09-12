@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap');
+@import "tailwindcss";
 
 @theme {
   --color-viewport: #faf9f6;
@@ -10,4 +10,195 @@
   body {
     @apply bg-viewport text-gray-900 font-sans antialiased;
   }
+}
+
+/* ─── Overlay ─── */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* Arrow buttons */
+.overlay-arrow {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(17, 24, 39, 0.15);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #111827;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.overlay-arrow:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(17, 24, 39, 0.3);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.overlay-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.overlay-arrow-left {
+  left: 24px;
+}
+
+.overlay-arrow-right {
+  right: 24px;
+}
+
+.overlay-arrow-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Project title chip */
+.overlay-chip {
+  pointer-events: none;
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.overlay-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.overlay-chip-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: #111827;
+}
+
+.overlay-chip-subtitle {
+  font-weight: 400;
+  font-size: 12px;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+}
+
+/* Close button */
+.overlay-close {
+  pointer-events: auto;
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(17, 24, 39, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #111827;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.overlay-close:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(17, 24, 39, 0.3);
+  transform: scale(1.08);
+}
+
+/* Navigation hint */
+.overlay-hint {
+  pointer-events: none;
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: rgba(17, 24, 39, 0.35);
+}
+
+/* ─── Projector HTML card ─── */
+
+.project-card {
+  text-align: center;
+  padding: 16px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  min-width: 180px;
+  user-select: none;
+}
+
+.project-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.project-card-subtitle {
+  font-weight: 400;
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.project-card-link {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #111827;
+  text-decoration: none;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(17, 24, 39, 0.15);
+  transition: all 0.2s ease;
+}
+
+.project-card-link:hover {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
 }

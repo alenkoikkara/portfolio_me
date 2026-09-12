@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
-import { Environment, SoftShadows, ContactShadows } from '@react-three/drei'
+import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 
 // Exact 1:1 scale with hichord.js
@@ -52,7 +52,9 @@ export default function LightingSetup() {
 
   return (
     <>
-      <SoftShadows size={1.5} samples={16} focus={0.5} />
+      {/* SoftShadows disabled — PCSS patches cause unpackRGBAToDepth GLSL
+          errors when cartridge materials (KHR_texture_transform) enter the scene.
+          Regular shadow maps with radius 4 are adequate. */}
       <Environment background={false} environmentIntensity={CONFIG.envIntensity} resolution={1024}>
         <mesh>
           <sphereGeometry args={[120, 24, 16]} />
