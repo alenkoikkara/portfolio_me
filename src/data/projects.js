@@ -1,6 +1,9 @@
 /**
  * Placeholder project data for the cartridge carousel.
  * Each project maps to one cartridge instance.
+ *
+ * `preview` is a tall screenshot of the site, scrolled on the projector plane.
+ * Regenerate them from the live URLs with `npm run previews`.
  */
 export const PROJECTS = [
   {
@@ -9,6 +12,7 @@ export const PROJECTS = [
     subtitle: 'AI-powered design system',
     color: '#6C5CE7',
     inkColor: '#FFFFFF',
+    preview: '/previews/spectrum.webp',
     url: 'https://example.com/spectrum',
   },
   {
@@ -17,6 +21,7 @@ export const PROJECTS = [
     subtitle: 'Real-time analytics dashboard',
     color: '#00B894',
     inkColor: '#181A1C',
+    preview: '/previews/pulse.webp',
     url: 'https://example.com/pulse',
   },
   {
@@ -25,6 +30,7 @@ export const PROJECTS = [
     subtitle: 'Generative music engine',
     color: '#FD79A8',
     inkColor: '#181A1C',
+    preview: '/previews/nova.webp',
     url: 'https://example.com/nova',
   },
   {
@@ -33,6 +39,7 @@ export const PROJECTS = [
     subtitle: 'Interactive 3D mapping tool',
     color: '#0984E3',
     inkColor: '#FFFFFF',
+    preview: '/previews/atlas.webp',
     url: 'https://example.com/atlas',
   },
   {
@@ -41,6 +48,7 @@ export const PROJECTS = [
     subtitle: 'Creative portfolio framework',
     color: '#E17055',
     inkColor: '#181A1C',
+    preview: '/previews/ember.webp',
     url: 'https://example.com/ember',
   },
 ]

@@ -80,12 +80,22 @@ export default function Overlay() {
         </button>
       )}
 
-      {/* Project title chip — the projector card carries this while projecting */}
-      {project && !isProjecting && (
+      {/* Project description, beside the device rather than over it */}
+      {project && (
         <div className="overlay-chip">
-          <span className="overlay-chip-dot" style={{ backgroundColor: project.color }} />
           <span className="overlay-chip-title">{project.title}</span>
           <span className="overlay-chip-subtitle">{project.subtitle}</span>
+          {isProjecting && project.url && (
+            <a
+              className="overlay-chip-link"
+              href={project.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: project.color }}
+            >
+              visit ↗
+            </a>
+          )}
         </div>
       )}
 

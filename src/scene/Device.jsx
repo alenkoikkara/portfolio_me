@@ -19,7 +19,26 @@ const CAM_REST_POS = [0.22, 0.42, 0.22]
  */
 const CAM_OPEN_POS = [0, 0.7, -0.08]
 const CAM_OPEN_TARGET = [0, 0.008, -0.1]
+/*
+ * Once a cartridge is in, the framing slides further up the desk so the device
+ * drops towards the bottom of the frame and the projected preview gets the
+ * room it needs. The lens and the protruding cartridge stay in shot, since
+ * they are where the beam comes from.
+ */
+const CAM_PROJECT_POS = [0, 0.7, -0.12]
+const CAM_PROJECT_TARGET = [0, 0.008, -0.14]
+/** Modes framed for the projector rather than the carousel. */
+const PROJECT_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 const CAM_EASE = 5
+/*
+ * The open camera looks almost straight down, where lookAt's default up vector
+ * is nearly parallel to the view direction and the resulting roll is unstable:
+ * the view can come back from a close rolled 180 degrees. So the up vector is
+ * steered explicitly. Looking down, screen-up is world -Z, which is also the
+ * edge of the device the slot and lens sit on.
+ */
+const UP_IDLE = new THREE.Vector3(0, 1, 0)
+const UP_OPEN = new THREE.Vector3(0, 0, -1)
 const CAM_PATH = [
   { t: 0.00, pos: [0.38, 0.10, 0.42] },
   { t: 2.60, pos: [0.34, 0.18, 0.37] },
@@ -208,11 +227,14 @@ export default function Device({ slotAnchorRef }) {
   const controlsRef = useRef()
   // Where the camera is looking; eased between the rest and open targets.
   const camTargetRef = useRef(new THREE.Vector3(...CAM_TARGET))
+  const camUpRef = useRef(new THREE.Vector3(0, 1, 0))
   const camScratch = useMemo(() => ({
     restPos: new THREE.Vector3(...CAM_REST_POS),
     restTarget: new THREE.Vector3(...CAM_TARGET),
     openPos: new THREE.Vector3(...CAM_OPEN_POS),
     openTarget: new THREE.Vector3(...CAM_OPEN_TARGET),
+    projectPos: new THREE.Vector3(...CAM_PROJECT_POS),
+    projectTarget: new THREE.Vector3(...CAM_PROJECT_TARGET),
   }), [])
 
   const [isExploded, setIsExploded] = useState(false)
@@ -319,35 +341,36 @@ export default function Device({ slotAnchorRef }) {
     // controls after a close does not snap the view.
     if (controlsRef.current) controlsRef.current.target.copy(camTargetRef.current)
 
+    // Steer the up vector alongside the camera so neither pose relies on
+    // lookAt guessing a roll. It converges on world up before the orbit
+    // controls take over in IDLE.
+    if (introDone) {
+      const upK = 1 - Math.exp(-delta * CAM_EASE)
+      camUpRef.current.lerp(mode === 'IDLE' ? UP_IDLE : UP_OPEN, upK).normalize()
+      state.camera.up.copy(camUpRef.current)
+    }
+
     // 3a. Open pose: glide to the flat, screen-aligned top-down view
     if (introDone && mode !== 'IDLE') {
+      const framed = PROJECT_MODES.has(mode)
       const k = 1 - Math.exp(-delta * CAM_EASE)
-      camTargetRef.current.lerp(camScratch.openTarget, k)
-      state.camera.position.lerp(camScratch.openPos, k)
+      camTargetRef.current.lerp(framed ? camScratch.projectTarget : camScratch.openTarget, k)
+      state.camera.position.lerp(framed ? camScratch.projectPos : camScratch.openPos, k)
       state.camera.lookAt(camTargetRef.current)
     }
 
     // 3b. Elastic camera snap-back (only in IDLE)
+    //
+    // Straight position ease, not a spherical one. Orbiting the azimuth is
+    // degenerate directly overhead, which is exactly where the camera sits
+    // when the carousel closes: a hair of movement in the look target flips
+    // the azimuth by half a turn, sending the camera around the far side and
+    // landing it rolled over. Easing the position needs no angles at all.
     if (introDone && !isDragging && mode === 'IDLE') {
-      const center = camTargetRef.current.lerp(camScratch.restTarget, 1 - Math.exp(-delta * CAM_EASE))
-      const targetPos = camScratch.restPos
-
-      const currentOffset = state.camera.position.clone().sub(center)
-      const targetOffset = targetPos.clone().sub(center)
-
-      const currentSpherical = new THREE.Spherical().setFromVector3(currentOffset)
-      const targetSpherical = new THREE.Spherical().setFromVector3(targetOffset)
-
-      let diff = targetSpherical.theta - currentSpherical.theta
-      if (diff > Math.PI) targetSpherical.theta -= Math.PI * 2
-      if (diff < -Math.PI) targetSpherical.theta += Math.PI * 2
-
-      currentSpherical.theta = MathUtils.lerp(currentSpherical.theta, targetSpherical.theta, 0.05)
-      currentSpherical.phi = MathUtils.lerp(currentSpherical.phi, targetSpherical.phi, 0.05)
-      currentSpherical.radius = MathUtils.lerp(currentSpherical.radius, targetSpherical.radius, 0.05)
-
-      state.camera.position.setFromSpherical(currentSpherical).add(center)
-      state.camera.lookAt(center)
+      const k = 1 - Math.exp(-delta * CAM_EASE)
+      camTargetRef.current.lerp(camScratch.restTarget, k)
+      state.camera.position.lerp(camScratch.restPos, k)
+      state.camera.lookAt(camTargetRef.current)
     }
 
     // 4. Exploded view animation (body & screen)

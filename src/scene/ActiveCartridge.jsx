@@ -229,7 +229,7 @@ export default function ActiveCartridge({ slotAnchorRef }) {
   if (!shouldRender || !instance) return null
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} name="ActiveCartridge">
       <primitive object={instance} />
     </group>
   )

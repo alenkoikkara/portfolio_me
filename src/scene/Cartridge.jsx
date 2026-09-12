@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useCallback } from 'react'
+import React, { useMemo, useRef, useState, useCallback } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useSpring, animated as a } from '@react-spring/three'
@@ -36,16 +36,20 @@ function phaseOf(id) {
  *   pose      — { position, rotation, scale }
  *   opacity   — 0–1
  *   focused   — whether this is the cartridge in view (drives the idle float)
- *   delay     — ms before the mount fade-in starts (stagger)
+ *   delay     — ms before the first appearance starts (stagger)
+ *   immediate — apply the next change with no animation at all
  *   onClick   — called when this cartridge is clicked
  *   visible   — whether to render at all
  */
-export default function Cartridge({ project, pose, opacity, focused = false, delay = 0, onClick, visible = true }) {
+export default function Cartridge({ project, pose, opacity, focused = false, delay = 0, immediate = false, onClick, visible = true }) {
   const { scene } = useGLTF(cartridgeGlb)
   const groupRef = useRef()
   // Inner group carries the idle rotation so it never fights the pose spring.
   const floatRef = useRef()
   const rotationAmount = useRef(0)
+  // The stagger is an entrance effect. Once this cartridge has been seen it
+  // must never replay it, or returning from the slot reads as a disappearance.
+  const [appeared, setAppeared] = useState(false)
   const phase = useMemo(() => phaseOf(project.id), [project.id])
 
   // Clone master mesh and materials per instance so color changes don't leak
@@ -84,7 +88,8 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
     rotation: pose.rotation,
     scale: [pose.scale, pose.scale, pose.scale],
     opacity,
-    delay,
+    delay: appeared ? 0 : delay,
+    immediate,
     // The focused cartridge settles with a slight overshoot as focus lands on it.
     config: focused ? { tension: 260, friction: 18 } : { tension: 200, friction: 26 },
   })
@@ -99,6 +104,14 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
         o.material.opacity = currentOpacity
       }
     })
+    // Drop out of the scene once faded: the contact shadow pass renders depth
+    // and ignores opacity, so a fully transparent cartridge would still cast.
+    // Stay in the scene while the target says so, and while a fade-out is
+    // still running. Only a cartridge that is both told to be gone and has
+    // finished fading leaves, because the contact shadow pass renders depth
+    // and would otherwise keep casting for one that is invisible.
+    if (groupRef.current) groupRef.current.visible = opacity > 0.01 || currentOpacity > 0.01
+    if (!appeared && currentOpacity > 0.01) setAppeared(true)
 
     if (!floatRef.current) return
     // Ease the rotation in and out so a cartridge losing focus comes to rest.
@@ -129,6 +142,8 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
   return (
     <a.group
       ref={groupRef}
+      name={`Cartridge_${project.id}`}
+      visible={opacity > 0.01}
       position={spring.position}
       rotation={spring.rotation}
       scale={spring.scale}

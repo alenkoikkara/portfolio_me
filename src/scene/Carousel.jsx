@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import Cartridge from './Cartridge'
 import useDeviceStore from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
@@ -18,6 +18,9 @@ const SIDE_FAN = 0.12
 const FADE_IN_DELAY_MS = 350
 const STAGGER_MS = 60
 
+/** Modes in which one cartridge is out of the strip, travelling or seated. */
+const ACTIVE_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
+
 /**
  * Compute pose for cartridge at index i, given which index is focused.
  * Cartridges lie flat (label up, contacts towards the slot); neighbours
@@ -36,6 +39,9 @@ export function slotPose(i, focusedIndex) {
 
 /**
  * Carousel — renders N cartridge instances along X axis.
+ *
+ * The cartridge that is travelling or seated stays mounted here at zero
+ * opacity rather than unmounting, so it never has to re-enter when it returns.
  * Visible during BROWSING, INSERTING, PROJECTING, EJECTING.
  * Fades in/out on mode transitions.
  */
@@ -44,16 +50,32 @@ export default function Carousel() {
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const insert = useDeviceStore((s) => s.insert)
 
+  // The mode as of the previous render. Handing the focused cartridge between
+  // the strip and the travelling copy must be instant in both directions: the
+  // two sit at the identical pose at that moment, so any fade shows either a
+  // hole or a double.
+  const prevMode = useRef(mode)
+  useEffect(() => {
+    prevMode.current = mode
+  }, [mode])
+  const crossedHandoff = ACTIVE_MODES.has(mode) !== ACTIVE_MODES.has(prevMode.current)
+
   const handleCartridgeClick = useCallback((e, index) => {
     e.stopPropagation()
+    // While projecting the strip is faded out, so it must not take clicks.
+    if (mode === 'PROJECTING') return
     // Only allow inserting the focused cartridge
     if (index === focusedIndex) {
       insert(index)
     }
-  }, [focusedIndex, insert])
+  }, [mode, focusedIndex, insert])
 
   // Don't render anything in IDLE (after fade out completes)
   if (mode === 'IDLE') return null
+
+  // The projected preview occupies the band the strip sits in, so the strip
+  // clears out of shot while it is up and fades back in on eject.
+  const stripOpacity = mode === 'PROJECTING' ? 0 : 1
 
   return (
     <group>
@@ -63,7 +85,7 @@ export default function Carousel() {
         const visible = offset <= 2
         // During INSERTING/PROJECTING/EJECTING, hide the active cartridge from carousel
         // (it's being animated independently)
-        const isActiveCartridge = (mode === 'INSERTING' || mode === 'PROJECTING' || mode === 'EJECTING') && i === focusedIndex
+        const isActiveCartridge = ACTIVE_MODES.has(mode) && i === focusedIndex
         const pose = slotPose(i, focusedIndex)
 
         return (
@@ -71,10 +93,11 @@ export default function Carousel() {
             key={project.id}
             project={project}
             pose={pose}
-            opacity={isActiveCartridge ? 0 : pose.opacity}
+            opacity={isActiveCartridge ? 0 : pose.opacity * stripOpacity}
             focused={i === focusedIndex && mode === 'BROWSING'}
             delay={FADE_IN_DELAY_MS + offset * STAGGER_MS}
-            visible={visible && !isActiveCartridge}
+            immediate={crossedHandoff && i === focusedIndex}
+            visible={visible}
             onClick={(e) => handleCartridgeClick(e, i)}
           />
         )

@@ -12,6 +12,53 @@
   }
 }
 
+/* ─── Stage theming ─── */
+
+/*
+ * The whole experience re-themes when the projects key is pressed: the room
+ * lights go down so the projected preview has something to read against. The
+ * canvas is transparent, so this background is what shows behind the scene.
+ * Overlay chrome reads these variables rather than hard-coded colours, so one
+ * class on the wrapper re-themes all of it in step with the background.
+ */
+.stage {
+  --stage-bg: #faf9f6;
+  --stage-ink: #111827;
+  --stage-muted: #6b7280;
+  --stage-faint: rgba(17, 24, 39, 0.35);
+  --stage-panel: rgba(255, 255, 255, 0.7);
+  --stage-panel-strong: rgba(255, 255, 255, 0.9);
+  --stage-line: rgba(17, 24, 39, 0.15);
+  --stage-line-soft: rgba(17, 24, 39, 0.1);
+  --stage-shadow: rgba(0, 0, 0, 0.06);
+
+  background-color: var(--stage-bg);
+  transition: background-color 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Browsing the carousel: lights down. */
+.stage--dim {
+  --stage-bg: #16181d;
+  --stage-ink: #f3f4f6;
+  --stage-muted: #9aa1ae;
+  --stage-faint: rgba(243, 244, 246, 0.38);
+  --stage-panel: rgba(255, 255, 255, 0.08);
+  --stage-panel-strong: rgba(255, 255, 255, 0.16);
+  --stage-line: rgba(255, 255, 255, 0.18);
+  --stage-line-soft: rgba(255, 255, 255, 0.12);
+  --stage-shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* Projecting: darker still, so the beam and preview carry the frame. */
+.stage--dark {
+  --stage-bg: #0b0c10;
+}
+
+.stage-title {
+  color: var(--stage-ink);
+  transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* ─── Overlay ─── */
 
 .overlay {
@@ -30,24 +77,23 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1.5px solid rgba(17, 24, 39, 0.15);
-  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid var(--stage-line);
+  background: var(--stage-panel);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: #111827;
+  color: var(--stage-ink);
   font-size: 22px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
   user-select: none;
 }
 
 .overlay-arrow:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(17, 24, 39, 0.3);
+  background: var(--stage-panel-strong);
   transform: translateY(-50%) scale(1.08);
 }
 
@@ -68,30 +114,37 @@
   pointer-events: none;
 }
 
-/* Project title chip */
+/*
+ * Project description — a bare block on the right, clear of the device.
+ *
+ * With no panel behind it the text sits directly on the stage, so it waits for
+ * the room lights to go down before fading in. Appearing immediately would put
+ * light text on the still-light background for the length of that transition.
+ */
 .overlay-chip {
   pointer-events: none;
   position: absolute;
-  bottom: 64px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Anchored off centre, not off the window edge: the device is centred, so
+     this keeps the description beside it at any width. */
+  left: calc(50% + 172px);
+  bottom: 199px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  max-width: 240px;
+  animation: overlay-rise 420ms cubic-bezier(0.4, 0, 0.2, 1) 460ms both;
 }
 
-.overlay-chip-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+@keyframes overlay-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overlay-chip-title {
@@ -99,14 +152,31 @@
   font-size: 13px;
   letter-spacing: 0.04em;
   text-transform: lowercase;
-  color: #111827;
+  color: var(--stage-ink);
+  transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .overlay-chip-subtitle {
   font-weight: 400;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--stage-muted);
   letter-spacing: 0.02em;
+  transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-chip-link {
+  pointer-events: auto;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.overlay-chip-link:hover {
+  opacity: 0.65;
 }
 
 /* Close button */
@@ -118,24 +188,29 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1.5px solid rgba(17, 24, 39, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid var(--stage-line-soft);
+  background: var(--stage-panel);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: #111827;
+  color: var(--stage-ink);
   font-size: 18px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .overlay-close:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(17, 24, 39, 0.3);
+  background: var(--stage-panel-strong);
   transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-chip {
+    animation-duration: 1ms;
+  }
 }
 
 /* Navigation hint */
@@ -143,7 +218,7 @@
   pointer-events: none;
   position: absolute;
   bottom: 28px;
-  left: 50%;
+  left: 9%;
   transform: translateX(-50%);
   display: flex;
   gap: 16px;
@@ -151,54 +226,5 @@
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: lowercase;
-  color: rgba(17, 24, 39, 0.35);
-}
-
-/* ─── Projector HTML card ─── */
-
-.project-card {
-  text-align: center;
-  padding: 16px 24px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  min-width: 180px;
-  user-select: none;
-}
-
-.project-card-title {
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.03em;
-  color: #111827;
-  margin: 0 0 4px 0;
-}
-
-.project-card-subtitle {
-  font-weight: 400;
-  font-size: 12px;
-  color: #6b7280;
-  margin: 0 0 12px 0;
-}
-
-.project-card-link {
-  display: inline-block;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: #111827;
-  text-decoration: none;
-  padding: 6px 16px;
-  border-radius: 999px;
-  border: 1.5px solid rgba(17, 24, 39, 0.15);
-  transition: all 0.2s ease;
-}
-
-.project-card-link:hover {
-  background: #111827;
-  color: #ffffff;
-  border-color: #111827;
+  color: var(--stage-faint);
 }
