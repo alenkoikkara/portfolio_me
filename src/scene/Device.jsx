@@ -116,6 +116,9 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   const buttonRef = useRef()
   const [clicked, setClicked] = useState(false)
   const [hovered, setHovered] = useState(false)
+  // Mirror the --stage-ink values from index.css based on mode
+  const mode = useDeviceStore((s) => s.mode)
+  const labelColor = mode === 'IDLE' ? '#111827' : '#f3f4f6'
 
   const baseY = position[1]
   const pressedY = baseY - 0.005
@@ -192,17 +195,18 @@ function DeviceButton({ position, description, labelDirection = 'down', children
               <path
                 d={pathD}
                 fill="none"
-                stroke="#111827"
+                stroke={labelColor}
                 strokeWidth="1.5"
                 strokeDasharray={pathLength}
                 strokeDashoffset={hovered ? 0 : pathLength}
-                style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1)' }}
+                style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1), stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)' }}
               />
             </svg>
             <div
-              className="absolute whitespace-nowrap text-xs font-medium tracking-widest lowercase text-gray-900 pb-1 transition-opacity duration-700"
+              className="absolute whitespace-nowrap text-xs font-medium tracking-widest lowercase pb-1 transition-opacity duration-700"
               style={{
                 ...textPosition,
+                color: labelColor,
                 opacity: hovered ? 1 : 0,
                 transitionDelay: hovered ? '800ms' : '0ms',
                 transitionTimingFunction: 'cubic-bezier(0.83, 0, 0.17, 1)'

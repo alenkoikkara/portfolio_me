@@ -113,13 +113,7 @@ export default function Projector() {
     let flash = 0
 
     if (boot.current.on) {
-      if (elapsed < DARK_MS) {
-        opacity = 0
-      } else if (elapsed < DARK_MS + FLASH_MS) {
-        flash = 1 - (elapsed - DARK_MS) / FLASH_MS
-      } else {
-        opacity = Math.min(1, (elapsed - DARK_MS - FLASH_MS) / FADE_IN_MS)
-      }
+      opacity = Math.min(1, elapsed / FADE_IN_MS)
     } else {
       opacity = Math.max(0, boot.current.from * (1 - elapsed / FADE_OUT_MS))
     }

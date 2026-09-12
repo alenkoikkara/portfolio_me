@@ -103,8 +103,11 @@ const BEAM_VERTEX = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewDir;
+  varying float vLen;        // 0 = lens tip, 1 = screen end
   void main() {
     vUv = uv;
+    // The cylinder is built along its local Y axis; vLen tracks progress along it.
+    vLen = uv.y;
     vec4 worldPos = modelMatrix * vec4(position, 1.0);
     vNormal = normalize(mat3(modelMatrix) * normal);
     vViewDir = normalize(cameraPosition - worldPos.xyz);
@@ -113,30 +116,68 @@ const BEAM_VERTEX = /* glsl */ `
 `
 
 /*
- * The beam is only visible because of what floats in it. A fresnel term makes
- * the cone bright where it is seen edge-on and clear head-on; the scrolling
- * noise is the dust. Without the noise this reads as a solid glass wedge.
+ * Realistic projector beam:
+ *  - Layered dust: two octaves of scrolling noise at different scales/speeds
+ *    so the motes in the air move naturally rather than in lockstep.
+ *  - Fresnel: cubic falloff so the cone is bright only at the silhouette
+ *    and invisible head-on, matching real volumetric light.
+ *  - Radial gradient: cone is brightest near the central axis (the focal ray)
+ *    and dims toward the edges, like a real lens' intensity profile.
+ *  - Length falloff: bright near the lens (where the beam is densest),
+ *    fading smoothly before it reaches the screen so there is no hard seam.
+ *  - Color: warm-white near the lens, slightly cooler at the far end,
+ *    matching the colour temperature of a real projector bulb.
  */
 const BEAM_FRAGMENT = /* glsl */ `
   uniform sampler2D uNoise;
   uniform float uTime;
   uniform float uStrength;
-  uniform vec3 uColor;
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewDir;
+  varying float vLen;
 
   void main() {
-    float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 2.0);
-    float dust = texture2D(uNoise, vec2(vUv.x * 3.0, vUv.y * 1.5 - uTime * 0.12)).r * 0.5 + 0.5;
-    // Densest at the lens, thinning as the cone widens, and gone before it
-    // reaches the screen: the rim of the cone passes in front of the plane
-    // from this camera, and a hard edge there would read as a seam. The throw
-    // is short and the device hides the first stretch of it, so what is left
-    // has to carry: the room is dark now, and additive light can afford it.
-    float falloff = mix(1.0, 0.45, vUv.y) * (1.0 - smoothstep(0.25, 0.6, vUv.y));
-    float alpha = fresnel * dust * falloff * 0.9 * uStrength;
-    gl_FragColor = vec4(uColor * alpha, alpha);
+    // ── Fresnel ──────────────────────────────────────────────────────────
+    // Cubic fall-off: nearly invisible head-on, bright at the silhouette.
+    float nv   = abs(dot(normalize(vNormal), normalize(vViewDir)));
+    float fresnel = pow(1.0 - nv, 3.0);
+
+    // ── Radial density ──────────────────────────────────────────────────
+    // vUv.x runs 0→1 around the cylinder. Map to -1…+1 to get distance
+    // from the central axis as seen on the surface.
+    float radial = 1.0 - pow(abs(vUv.x * 2.0 - 1.0), 0.6);
+
+    // ── Layered dust ────────────────────────────────────────────────────
+    // Two octaves at different tiling & scroll speeds so motes move naturally.
+    vec2 uv1 = vec2(vUv.x * 4.0, vLen * 2.0 - uTime * 0.09);
+    vec2 uv2 = vec2(vUv.x * 7.0 + 0.3, vLen * 3.5 + uTime * 0.05);
+    float d1 = texture2D(uNoise, uv1).r;
+    float d2 = texture2D(uNoise, uv2).r;
+    float dust = d1 * 0.65 + d2 * 0.35;
+    // Bias toward brighter values so the beam reads as filled with light
+    dust = pow(dust, 0.6);
+
+    // ── Length falloff ───────────────────────────────────────────────────
+    // Brightest near lens (vLen ≈ 0), gone well before the screen so no seam.
+    float lenFalloff = (1.0 - smoothstep(0.0, 0.55, vLen))   // main fade
+                     * (1.0 - smoothstep(0.55, 0.85, vLen));  // soft tail
+
+    // Intensity just inside the lens tip (short gap of low opacity)
+    float lenRise = smoothstep(0.0, 0.08, vLen);
+
+    // ── Colour temperature ───────────────────────────────────────────────
+    // Warm white at the source, slightly bluer at the far end.
+    vec3 nearCol = vec3(1.00, 0.97, 0.92);   // warm halogen
+    vec3 farCol  = vec3(0.90, 0.95, 1.00);   // cool scatter
+    vec3 beamCol = mix(nearCol, farCol, vLen * 0.6);
+
+    // ── Compose ──────────────────────────────────────────────────────────
+    float alpha = fresnel * dust * lenFalloff * lenRise * radial * uStrength;
+    // Clamp so additive blending doesn't blow out in bright spots
+    alpha = clamp(alpha * 1.2, 0.0, 0.55);
+
+    gl_FragColor = vec4(beamCol * alpha, alpha);
 
     #include <colorspace_fragment>
   }
@@ -156,10 +197,10 @@ export function makeBeamMaterial(noise) {
     side: THREE.DoubleSide,
     toneMapped: false,
     uniforms: {
-      uNoise: { value: noise },
-      uTime: { value: 0 },
+      uNoise:    { value: noise },
+      uTime:     { value: 0 },
       uStrength: { value: 0 },
-      uColor: { value: new THREE.Color(0.95, 0.98, 1.0) },
     },
   })
 }
+

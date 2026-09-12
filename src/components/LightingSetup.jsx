@@ -1,14 +1,12 @@
-import React, { useMemo } from 'react'
-import { useThree } from '@react-three/fiber'
+import React, { useRef } from 'react'
+import { useThree, useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
+import useDeviceStore from '../scene/useDeviceStore'
 
 // Exact 1:1 scale with hichord.js
 const S = 1;
 export const CONFIG = {
-  exposure: 1.15,
-  envIntensity: 1.6,
-
   studio: {
     key:  { size: [1.6*S, 1.2*S], pos: [0.55*S, 1.10*S, 0.85*S], intensity: 9.0, color: '#ffffff' },
     fill: { size: [1.8*S, 1.4*S], pos: [-1.20*S, 0.45*S, 0.35*S], intensity: 1.6, color: '#c9d8ee' },
@@ -17,9 +15,9 @@ export const CONFIG = {
     surround: '#131418',
   },
 
-  keyLight:  { position: [0.16*S, 0.26*S, 0.15*S], intensity: 3.4, color: '#fff6ec' },
-  rimLight:  { position: [-0.10*S, 0.14*S, -0.22*S], intensity: 1.8, color: '#bfd4f2' },
-  fillLight: { position: [-0.22*S, 0.10*S, 0.14*S], intensity: 0.45, color: '#dfe6f0' },
+  keyLight:  { position: [0.16*S, 0.26*S, 0.15*S], color: '#fff6ec' },
+  rimLight:  { position: [-0.10*S, 0.14*S, -0.22*S], color: '#bfd4f2' },
+  fillLight: { position: [-0.22*S, 0.10*S, 0.14*S], color: '#dfe6f0' },
 
   shadow: {
     size: 0.34*S,
@@ -30,8 +28,6 @@ export const CONFIG = {
     radius: 4,
   },
 }
-
-
 
 const EnvPanel = ({ config }) => (
   <mesh position={config.pos} onUpdate={m => m.lookAt(0,0,0)}>
@@ -45,17 +41,47 @@ const EnvPanel = ({ config }) => (
 )
 
 export default function LightingSetup() {
-  const { gl } = useThree()
+  const { gl, scene } = useThree()
   
-  // Apply tone mapping exposure
-  gl.toneMappingExposure = CONFIG.exposure
+  const keyLightRef = useRef()
+  const rimLightRef = useRef()
+  const fillLightRef = useRef()
+  
+  const mode = useDeviceStore(s => s.mode)
+
+  // Seed to idle values on first mount so useFrame has no gap to snap through
+  React.useEffect(() => {
+    scene.environmentIntensity = 1.6
+    gl.toneMappingExposure = 1.15
+  }, [])
+  
+  useFrame((state, delta) => {
+    const isProjecting = mode !== 'IDLE'
+    
+    const targetExposure = isProjecting ? 0.75 : 1.15
+    const targetEnvIntensity = isProjecting ? 0.6 : 1.6
+    const targetKey = isProjecting ? 1.2 : 3.4
+    const targetRim = isProjecting ? 0.6 : 1.8
+    const targetFill = isProjecting ? 0.15 : 0.45
+
+    gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, delta)
+    
+    // Animate environment intensity if supported (R3F environment)
+    if (scene.environmentIntensity !== undefined) {
+      scene.environmentIntensity = THREE.MathUtils.damp(scene.environmentIntensity, targetEnvIntensity, 4, delta)
+    }
+
+    if (keyLightRef.current) keyLightRef.current.intensity = THREE.MathUtils.damp(keyLightRef.current.intensity, targetKey, 4, delta)
+    if (rimLightRef.current) rimLightRef.current.intensity = THREE.MathUtils.damp(rimLightRef.current.intensity, targetRim, 4, delta)
+    if (fillLightRef.current) fillLightRef.current.intensity = THREE.MathUtils.damp(fillLightRef.current.intensity, targetFill, 4, delta)
+  })
 
   return (
     <>
       {/* SoftShadows disabled — PCSS patches cause unpackRGBAToDepth GLSL
           errors when cartridge materials (KHR_texture_transform) enter the scene.
           Regular shadow maps with radius 4 are adequate. */}
-      <Environment background={false} environmentIntensity={CONFIG.envIntensity} resolution={1024}>
+      <Environment background={false} resolution={1024}>
         <mesh>
           <sphereGeometry args={[120, 24, 16]} />
           <meshBasicMaterial color={CONFIG.studio.surround} side={THREE.BackSide} toneMapped={false} />
@@ -71,8 +97,9 @@ export default function LightingSetup() {
 
       {/* Key Light */}
       <directionalLight
+        ref={keyLightRef}
         position={CONFIG.keyLight.position}
-        intensity={CONFIG.keyLight.intensity}
+        intensity={3.4}
         color={CONFIG.keyLight.color}
         castShadow
         shadow-mapSize-width={CONFIG.shadow.mapSize}
@@ -90,15 +117,17 @@ export default function LightingSetup() {
 
       {/* Rim Light */}
       <directionalLight
+        ref={rimLightRef}
         position={CONFIG.rimLight.position}
-        intensity={CONFIG.rimLight.intensity}
+        intensity={1.8}
         color={CONFIG.rimLight.color}
       />
 
       {/* Fill Light */}
       <directionalLight
+        ref={fillLightRef}
         position={CONFIG.fillLight.position}
-        intensity={CONFIG.fillLight.intensity}
+        intensity={0.45}
         color={CONFIG.fillLight.color}
       />
 
