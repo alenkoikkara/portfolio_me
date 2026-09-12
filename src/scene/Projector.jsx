@@ -5,6 +5,7 @@ import useDeviceStore from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
 import usePreviewTexture from './usePreviewTexture'
 import { makeBeamMaterial, makeNoiseTexture, makePreviewMaterial } from './projectorShaders'
+import { startProjector, stopProjector } from './audio'
 
 /* ─── Placement ─── */
 // The open camera looks straight down, so the preview lies flat and fills the
@@ -103,6 +104,15 @@ export default function Projector() {
       start: performance.now(),
       from: opacityRef.current,
     }
+  }, [isProjecting])
+
+  // The reel runs for exactly as long as the projector is lit. It winds up
+  // alongside the boot flash and winds down on eject, and the cleanup covers
+  // leaving the page mid-projection.
+  useEffect(() => {
+    if (!isProjecting) return undefined
+    startProjector()
+    return () => stopProjector()
   }, [isProjecting])
 
   useFrame(({ clock }) => {

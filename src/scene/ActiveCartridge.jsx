@@ -7,6 +7,7 @@ import useDeviceStore from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
 import { slotPose } from './Carousel'
 import cartridgeGlb from '../assets/glb/cartridge.glb'
+import { playCartridgeLift, playCartridgeSlide, playCartridgeSeat, playCartridgeRelease } from './audio'
 
 /* ─── Slot geometry ─── */
 // The cartridge is 50 mm long with its contacts on the +Z end. It enters the
@@ -144,6 +145,7 @@ export default function ActiveCartridge({ slotAnchorRef }) {
     groupRef.current.rotation.set(0, 0, 0)
 
     // Start lift stage: pick the cartridge up towards the camera
+    playCartridgeLift()
     anim.stage = 'lift'
     anim.startTime = performance.now()
     anim.startPos.copy(carouselPos)
@@ -158,6 +160,7 @@ export default function ActiveCartridge({ slotAnchorRef }) {
     const carouselPos = carouselWorldPos(focusedIndex, focusedIndex)
     anim.carouselPos.copy(carouselPos)
 
+    playCartridgeRelease()
     anim.stage = 'pull'
     anim.startTime = performance.now()
     anim.startPos.copy(groupRef.current.position)
@@ -203,6 +206,7 @@ export default function ActiveCartridge({ slotAnchorRef }) {
         groupRef.current.position.lerpVectors(anim.startPos, anim.targetPos, e)
         if (t >= 1) {
           // Push into the slot, running a hair past the seat for the detent
+          playCartridgeSlide()
           anim.stage = 'seat'
           anim.startTime = performance.now()
           anim.startPos.copy(groupRef.current.position)
@@ -216,6 +220,7 @@ export default function ActiveCartridge({ slotAnchorRef }) {
         groupRef.current.position.lerpVectors(anim.startPos, anim.targetPos, e)
         if (t >= 1) {
           // Snap back onto the detent
+          playCartridgeSeat()
           anim.stage = 'snap'
           anim.startTime = performance.now()
           anim.startPos.copy(groupRef.current.position)

@@ -6,6 +6,7 @@ import deviceGlb from '../assets/glb/device.glb'
 import LightingSetup from '../components/LightingSetup'
 import useDeviceStore from './useDeviceStore'
 import * as THREE from 'three'
+import { playMechanicalClick } from './audio'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
@@ -69,46 +70,6 @@ function sampleCamPath(time, out) {
     }
   }
   return out.fromArray(p[p.length - 1].pos)
-}
-
-/* ─── Audio ─── */
-let audioCtx = null
-function playMechanicalClick() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  }
-  if (audioCtx.state === 'suspended') audioCtx.resume()
-
-  const time = audioCtx.currentTime
-
-  // High-frequency tactile snap
-  const clickOsc = audioCtx.createOscillator()
-  const clickGain = audioCtx.createGain()
-  clickOsc.type = 'square'
-  const clickPitch = 2500 + (Math.random() * 800 - 400)
-  clickOsc.frequency.setValueAtTime(clickPitch, time)
-  clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.02)
-  clickGain.gain.setValueAtTime(0.08, time)
-  clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02)
-  clickOsc.connect(clickGain)
-  clickGain.connect(audioCtx.destination)
-  clickOsc.start(time)
-  clickOsc.stop(time + 0.02)
-
-  // Deep bottom-out thock
-  const thockOsc = audioCtx.createOscillator()
-  const thockGain = audioCtx.createGain()
-  thockOsc.type = 'sine'
-  const thockPitch = 300 + (Math.random() * 40 - 20)
-  thockOsc.frequency.setValueAtTime(thockPitch, time + 0.01)
-  thockOsc.frequency.exponentialRampToValueAtTime(50, time + 0.06)
-  thockGain.gain.setValueAtTime(0, time)
-  thockGain.gain.setValueAtTime(0.5, time + 0.01)
-  thockGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08)
-  thockOsc.connect(thockGain)
-  thockGain.connect(audioCtx.destination)
-  thockOsc.start(time + 0.01)
-  thockOsc.stop(time + 0.08)
 }
 
 /* ─── Button component ─── */
