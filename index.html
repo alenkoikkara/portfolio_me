@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>alen koikkara</title>
+    <!-- Ahead of the stylesheet, so the webfont resolves in parallel rather
+         than waiting for the CSS that used to @import it. -->
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>
