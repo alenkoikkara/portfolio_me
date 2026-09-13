@@ -45,6 +45,15 @@ const CAM_EASE = 5
  * what this is for.
  */
 const MAX_EASE_STEP = 0.1
+
+/*
+ * How far a key rises when the pointer is over it, in metres.
+ *
+ * A third of the travel it drops when pressed, so the two read as the same
+ * mechanism at different strengths: the key comes to meet you, then gives way
+ * under the click.
+ */
+const HOVER_LIFT = 0.0016
 /*
  * The open camera looks almost straight down, where lookAt's default up vector
  * is nearly parallel to the view direction and the resulting roll is unstable:
@@ -106,6 +115,11 @@ function DeviceButton({ position, description, labelDirection = 'down', children
     setClicked(true)
     playMechanicalClick()
     setTimeout(() => setClicked(false), 150)
+    // Retract the leader line and its label: the button has been read and
+    // acted on, so the annotation has done its job. The pointer is still over
+    // the key, so no pointerout follows and it would otherwise stay drawn.
+    // Leaving and hovering again draws it back.
+    setHovered(false)
     if (onClick) onClick(e)
   }
 
@@ -124,7 +138,12 @@ function DeviceButton({ position, description, labelDirection = 'down', children
 
   useFrame(() => {
     if (buttonRef.current && introDone) {
-      const targetY = isExploded ? explodeTargetY : (clicked ? pressedY : baseY)
+      // Exploded overrides everything; a press beats a hover, so the key
+      // still dips even though the pointer is by definition on it.
+      let targetY = baseY
+      if (isExploded) targetY = explodeTargetY
+      else if (clicked) targetY = pressedY
+      else if (hovered) targetY = baseY + HOVER_LIFT
       buttonRef.current.position.y = MathUtils.lerp(
         buttonRef.current.position.y,
         targetY,
