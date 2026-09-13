@@ -2,20 +2,22 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Suspense } from 'react'
 import { useThree } from '@react-three/fiber'
 import { PROJECTS } from '../data/projects'
+import { PHOTOS } from '../data/photos'
 import Cartridge from './Cartridge'
 import { Html } from '@react-three/drei'
-import useDeviceStore from './useDeviceStore'
+import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
 import Device from './Device'
 import Carousel from './Carousel'
 import ActiveCartridge from './ActiveCartridge'
 import Projector from './Projector'
+import Gallery from './Gallery'
 
 function ProjectChip() {
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const project = PROJECTS[focusedIndex]
 
-  if (mode === 'IDLE' || !project) return null
+  if (mode === 'IDLE' || GALLERY_MODES.has(mode) || !project) return null
 
   const isProjecting = mode === 'PROJECTING'
 
@@ -95,6 +97,7 @@ export default function Stage() {
     window.__scene = scene
     window.__camera = camera
     window.PROJECT_IDS = PROJECTS.map((p) => p.id)
+    window.PHOTO_IDS = PHOTOS.map((p) => p.id)
   }
 
   /*
@@ -122,6 +125,7 @@ export default function Stage() {
       <ActiveCartridge slotAnchorRef={slotAnchorRef} />
       <Projector />
       <ProjectChip />
+      <Gallery />
     </Suspense>
   )
 }

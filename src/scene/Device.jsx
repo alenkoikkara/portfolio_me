@@ -4,9 +4,10 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, LoopOnce } from 'three'
 import deviceGlb from '../assets/glb/device.glb'
 import LightingSetup from '../components/LightingSetup'
-import useDeviceStore from './useDeviceStore'
+import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
 import * as THREE from 'three'
 import { playMechanicalClick } from './audio'
+import deviceFade from './deviceFade'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
@@ -55,6 +56,30 @@ const MAX_EASE_STEP = 0.1
  */
 const HOVER_LIFT = 0.0016
 /*
+ * How long the device takes to fade out for the gallery, and to come back, in
+ * seconds.
+ *
+ * Matched to the 700 ms stage dim in index.css, so the desk and the room it
+ * sits in go down together instead of the device vanishing against a page that
+ * is still bright.
+ *
+ * The wall hangs five metres behind the device, so the switch between them is a
+ * cut between two cameras rather than a move. Taking the device down to nothing
+ * first means that cut lands on an empty frame in both directions, and there is
+ * never a frame showing the desk and the wall in the same breath. It is shorter
+ * than the OPENING_GALLERY beat, so the device is gone before the camera
+ * changes hands.
+ *
+ * A linear ramp rather than the exponential damp the camera uses. This fade
+ * ends by putting every material's original blend mode back, so it has to
+ * actually arrive: an asymptotic approach never satisfies its own end condition,
+ * and a loop that stops early — a backgrounded tab throttling its frames — would
+ * leave the device stranded a fraction short of opaque and permanently sorted as
+ * transparent geometry. A ramp lands exactly, in a bounded number of frames.
+ */
+const DEVICE_FADE_SECONDS = 0.7
+
+/*
  * The open camera looks almost straight down, where lookAt's default up vector
  * is nearly parallel to the view direction and the resulting roll is unstable:
  * the view can come back from a close rolled 180 degrees. So the up vector is
@@ -100,6 +125,16 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   const buttonRef = useRef()
   const [clicked, setClicked] = useState(false)
   const [hovered, setHovered] = useState(false)
+  /*
+   * Whether the annotation was dismissed by a click rather than by the pointer
+   * leaving. It is taken away without animating in that case: retracting it
+   * draws the leader line back over a second and a half, which sends a hairline
+   * sweeping four hundred pixels across the screen just as the visitor clicks
+   * something — read as a glitch, and the largest thing moving in the frame at
+   * that moment. Leaving normally still retracts, which is where that animation
+   * belongs, since the pointer is on its way out anyway.
+   */
+  const [dismissed, setDismissed] = useState(false)
   // Mirror the --stage-ink values from index.css based on mode
   const mode = useDeviceStore((s) => s.mode)
   const labelColor = mode === 'IDLE' ? '#111827' : '#f3f4f6'
@@ -120,6 +155,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
     // the key, so no pointerout follows and it would otherwise stay drawn.
     // Leaving and hovering again draws it back.
     setHovered(false)
+    setDismissed(true)
     if (onClick) onClick(e)
   }
 
@@ -127,12 +163,14 @@ function DeviceButton({ position, description, labelDirection = 'down', children
     if (!introDone) return
     e.stopPropagation()
     setHovered(true)
+    setDismissed(false)
     document.body.style.cursor = 'pointer'
   }
 
   const handlePointerOut = (e) => {
     e.stopPropagation()
     setHovered(false)
+    setDismissed(false)
     document.body.style.cursor = 'auto'
   }
 
@@ -193,15 +231,20 @@ function DeviceButton({ position, description, labelDirection = 'down', children
                 strokeWidth="1.5"
                 strokeDasharray={pathLength}
                 strokeDashoffset={hovered ? 0 : pathLength}
-                style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1), stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+                style={{
+                  transition: dismissed
+                    ? 'stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)'
+                    : 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1), stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
               />
             </svg>
             <div
-              className="absolute whitespace-nowrap text-xs font-medium tracking-widest lowercase pb-1 transition-opacity duration-700"
+              className="absolute whitespace-nowrap text-xs font-medium tracking-widest lowercase pb-1"
               style={{
                 ...textPosition,
                 color: labelColor,
                 opacity: hovered ? 1 : 0,
+                transition: dismissed ? 'none' : 'opacity 700ms',
                 transitionDelay: hovered ? '800ms' : '0ms',
                 transitionTimingFunction: 'cubic-bezier(0.83, 0, 0.17, 1)'
               }}
@@ -235,6 +278,11 @@ export default function Device({ slotAnchorRef }) {
     projectTarget: new THREE.Vector3(...CAM_PROJECT_TARGET),
   }), [])
 
+  // Every material under the device root, with the `transparent` flag it was
+  // authored with, so the fade can put it back rather than leaving the whole
+  // device permanently sorted as transparent geometry.
+  const fadeMaterials = useRef(null)
+
   const [isExploded, setIsExploded] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [introDone, setIntroDone] = useState(false)
@@ -245,16 +293,29 @@ export default function Device({ slotAnchorRef }) {
   const openCarousel = useDeviceStore((s) => s.openCarousel)
   const closeCarousel = useDeviceStore((s) => s.closeCarousel)
   const eject = useDeviceStore((s) => s.eject)
+  const openGallery = useDeviceStore((s) => s.openGallery)
+  const galleryOpened = useDeviceStore((s) => s.galleryOpened)
+  /*
+   * While the wall is up it owns the default camera, and every camera line
+   * below writes to `state.camera` — that is, to whichever camera is default.
+   * Without this guard the device would keep dragging the gallery camera back
+   * towards the device, five metres in front of the wall.
+   */
+  const inGallery = GALLERY_MODES.has(mode)
 
   // Keep Blender's horizontal FOV regardless of window shape
   const { size, camera } = useThree()
   useEffect(() => {
+    // `camera` is whichever camera is currently default, and in the gallery
+    // that is the wall's own — which wants its own field of view, not the one
+    // framing a 92 mm device.
+    if (inGallery) return
     const aspect = size.width / size.height
     const hfov = THREE.MathUtils.degToRad(CAM_HFOV)
     const vfov = 2 * Math.atan(Math.tan(hfov / 2) / Math.max(aspect, 0.0001))
     camera.fov = THREE.MathUtils.radToDeg(vfov)
     camera.updateProjectionMatrix()
-  }, [size.width, size.height, camera])
+  }, [size.width, size.height, camera, inGallery])
 
   const { nodes, materials, animations } = useGLTF(deviceGlb)
   const { actions, names, mixer } = useAnimations(animations, group)
@@ -296,6 +357,11 @@ export default function Device({ slotAnchorRef }) {
     }
   }, [mode, openCarousel, closeCarousel])
 
+  // Photography key handler
+  const handlePhotographyKey = useCallback(() => {
+    if (mode === 'IDLE') openGallery()
+  }, [mode, openGallery])
+
   // Eject button handler
   const handleEject = useCallback((e) => {
     e.stopPropagation()
@@ -319,8 +385,58 @@ export default function Device({ slotAnchorRef }) {
   useFrame((state, delta) => {
     const step = Math.min(delta, MAX_EASE_STEP)
 
+    /*
+     * 0. Fade the device out for the gallery, and back in on the way home.
+     *
+     * The device is hidden for all three gallery modes. The camera only comes
+     * back to the desk once the wall has faded out, so the device has to still
+     * be gone at that moment; it fades back in on IDLE, in step with the stage
+     * lights coming up.
+     */
+    if (group.current) {
+      if (!fadeMaterials.current) {
+        const seen = new Map()
+        group.current.traverse((o) => {
+          if (o.isMesh && o.material) seen.set(o.material, o.material.transparent)
+        })
+        fadeMaterials.current = [...seen].map(([material, transparent]) => ({ material, transparent }))
+      }
+
+      const target = inGallery ? 0 : 1
+      const travel = step / DEVICE_FADE_SECONDS
+      const fade = target > deviceFade.value
+        ? Math.min(target, deviceFade.value + travel)
+        : Math.max(target, deviceFade.value - travel)
+      deviceFade.value = fade
+
+      for (const { material, transparent } of fadeMaterials.current) {
+        if (fade >= 1) {
+          material.opacity = 1
+          material.transparent = transparent
+        } else {
+          material.transparent = true
+          material.opacity = fade
+        }
+      }
+      // Out of the scene once invisible: the shadow pass renders depth and
+      // ignores opacity, so a fully transparent device would still cast.
+      group.current.visible = fade > 0
+
+      /*
+       * The fade hands the camera over, rather than a timer doing it.
+       *
+       * This is the same rule the cartridge follows: the animation reports that
+       * it finished, so a slow machine cannot advance the mode before the thing
+       * has actually happened. Timing it from outside meant the wall could take
+       * the camera while the device was still half on screen, and the device
+       * then vanished mid-cut. The guard inside the action makes the repeated
+       * call a no-op.
+       */
+      if (fade === 0 && mode === 'OPENING_GALLERY') galleryOpened()
+    }
+
     // 1. Camera cinematic intro
-    if (!introDone) {
+    if (!introDone && !inGallery) {
       introElapsedRef.current += delta
       sampleCamPath(introElapsedRef.current, state.camera.position)
       state.camera.lookAt(...CAM_TARGET)
@@ -342,19 +458,19 @@ export default function Device({ slotAnchorRef }) {
 
     // Keep the orbit pivot on the eased look target so re-enabling the
     // controls after a close does not snap the view.
-    if (controlsRef.current) controlsRef.current.target.copy(camTargetRef.current)
+    if (controlsRef.current && !inGallery) controlsRef.current.target.copy(camTargetRef.current)
 
     // Steer the up vector alongside the camera so neither pose relies on
     // lookAt guessing a roll. It converges on world up before the orbit
     // controls take over in IDLE.
-    if (introDone) {
+    if (introDone && !inGallery) {
       const upK = 1 - Math.exp(-step * CAM_EASE)
       camUpRef.current.lerp(mode === 'IDLE' ? UP_IDLE : UP_OPEN, upK).normalize()
       state.camera.up.copy(camUpRef.current)
     }
 
     // 3a. Open pose: glide to the flat, screen-aligned top-down view
-    if (introDone && mode !== 'IDLE') {
+    if (introDone && mode !== 'IDLE' && !inGallery) {
       const framed = PROJECT_MODES.has(mode)
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(framed ? camScratch.projectTarget : camScratch.openTarget, k)
@@ -388,15 +504,27 @@ export default function Device({ slotAnchorRef }) {
 
   return (
     <>
-      <OrbitControls
-        ref={controlsRef}
-        enableZoom={false}
-        enablePan={false}
-        target={CAM_TARGET}
-        enabled={introDone && mode === 'IDLE'}
-        onStart={() => setIsDragging(true)}
-        onEnd={() => setIsDragging(false)}
-      />
+      {/*
+        * Unmounted in the gallery rather than merely disabled.
+        *
+        * These controls bind whichever camera is default, and rebuild when that
+        * changes. Rebuilding constructs a fresh OrbitControls, whose constructor
+        * orients its camera at its target — so the moment the wall's camera
+        * became default, this aimed it back at the device and the wall was
+        * behind the view. Disabling does not help: `enabled` only gates the
+        * per-frame update, not construction.
+        */}
+      {!inGallery && (
+        <OrbitControls
+          ref={controlsRef}
+          enableZoom={false}
+          enablePan={false}
+          target={CAM_TARGET}
+          enabled={introDone && mode === 'IDLE'}
+          onStart={() => setIsDragging(true)}
+          onEnd={() => setIsDragging(false)}
+        />
+      )}
 
       <LightingSetup />
 
@@ -497,7 +625,7 @@ export default function Device({ slotAnchorRef }) {
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_2" introDone={introDone} isExploded={isExploded} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
+            <DeviceButton name="Key_Top_2" introDone={introDone} isExploded={isExploded} onClick={handlePhotographyKey} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_2.geometry} material={materials.Dark} />
             </DeviceButton>

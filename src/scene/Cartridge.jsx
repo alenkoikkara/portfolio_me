@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useSpring, animated as a } from '@react-spring/three'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { MathUtils } from 'three'
@@ -86,7 +86,17 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
     return { instance: clone, labelMat: foundLabelMat }
   }, [scene, project.id])
 
-  // Load preview texture and apply it to the label area
+  /*
+   * Load the preview texture and apply it to the label area.
+   *
+   * It is uploaded to the GPU the moment it decodes rather than being left for
+   * the first frame that draws it. These are the full tall screenshots, so three
+   * of them arriving in the single frame the carousel opens means three large
+   * uploads and three mipmap builds in the frame where the camera is mid-glide —
+   * which is the stutter. Decodes land whenever they land; the transition frame
+   * should not be paying for them.
+   */
+  const gl = useThree((s) => s.gl)
   useEffect(() => {
     if (!labelMat || !project.preview) return
     let disposed = false
@@ -104,6 +114,7 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
         // Show top portion of the screenshot (most representative)
         tex.offset.set(0, 0)
         tex.repeat.set(1, 0.3)
+        gl.initTexture(tex)
         labelMat.map = tex
         labelMat.needsUpdate = true
       }
@@ -116,7 +127,7 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
         labelMat.needsUpdate = true
       }
     }
-  }, [labelMat, project.preview])
+  }, [labelMat, project.preview, gl])
 
   // Spring-animate pose changes; on mount the cartridge fades in and settles
   // down from slightly above its slot.

@@ -217,3 +217,51 @@
   text-transform: lowercase;
   color: var(--stage-faint);
 }
+
+/*
+ * Photography wall caption.
+ *
+ * Only the print filling the frame is captioned, and the caption sits directly
+ * on the dark room with no panel behind it, so it reads these variables like
+ * the rest of the overlay chrome rather than hard-coding a light-on-dark pair.
+ */
+.overlay-caption {
+  pointer-events: none;
+  position: absolute;
+  left: 40px;
+  bottom: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-caption--visible {
+  opacity: 1;
+  transform: translateY(0);
+  /* Waits out the print's flight rather than arriving over a moving image. */
+  transition-delay: 220ms;
+}
+
+.overlay-caption-title {
+  color: var(--stage-ink);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.overlay-caption-meta {
+  color: var(--stage-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+
+@media (max-width: 640px) {
+  .overlay-caption {
+    left: 20px;
+    bottom: 56px;
+  }
+}

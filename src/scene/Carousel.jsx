@@ -20,6 +20,15 @@ const STAGGER_MS = 60
 
 /** Modes in which one cartridge is out of the strip, travelling or seated. */
 const ACTIVE_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
+/*
+ * Modes in which the strip exists at all.
+ *
+ * A whitelist, like every other mode guard in the scene. This used to ask for
+ * "not IDLE", which quietly meant the strip also rendered through the gallery
+ * modes — invisible while the wall's camera was up, but flashing into shot for
+ * the moment the camera came back to the device on the way out.
+ */
+const STRIP_MODES = new Set(['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING'])
 
 /**
  * Compute pose for cartridge at index i, given which index is focused.
@@ -72,8 +81,8 @@ export default function Carousel() {
     }
   }, [mode, focusedIndex, insert])
 
-  // Don't render anything in IDLE (after fade out completes)
-  if (mode === 'IDLE') return null
+  // Nothing to draw unless the strip belongs on screen in this mode.
+  if (!STRIP_MODES.has(mode)) return null
 
   // The projected preview occupies the band the strip sits in, so the strip
   // clears out of shot while it is up and fades back in on eject.

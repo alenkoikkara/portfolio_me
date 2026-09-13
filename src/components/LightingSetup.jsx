@@ -2,7 +2,8 @@ import React, { useRef } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
-import useDeviceStore from '../scene/useDeviceStore'
+import useDeviceStore, { GALLERY_MODES } from '../scene/useDeviceStore'
+import deviceFade from '../scene/deviceFade'
 
 // Exact 1:1 scale with hichord.js
 const S = 1;
@@ -29,6 +30,22 @@ export const CONFIG = {
   },
 }
 
+/*
+ * Longest frame the light easing will act on, in seconds.
+ *
+ * The same cap, for the same reason, as MAX_EASE_STEP on the camera in
+ * scene/Device.jsx. These eases are exponential on frame delta, so a single
+ * long frame resolves almost the whole change in one step and the room snaps
+ * rather than dims. That is not hypothetical here: the frame in which the
+ * carousel opens also links every cartridge shader, which is long enough to
+ * take the exposure its entire travel at once — measured at a full 1.15 → 0.75
+ * in one frame — and it reads as the lights glitching at the moment of a click.
+ *
+ * Loose on purpose. Anything down to ten frames a second passes through
+ * untouched, so only a pathological frame is damped.
+ */
+const MAX_LIGHT_STEP = 0.1
+
 const EnvPanel = ({ config }) => (
   <mesh position={config.pos} onUpdate={m => m.lookAt(0,0,0)}>
     <planeGeometry args={config.size} />
@@ -43,6 +60,11 @@ const EnvPanel = ({ config }) => (
 export default function LightingSetup() {
   const { gl, scene } = useThree()
   
+  const shadowGroupRef = useRef()
+  // Base opacity of each shadow material, so the fade scales what was authored
+  // rather than overwriting it.
+  const shadowBase = useRef(null)
+
   const keyLightRef = useRef()
   const rimLightRef = useRef()
   const fillLightRef = useRef()
@@ -56,24 +78,56 @@ export default function LightingSetup() {
   }, [])
   
   useFrame((state, delta) => {
+    const step = Math.min(delta, MAX_LIGHT_STEP)
+    const inGallery = GALLERY_MODES.has(mode)
     const isProjecting = mode !== 'IDLE'
-    
-    const targetExposure = isProjecting ? 0.75 : 1.15
-    const targetEnvIntensity = isProjecting ? 0.6 : 1.6
-    const targetKey = isProjecting ? 1.2 : 3.4
-    const targetRim = isProjecting ? 0.6 : 1.8
-    const targetFill = isProjecting ? 0.15 : 0.45
 
-    gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, delta)
+    /*
+     * The gallery is a different room. These three lights are aimed at a device
+     * 92 mm across and are directional, so they reach the wall five metres away
+     * as well — at full strength they flatten it from head-on and cancel the
+     * grazing light the wall hangs its own depth on. They go out, and the wall
+     * lights itself. The environment stays part-way up so the prints keep a
+     * little reflected room light in them rather than going matte.
+     */
+    const targetExposure = inGallery ? 1.0 : isProjecting ? 0.75 : 1.15
+    const targetEnvIntensity = inGallery ? 0.5 : isProjecting ? 0.6 : 1.6
+    const targetKey = inGallery ? 0 : isProjecting ? 1.2 : 3.4
+    const targetRim = inGallery ? 0 : isProjecting ? 0.6 : 1.8
+    const targetFill = inGallery ? 0 : isProjecting ? 0.15 : 0.45
+
+    gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, step)
     
     // Animate environment intensity if supported (R3F environment)
     if (scene.environmentIntensity !== undefined) {
-      scene.environmentIntensity = THREE.MathUtils.damp(scene.environmentIntensity, targetEnvIntensity, 4, delta)
+      scene.environmentIntensity = THREE.MathUtils.damp(scene.environmentIntensity, targetEnvIntensity, 4, step)
     }
 
-    if (keyLightRef.current) keyLightRef.current.intensity = THREE.MathUtils.damp(keyLightRef.current.intensity, targetKey, 4, delta)
-    if (rimLightRef.current) rimLightRef.current.intensity = THREE.MathUtils.damp(rimLightRef.current.intensity, targetRim, 4, delta)
-    if (fillLightRef.current) fillLightRef.current.intensity = THREE.MathUtils.damp(fillLightRef.current.intensity, targetFill, 4, delta)
+    if (keyLightRef.current) keyLightRef.current.intensity = THREE.MathUtils.damp(keyLightRef.current.intensity, targetKey, 4, step)
+    if (rimLightRef.current) rimLightRef.current.intensity = THREE.MathUtils.damp(rimLightRef.current.intensity, targetRim, 4, step)
+    if (fillLightRef.current) fillLightRef.current.intensity = THREE.MathUtils.damp(fillLightRef.current.intensity, targetFill, 4, step)
+
+    /*
+     * Take the shadows down with the device.
+     *
+     * `Device` drives deviceFade in its own frame loop; this only follows it. A
+     * device that faded out while its contact shadow stayed printed on the desk
+     * would read as a bug, not as a transition — the shadow is part of the
+     * object as far as the eye is concerned.
+     */
+    if (shadowGroupRef.current) {
+      if (!shadowBase.current) {
+        const seen = new Map()
+        shadowGroupRef.current.traverse((o) => {
+          if (o.isMesh && o.material) seen.set(o.material, o.material.opacity)
+        })
+        shadowBase.current = [...seen].map(([material, opacity]) => ({ material, opacity }))
+      }
+      for (const { material, opacity } of shadowBase.current) {
+        material.opacity = opacity * deviceFade.value
+      }
+      shadowGroupRef.current.visible = deviceFade.value > 0
+    }
   })
 
   return (
@@ -132,7 +186,7 @@ export default function LightingSetup() {
       />
 
       {/* Shadows */}
-      <group>
+      <group ref={shadowGroupRef}>
         {/* Directional drop shadow */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]} receiveShadow>
           <planeGeometry args={[CONFIG.shadow.size, CONFIG.shadow.size]} />

@@ -19,7 +19,32 @@ import { PROJECTS } from '../data/projects'
  *   PROJECTING → EJECTING   (eject)
  *   EJECTING   → BROWSING   (ejected — called by animation completion)
  *   EJECTING   → INSERTING  (ejected when pendingIndex is set)
+ *
+ * The photography key runs a second, parallel arm of the machine:
+ *
+ *   IDLE            → OPENING_GALLERY (openGallery)
+ *   OPENING_GALLERY → GALLERY         (galleryOpened — the device fade reports in)
+ *   GALLERY         → CLOSING_GALLERY (closeGallery)
+ *   CLOSING_GALLERY → IDLE            (galleryClosed — the wall reports in)
+ *
+ * The two transitional modes are not cosmetic. The gallery has its own camera,
+ * and swapping which camera is default is a cut, not a glide — so both cuts are
+ * arranged to land on an empty frame of a single colour, which the desk and the
+ * wall share. Nothing is ever seen changing.
+ *
+ * OPENING_GALLERY is the beat where the device fades out and the stage dims
+ * together, while the wall — mounted but five metres behind and out of frame —
+ * gets its textures on the wire. The device's fade is what calls galleryOpened,
+ * so the camera cannot change hands while the desk is still on screen. The
+ * prints then come up into the empty frame the cut landed on.
+ *
+ * CLOSING_GALLERY is the reverse: the prints clear first, with the camera still
+ * on the wall, and only then does it hand back to a desk that is still faded
+ * out. The device and the room come up together on IDLE.
  */
+/** Modes in which the photography wall is on screen and owns the camera. */
+export const GALLERY_MODES = new Set(['OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY'])
+
 const useDeviceStore = create((set, get) => ({
   mode: 'IDLE',
   // True once the opening animation has played out and the device is at rest.
@@ -27,6 +52,8 @@ const useDeviceStore = create((set, get) => ({
   focusedIndex: 0,
   activeId: null,
   pendingIndex: null,
+  /** Photo filling the frame on the photography wall, by id. */
+  focusedPhotoId: null,
 
   markIntroDone: () => set({ introDone: true }),
 
@@ -75,6 +102,41 @@ const useDeviceStore = create((set, get) => ({
     const { mode } = get()
     if (mode !== 'PROJECTING') return
     set({ mode: 'EJECTING', pendingIndex: null })
+  },
+
+  /* ─── Photography wall ─── */
+
+  openGallery: () => {
+    const { mode } = get()
+    if (mode !== 'IDLE') return
+    set({ mode: 'OPENING_GALLERY', focusedPhotoId: null })
+  },
+
+  /** Called by the wall once it has dimmed in and its first textures are up. */
+  galleryOpened: () => {
+    const { mode } = get()
+    if (mode !== 'OPENING_GALLERY') return
+    set({ mode: 'GALLERY' })
+  },
+
+  closeGallery: () => {
+    const { mode } = get()
+    if (mode !== 'GALLERY' && mode !== 'OPENING_GALLERY') return
+    set({ mode: 'CLOSING_GALLERY', focusedPhotoId: null })
+  },
+
+  /** Called by the wall once it has faded back out. */
+  galleryClosed: () => {
+    const { mode } = get()
+    if (mode !== 'CLOSING_GALLERY') return
+    set({ mode: 'IDLE' })
+  },
+
+  /** Fly one print to full frame, or pass null to send it back to the wall. */
+  focusPhoto: (id) => {
+    const { mode } = get()
+    if (mode !== 'GALLERY') return
+    set({ focusedPhotoId: id })
   },
 
   /** Called by ejection animation on completion */

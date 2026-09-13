@@ -10,7 +10,8 @@
     "previews": "node scripts/generate-previews.mjs",
     "preview": "vite preview",
     "optimize:models": "node scripts/optimize-models.mjs",
-    "prebuild": "node scripts/optimize-models.mjs"
+    "prebuild": "node scripts/optimize-models.mjs",
+    "photos": "node scripts/prepare-photos.mjs"
   },
   "dependencies": {
     "@react-spring/three": "^10.1.2",
