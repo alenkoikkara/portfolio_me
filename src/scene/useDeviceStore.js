@@ -22,9 +22,13 @@ import { PROJECTS } from '../data/projects'
  */
 const useDeviceStore = create((set, get) => ({
   mode: 'IDLE',
+  // True once the opening animation has played out and the device is at rest.
+  introDone: false,
   focusedIndex: 0,
   activeId: null,
   pendingIndex: null,
+
+  markIntroDone: () => set({ introDone: true }),
 
   openCarousel: () => {
     const { mode } = get()

@@ -32,6 +32,20 @@ const CAM_PROJECT_TARGET = [0, 0.008, -0.14]
 const PROJECT_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 const CAM_EASE = 5
 /*
+ * Longest frame the camera easing will act on, in seconds.
+ *
+ * The glide is exponential on frame delta, so one very long frame — a tab
+ * returning to the foreground, a garbage collection — would resolve almost
+ * the whole move in a single step and read as a jump rather than a glide.
+ *
+ * The cap is deliberately loose. Anything down to ten frames a second passes
+ * through untouched, so normal playback is unaffected on any real display;
+ * only a pathological frame is damped. A tighter cap would starve the easing
+ * on a slow device and make the move take longer, which is the opposite of
+ * what this is for.
+ */
+const MAX_EASE_STEP = 0.1
+/*
  * The open camera looks almost straight down, where lookAt's default up vector
  * is nearly parallel to the view direction and the resulting roll is unstable:
  * the view can come back from a close rolled 180 degrees. So the up vector is
@@ -205,6 +219,7 @@ export default function Device({ slotAnchorRef }) {
   const [isExploded, setIsExploded] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [introDone, setIntroDone] = useState(false)
+  const markIntroDone = useDeviceStore((s) => s.markIntroDone)
 
   // Zustand store
   const mode = useDeviceStore((s) => s.mode)
@@ -241,6 +256,7 @@ export default function Device({ slotAnchorRef }) {
         finishedCount++
         if (finishedCount === names.length) {
           setIntroDone(true)
+          markIntroDone()
         }
       }
 
@@ -248,6 +264,7 @@ export default function Device({ slotAnchorRef }) {
       return () => mixer.removeEventListener('finished', onFinished)
     } else {
       setIntroDone(true)
+      markIntroDone()
     }
   }, [actions, names, mixer])
 
@@ -281,6 +298,8 @@ export default function Device({ slotAnchorRef }) {
 
   // Camera cinematic + screen flicker + elastic snap-back + explode view
   useFrame((state, delta) => {
+    const step = Math.min(delta, MAX_EASE_STEP)
+
     // 1. Camera cinematic intro
     if (!introDone) {
       introElapsedRef.current += delta
@@ -310,7 +329,7 @@ export default function Device({ slotAnchorRef }) {
     // lookAt guessing a roll. It converges on world up before the orbit
     // controls take over in IDLE.
     if (introDone) {
-      const upK = 1 - Math.exp(-delta * CAM_EASE)
+      const upK = 1 - Math.exp(-step * CAM_EASE)
       camUpRef.current.lerp(mode === 'IDLE' ? UP_IDLE : UP_OPEN, upK).normalize()
       state.camera.up.copy(camUpRef.current)
     }
@@ -318,7 +337,7 @@ export default function Device({ slotAnchorRef }) {
     // 3a. Open pose: glide to the flat, screen-aligned top-down view
     if (introDone && mode !== 'IDLE') {
       const framed = PROJECT_MODES.has(mode)
-      const k = 1 - Math.exp(-delta * CAM_EASE)
+      const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(framed ? camScratch.projectTarget : camScratch.openTarget, k)
       state.camera.position.lerp(framed ? camScratch.projectPos : camScratch.openPos, k)
       state.camera.lookAt(camTargetRef.current)
@@ -332,7 +351,7 @@ export default function Device({ slotAnchorRef }) {
     // the azimuth by half a turn, sending the camera around the far side and
     // landing it rolled over. Easing the position needs no angles at all.
     if (introDone && !isDragging && mode === 'IDLE') {
-      const k = 1 - Math.exp(-delta * CAM_EASE)
+      const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(camScratch.restTarget, k)
       state.camera.position.lerp(camScratch.restPos, k)
       state.camera.lookAt(camTargetRef.current)
