@@ -19,7 +19,7 @@ function preloadModels() {
     enforce: 'post',
     apply: 'build',
     transformIndexHtml(html, ctx) {
-      const models = Object.keys(ctx.bundle ?? {}).filter((f) => f.endsWith('.glb'))
+      const models = Object.keys(ctx.bundle || {}).filter((f) => f.endsWith('.glb'))
       return {
         html,
         tags: models.map((file) => ({
