@@ -277,6 +277,21 @@ function Wall() {
     wallRef.current.traverse((o) => o.layers.set(GALLERY_LAYER))
   }, [prints])
 
+  /*
+   * Let the pointer reach the layer too.
+   *
+   * A raycaster tests layer 0 and nothing else unless told otherwise, so moving
+   * the wall onto its own layer — which is what keeps it out of the device
+   * camera — also takes every print out of reach of a click. Nothing errors; the
+   * prints simply stop responding. Enabled only while the wall is mounted, so
+   * the device scene keeps raycasting exactly what it did before.
+   */
+  const raycaster = useThree((s) => s.raycaster)
+  useEffect(() => {
+    raycaster.layers.enable(GALLERY_LAYER)
+    return () => raycaster.layers.disable(GALLERY_LAYER)
+  }, [raycaster])
+
   const wallLight = useRef()
   useEffect(() => {
     const light = wallLight.current

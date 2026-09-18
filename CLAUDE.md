@@ -98,6 +98,14 @@ Sizing the plane to stay out of frame would have to be re-derived whenever the w
 or viewport changed, and being wrong by a little brings the whole failure back. The
 wall's two lights sit on the layer too, which is also what keeps them off the device.
 
+**A layer hides things from the pointer as well as from a camera.** A `Raycaster`
+tests layer 0 and nothing else unless told otherwise, so moving the wall onto its
+own layer silently took every print out of reach of a click — no error, the prints
+simply stopped responding. `Gallery.jsx` enables `GALLERY_LAYER` on R3F's raycaster
+while the wall is mounted and disables it on the way out. Anything else put on a
+layer needs the same, and the failure will look like a dead mesh rather than a
+layer problem.
+
 Three values then have to agree so the cut itself is invisible: the stage dim
 (`700ms` on `.stage` in `index.css`), the device fade (`DEVICE_FADE_SECONDS` in
 `Device.jsx`), and the backdrop colour (`BACKDROP` in `Gallery.jsx`, which must equal
@@ -387,6 +395,10 @@ wall's layout arithmetic, the texture stores' loading and eviction policy, the
 preview texture hook, and the DOM overlay. `npm run coverage` enforces 90% across
 statements, branches, functions and lines for exactly those files — the list is in
 `vitest.config.js`, and it is scoped on purpose.
+
+This is also the shape of bug the unit tests cannot see: click-to-focus broke on a
+raycaster layer mask, which lives entirely in R3F's event system. It was found by
+clicking a print in a real browser and reading `focusedPhotoId` back.
 
 **What is deliberately not unit-tested, and why.** Roughly two thirds of this
 codebase draws. `Device`, `Gallery`, `Print`, `Projector`, `Cartridge` and their
