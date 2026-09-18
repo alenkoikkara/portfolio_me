@@ -357,6 +357,19 @@ text on a still-light background.
   wall's camera and aim it back at the device. They are unmounted in gallery modes,
   and `Device.jsx` guards every line that writes to `state.camera` on `inGallery`
   for the same reason.
+- **drei's `<Environment>` re-applies `scene.environmentIntensity` on every
+  render, and its default is 1.** Left unset it fought the ease in
+  `LightingSetup.jsx`: any re-render knocked the room's ambient light from 1.6
+  down to 1 and the ease spent the next ten frames climbing back, which read as
+  the scene flickering. It is now handed `envIntensityFor(mode)` — the value that
+  mode is heading for — so a re-render lands where the ease already wants to be.
+  The same trap applies to any drei prop that writes to the scene and also has a
+  default.
+- **Nothing in the frame loop should be React state.** `isDragging` in
+  `Device.jsx` is a ref, because drei's `OrbitControls` fires start and end on
+  every click — even one that never moves — and as state that was two renders per
+  click, cascading into the `<Environment>` reset above. If a value is only read
+  inside `useFrame`, keep it in a ref.
 - **Every exponential ease must clamp its frame delta.** `MathUtils.damp(a, b, k, dt)`
   resolves `1 - e^(-k·dt)` of the remaining distance, so one long frame resolves
   almost all of it and the move reads as a jump. `Device.jsx` caps the camera with

@@ -46,6 +46,21 @@ export const CONFIG = {
  */
 const MAX_LIGHT_STEP = 0.1
 
+/**
+ * Ambient level for a mode, shared by the ease and by `<Environment>` itself.
+ *
+ * drei re-applies `scene.environmentIntensity` from its prop on every render,
+ * and its default is 1. Left unset, any re-render knocked the room's ambient
+ * light down to 1 and the ease below spent the next ten frames climbing back —
+ * a visible dip on something as ordinary as a click. Handing it the value this
+ * mode is heading for means a re-render lands where the ease already wants to
+ * be, and nothing moves.
+ */
+function envIntensityFor(mode) {
+  if (GALLERY_MODES.has(mode)) return 0.5
+  return mode === 'IDLE' ? 1.6 : 0.6
+}
+
 const EnvPanel = ({ config }) => (
   <mesh position={config.pos} onUpdate={m => m.lookAt(0,0,0)}>
     <planeGeometry args={config.size} />
@@ -91,7 +106,7 @@ export default function LightingSetup() {
      * little reflected room light in them rather than going matte.
      */
     const targetExposure = inGallery ? 1.0 : isProjecting ? 0.75 : 1.15
-    const targetEnvIntensity = inGallery ? 0.5 : isProjecting ? 0.6 : 1.6
+    const targetEnvIntensity = envIntensityFor(mode)
     const targetKey = inGallery ? 0 : isProjecting ? 1.2 : 3.4
     const targetRim = inGallery ? 0 : isProjecting ? 0.6 : 1.8
     const targetFill = inGallery ? 0 : isProjecting ? 0.15 : 0.45
@@ -135,7 +150,11 @@ export default function LightingSetup() {
       {/* SoftShadows disabled — PCSS patches cause unpackRGBAToDepth GLSL
           errors when cartridge materials (KHR_texture_transform) enter the scene.
           Regular shadow maps with radius 4 are adequate. */}
-      <Environment background={false} resolution={1024}>
+      <Environment
+        background={false}
+        resolution={1024}
+        environmentIntensity={envIntensityFor(mode)}
+      >
         <mesh>
           <sphereGeometry args={[120, 24, 16]} />
           <meshBasicMaterial color={CONFIG.studio.surround} side={THREE.BackSide} toneMapped={false} />

@@ -298,7 +298,15 @@ export default function Device({ slotAnchorRef }) {
   const fadeMaterials = useRef(null)
 
   const [isExploded, setIsExploded] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
+  /*
+   * A ref, not state: it is only ever read inside the frame loop, and drei's
+   * OrbitControls fires start and end on every click — even one that never
+   * moves. As state that was two React renders per click, which re-rendered
+   * LightingSetup, which re-rendered drei's <Environment>, which re-applies
+   * `scene.environmentIntensity` from its prop. The scene's ambient light was
+   * being knocked down and eased back on every click of the canvas.
+   */
+  const isDraggingRef = useRef(false)
   const [introDone, setIntroDone] = useState(false)
   const markIntroDone = useDeviceStore((s) => s.markIntroDone)
 
@@ -507,7 +515,7 @@ export default function Device({ slotAnchorRef }) {
     // when the carousel closes: a hair of movement in the look target flips
     // the azimuth by half a turn, sending the camera around the far side and
     // landing it rolled over. Easing the position needs no angles at all.
-    if (introDone && !isDragging && mode === 'IDLE') {
+    if (introDone && !isDraggingRef.current && mode === 'IDLE') {
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(camScratch.restTarget, k)
       state.camera.position.lerp(camScratch.restPos, k)
@@ -543,8 +551,8 @@ export default function Device({ slotAnchorRef }) {
           enablePan={false}
           target={CAM_TARGET}
           enabled={introDone && mode === 'IDLE'}
-          onStart={() => setIsDragging(true)}
-          onEnd={() => setIsDragging(false)}
+          onStart={() => { isDraggingRef.current = true }}
+          onEnd={() => { isDraggingRef.current = false }}
         />
       )}
 
