@@ -29,6 +29,20 @@ const CAM_OPEN_TARGET = [0, 0.008, -0.1]
  */
 const CAM_PROJECT_POS = [0, 0.7, -0.12]
 const CAM_PROJECT_TARGET = [0, 0.008, -0.14]
+/**
+ * Where the three logo buttons go.
+ *
+ * Opened in a new tab so the scene is not torn down behind the visitor — the
+ * intro, the wall's textures and any open print would all have to be rebuilt on
+ * the way back. `noopener` is what stops the opened page reaching back through
+ * `window.opener`; `noreferrer` keeps this URL out of its analytics.
+ */
+const SOCIAL_LINKS = {
+  github: 'https://github.com/alenkoikkara',
+  linkedin: 'https://www.linkedin.com/in/alenkoikkara/',
+  medium: 'https://medium.com/@alendennis77',
+}
+
 /** Modes framed for the projector rather than the carousel. */
 const PROJECT_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 const CAM_EASE = 5
@@ -357,6 +371,14 @@ export default function Device({ slotAnchorRef }) {
     }
   }, [mode, openCarousel, closeCarousel])
 
+  /*
+   * Opening happens straight out of the click handler, with no await in
+   * between, or a browser treats it as an unsolicited popup and blocks it.
+   */
+  const openLink = useCallback((url) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }, [])
+
   // Photography key handler
   const handlePhotographyKey = useCallback(() => {
     if (mode === 'IDLE') openGallery()
@@ -585,15 +607,15 @@ export default function Device({ slotAnchorRef }) {
             </group>
 
             {/* Top Logo Buttons */}
-            <DeviceButton name="Btn_GH" introDone={introDone} isExploded={isExploded} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
+            <DeviceButton name="Btn_GH" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.github)} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_1.geometry} material={materials.GitHubDark} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_LI" introDone={introDone} isExploded={isExploded} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
+            <DeviceButton name="Btn_LI" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.linkedin)} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_1.geometry} material={materials.LinkedInBlue} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_MD" introDone={introDone} isExploded={isExploded} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
+            <DeviceButton name="Btn_MD" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.medium)} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_1.geometry} material={materials.MediumBlack} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
