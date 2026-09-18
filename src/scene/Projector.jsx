@@ -60,6 +60,13 @@ export default function Projector() {
 
   useEffect(() => {
     previewMaterial.uniforms.uMap.value = texture
+    if (texture && texture.image) {
+      const imgAspect = texture.image.width / texture.image.height
+      const planeAspect = PLANE_SIZE[0] / PLANE_SIZE[1]
+      // To prevent squishing, the visible window's aspect ratio must match the plane's aspect ratio.
+      // Since it fills the plane width (uRepeat.x = 1), we scale the height:
+      previewMaterial.uniforms.uRepeat.value.y = imgAspect / planeAspect
+    }
     return () => {
       previewMaterial.uniforms.uMap.value = null
     }
@@ -143,7 +150,11 @@ export default function Projector() {
     u.uOpacity.value = opacity
     u.uFlash.value = flash
     u.uBrightness.value = flicker * wrapFade
-    u.uOffset.value.y = SCROLL_RANGE * (1 - cycle)
+    
+    // Calculate scroll offset based on dynamic window size
+    const windowSize = u.uRepeat.value.y
+    const scrollRange = Math.max(0, 1 - windowSize) // Ensure it doesn't go negative if image is very short
+    u.uOffset.value.y = scrollRange * (1 - cycle)
 
     const strength = Math.max(opacity, flash)
     beamMaterial.uniforms.uTime.value = t

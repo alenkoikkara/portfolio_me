@@ -19,8 +19,8 @@ import { fileURLToPath } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_DIR = join(ROOT, 'public', 'previews')
 
-// Matches the capture used for the committed placeholders.
-const VIEWPORT = { width: 1280, height: 3200 }
+// Set viewport to standard desktop resolution (1920x1080)
+const VIEWPORT = { width: 1920, height: 1080 }
 const OUTPUT_WIDTH = 1024
 const QUALITY = 82
 
@@ -66,12 +66,45 @@ async function main() {
   for (const project of projects) {
     const slug = slugOf(project)
     try {
-      await page.goto(project.url, { waitUntil: 'networkidle', timeout: 45000 })
+      // Use 'load' instead of 'networkidle' because some sites have continuous background network activity that prevents networkidle
+      await page.goto(project.url, { waitUntil: 'load', timeout: 45000 })
       // Let entrance animations and lazy images settle before the shot.
       await page.waitForTimeout(2500)
+      
+      // Use native mouse wheel to scroll, which works better with virtual scrolling and WebGL
+      let currentScroll = 0
+      const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight)
+      const viewportHeight = VIEWPORT.height
+      const scrollStep = 500
+
+      while (currentScroll < maxScroll) {
+        await page.mouse.wheel(0, scrollStep)
+        currentScroll += scrollStep
+        // Wait to allow WebGL to render and animations to settle
+        await page.waitForTimeout(200)
+      }
+      
+      // Scroll back up quickly
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await page.waitForTimeout(1000)
+
       const png = await page.screenshot({ fullPage: true })
-      const webp = await sharp(png)
-        .resize({ width: OUTPUT_WIDTH, withoutEnlargement: true })
+      
+      let img = sharp(png)
+      const metadata = await img.metadata()
+      
+      const scale = OUTPUT_WIDTH / metadata.width
+      const expectedHeight = metadata.height * scale
+      
+      let resizeOpts = { width: OUTPUT_WIDTH, withoutEnlargement: true }
+      if (expectedHeight > 8192) {
+        resizeOpts.height = 8192
+        resizeOpts.fit = 'cover'
+        resizeOpts.position = 'top'
+      }
+
+      const webp = await img
+        .resize(resizeOpts)
         .webp({ quality: QUALITY })
         .toBuffer()
       await writeFile(join(OUT_DIR, `${slug}.webp`), webp)
