@@ -124,5 +124,47 @@ export const GENERATED_PHOTOS = [
     "src": "/photos/full/img20.webp",
     "thumb": "/photos/thumb/img20.webp",
     "aspect": 1.7783
+  },
+  {
+    "id": "img21",
+    "src": "/photos/full/img21.webp",
+    "thumb": "/photos/thumb/img21.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img22",
+    "src": "/photos/full/img22.webp",
+    "thumb": "/photos/thumb/img22.webp",
+    "aspect": 0.75
+  },
+  {
+    "id": "img23",
+    "src": "/photos/full/img23.webp",
+    "thumb": "/photos/thumb/img23.webp",
+    "aspect": 0.75
+  },
+  {
+    "id": "img24",
+    "src": "/photos/full/img24.webp",
+    "thumb": "/photos/thumb/img24.webp",
+    "aspect": 0.9507
+  },
+  {
+    "id": "img25",
+    "src": "/photos/full/img25.webp",
+    "thumb": "/photos/thumb/img25.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img26",
+    "src": "/photos/full/img26.webp",
+    "thumb": "/photos/thumb/img26.webp",
+    "aspect": 0.7499
+  },
+  {
+    "id": "img27",
+    "src": "/photos/full/img27.webp",
+    "thumb": "/photos/thumb/img27.webp",
+    "aspect": 1.3333
   }
 ]
