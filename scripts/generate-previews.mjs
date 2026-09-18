@@ -74,7 +74,6 @@ async function main() {
       // Use native mouse wheel to scroll, which works better with virtual scrolling and WebGL
       let currentScroll = 0
       const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight)
-      const viewportHeight = VIEWPORT.height
       const scrollStep = 500
 
       while (currentScroll < maxScroll) {

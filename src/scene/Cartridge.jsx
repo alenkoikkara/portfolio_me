@@ -111,9 +111,27 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
         tex.wrapT = THREE.ClampToEdgeWrapping
         tex.minFilter = THREE.LinearMipmapLinearFilter
         tex.generateMipmaps = true
-        // Show top portion of the screenshot (most representative)
-        tex.offset.set(0, 0)
-        tex.repeat.set(1, 0.3)
+        // Calculate cover-style cropping so images aren't squished
+        const imgAspect = tex.image.width / tex.image.height
+        const labelAspect = 1.333 // Approximate aspect ratio of the physical label
+
+        let repeatX = 1
+        let repeatY = 1
+        let offsetX = 0
+        let offsetY = 0
+
+        if (imgAspect > labelAspect) {
+          // Image is wider than label -> crop sides
+          repeatX = labelAspect / imgAspect
+          offsetX = (1 - repeatX) / 2 // center horizontally
+        } else {
+          // Image is taller than label -> crop bottom (since flipY = false, 0 is top)
+          repeatY = imgAspect / labelAspect
+          offsetY = 0 // start at top
+        }
+
+        tex.offset.set(offsetX, offsetY)
+        tex.repeat.set(repeatX, repeatY)
         gl.initTexture(tex)
         labelMat.map = tex
         labelMat.needsUpdate = true

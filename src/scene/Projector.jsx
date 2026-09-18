@@ -19,8 +19,6 @@ const LENS_POS = [-0.032, 0.007, -0.054]
 /* ─── Boot beat (ms) ─── */
 // Dark, then a single bright frame, then the image fades up. Without the dark
 // beat the insertion just cuts to a picture; with it, the projector warms up.
-const DARK_MS = 400
-const FLASH_MS = 90
 const FADE_IN_MS = 520
 const FADE_OUT_MS = 340
 
@@ -28,8 +26,6 @@ const FADE_OUT_MS = 340
 // Seconds to travel the screenshot once. The window shows 30% of the page, so
 // the visible range of the offset is 1 - 0.3.
 const SCROLL_PERIOD = 40
-const WINDOW = 0.3
-const SCROLL_RANGE = 1 - WINDOW
 
 /** Modes in which the preview texture is worth holding in memory. */
 const LIVE_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])

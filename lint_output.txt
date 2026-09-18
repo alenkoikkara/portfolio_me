@@ -1,0 +1,1000 @@
+
+> temp_app@0.0.0 lint
+> oxlint
+
+
+  ! eslint(no-unused-vars): Variable 'viewportHeight' is declared but never used. Unused variables should start with a '_'.
+    ,-[scripts/generate-previews.mjs:77:13]
+ 76 |       const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight)
+ 77 |       const viewportHeight = VIEWPORT.height
+    :             ^^^^^^^|^^^^^^
+    :                    `-- 'viewportHeight' is declared here
+ 78 |       const scrollStep = 500
+    `----
+  help: Consider removing this declaration.
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/scene/usePreviewTexture.js:28:7]
+ 25 | 
+ 26 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 27 |     if (!active || !url) {
+ 28 |       setEntry(null)
+    :       ^^^^|^^^
+    :           `-- Avoid calling setState() directly within an effect
+ 29 |       return undefined
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+    ,-[src/scene/Carousel.jsx:37:17]
+ 36 |  */
+ 37 | export function slotPose(i, focusedIndex, n = PROJECTS.length) {
+    :                 ^^^^^^^^
+ 38 |   // Raw offset, then take the shortest arc around the ring
+    `----
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/scene/Carousel.jsx:72:70]
+ 71 |   }, [mode])
+ 72 |   const crossedHandoff = ACTIVE_MODES.has(mode) !== ACTIVE_MODES.has(prevMode.current)
+    :                                                                      ^^^^^^^^|^^^^^^^
+    :                                                                              `-- Passing a ref to a function may read its value during render
+ 73 | 
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! eslint(no-unused-vars): Identifier 'fs' is imported but never used.
+   ,-[parse_glb.js:1:8]
+ 1 | import fs from 'fs';
+   :        ^|
+   :         `-- 'fs' is imported here
+ 2 | import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'GLTFLoader' is imported but never used.
+   ,-[parse_glb.js:2:10]
+ 1 | import fs from 'fs';
+ 2 | import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+   :          ^^^^^|^^^^
+   :               `-- 'GLTFLoader' is imported here
+ 3 | // To run in node, we'd need headless gl, easier to just use standard gltf parsing tools, but three doesn't run in pure node without mocking.
+   `----
+  help: Consider removing this import.
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/components/LightingSetup.jsx:76:5]
+ 60 | export default function LightingSetup() {
+ 61 |   const { gl, scene } = useThree()
+    :               ^^|^^
+    :                 `-- `scene` originates here
+ 62 |   
+ 63 |   const shadowGroupRef = useRef()
+ 64 |   // Base opacity of each shadow material, so the fade scales what was authored
+ 65 |   // rather than overwriting it.
+ 66 |   const shadowBase = useRef(null)
+ 67 | 
+ 68 |   const keyLightRef = useRef()
+ 69 |   const rimLightRef = useRef()
+ 70 |   const fillLightRef = useRef()
+ 71 |   
+ 72 |   const mode = useDeviceStore(s => s.mode)
+ 73 | 
+ 74 |   // Seed to idle values on first mount so useFrame has no gap to snap through
+ 75 |   React.useEffect(() => {
+ 76 |     scene.environmentIntensity = 1.6
+    :     ^^|^^
+    :       `-- `scene` cannot be modified
+ 77 |     gl.toneMappingExposure = 1.15
+    `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/components/LightingSetup.jsx:77:5]
+ 60 | export default function LightingSetup() {
+ 61 |   const { gl, scene } = useThree()
+    :           ^|
+    :            `-- `gl` originates here
+ 62 |   
+ 63 |   const shadowGroupRef = useRef()
+ 64 |   // Base opacity of each shadow material, so the fade scales what was authored
+ 65 |   // rather than overwriting it.
+ 66 |   const shadowBase = useRef(null)
+ 67 | 
+ 68 |   const keyLightRef = useRef()
+ 69 |   const rimLightRef = useRef()
+ 70 |   const fillLightRef = useRef()
+ 71 |   
+ 72 |   const mode = useDeviceStore(s => s.mode)
+ 73 | 
+ 74 |   // Seed to idle values on first mount so useFrame has no gap to snap through
+ 75 |   React.useEffect(() => {
+ 76 |     scene.environmentIntensity = 1.6
+ 77 |     gl.toneMappingExposure = 1.15
+    :     ^|
+    :      `-- `gl` cannot be modified
+ 78 |   }, [])
+    `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/components/LightingSetup.jsx:99:5]
+  60 | export default function LightingSetup() {
+  61 |   const { gl, scene } = useThree()
+     :           ^|
+     :            `-- `gl` originates here
+  62 |   
+  63 |   const shadowGroupRef = useRef()
+  64 |   // Base opacity of each shadow material, so the fade scales what was authored
+  65 |   // rather than overwriting it.
+  66 |   const shadowBase = useRef(null)
+  67 | 
+  68 |   const keyLightRef = useRef()
+  69 |   const rimLightRef = useRef()
+  70 |   const fillLightRef = useRef()
+  71 |   
+  72 |   const mode = useDeviceStore(s => s.mode)
+  73 | 
+  74 |   // Seed to idle values on first mount so useFrame has no gap to snap through
+  75 |   React.useEffect(() => {
+  76 |     scene.environmentIntensity = 1.6
+  77 |     gl.toneMappingExposure = 1.15
+  78 |   }, [])
+  79 |   
+  80 |   useFrame((state, delta) => {
+  81 |     const step = Math.min(delta, MAX_LIGHT_STEP)
+  82 |     const inGallery = GALLERY_MODES.has(mode)
+  83 |     const isProjecting = mode !== 'IDLE'
+  84 | 
+  85 |     /*
+  86 |      * The gallery is a different room. These three lights are aimed at a device
+  87 |      * 92 mm across and are directional, so they reach the wall five metres away
+  88 |      * as well — at full strength they flatten it from head-on and cancel the
+  89 |      * grazing light the wall hangs its own depth on. They go out, and the wall
+  90 |      * lights itself. The environment stays part-way up so the prints keep a
+  91 |      * little reflected room light in them rather than going matte.
+  92 |      */
+  93 |     const targetExposure = inGallery ? 1.0 : isProjecting ? 0.75 : 1.15
+  94 |     const targetEnvIntensity = inGallery ? 0.5 : isProjecting ? 0.6 : 1.6
+  95 |     const targetKey = inGallery ? 0 : isProjecting ? 1.2 : 3.4
+  96 |     const targetRim = inGallery ? 0 : isProjecting ? 0.6 : 1.8
+  97 |     const targetFill = inGallery ? 0 : isProjecting ? 0.15 : 0.45
+  98 | 
+  99 |     gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, step)
+     :     ^|
+     :      `-- `gl` cannot be modified
+ 100 |     
+     `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/components/LightingSetup.jsx:103:7]
+  60 | export default function LightingSetup() {
+  61 |   const { gl, scene } = useThree()
+     :               ^^|^^
+     :                 `-- `scene` originates here
+  62 |   
+  63 |   const shadowGroupRef = useRef()
+  64 |   // Base opacity of each shadow material, so the fade scales what was authored
+  65 |   // rather than overwriting it.
+  66 |   const shadowBase = useRef(null)
+  67 | 
+  68 |   const keyLightRef = useRef()
+  69 |   const rimLightRef = useRef()
+  70 |   const fillLightRef = useRef()
+  71 |   
+  72 |   const mode = useDeviceStore(s => s.mode)
+  73 | 
+  74 |   // Seed to idle values on first mount so useFrame has no gap to snap through
+  75 |   React.useEffect(() => {
+  76 |     scene.environmentIntensity = 1.6
+  77 |     gl.toneMappingExposure = 1.15
+  78 |   }, [])
+  79 |   
+  80 |   useFrame((state, delta) => {
+  81 |     const step = Math.min(delta, MAX_LIGHT_STEP)
+  82 |     const inGallery = GALLERY_MODES.has(mode)
+  83 |     const isProjecting = mode !== 'IDLE'
+  84 | 
+  85 |     /*
+  86 |      * The gallery is a different room. These three lights are aimed at a device
+  87 |      * 92 mm across and are directional, so they reach the wall five metres away
+  88 |      * as well — at full strength they flatten it from head-on and cancel the
+  89 |      * grazing light the wall hangs its own depth on. They go out, and the wall
+  90 |      * lights itself. The environment stays part-way up so the prints keep a
+  91 |      * little reflected room light in them rather than going matte.
+  92 |      */
+  93 |     const targetExposure = inGallery ? 1.0 : isProjecting ? 0.75 : 1.15
+  94 |     const targetEnvIntensity = inGallery ? 0.5 : isProjecting ? 0.6 : 1.6
+  95 |     const targetKey = inGallery ? 0 : isProjecting ? 1.2 : 3.4
+  96 |     const targetRim = inGallery ? 0 : isProjecting ? 0.6 : 1.8
+  97 |     const targetFill = inGallery ? 0 : isProjecting ? 0.15 : 0.45
+  98 | 
+  99 |     gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, step)
+ 100 |     
+ 101 |     // Animate environment intensity if supported (R3F environment)
+ 102 |     if (scene.environmentIntensity !== undefined) {
+ 103 |       scene.environmentIntensity = THREE.MathUtils.damp(scene.environmentIntensity, targetEnvIntensity, 4, step)
+     :       ^^|^^
+     :         `-- `scene` cannot be modified
+ 104 |     }
+     `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): Cannot modify local variables after render completes
+     ,-[src/components/LightingSetup.jsx:99:5]
+  79 |   
+  80 |   useFrame((state, delta) => {
+     :            ^^^^^^^^^|^^^^^^^^^
+     :                     `-- This function may (indirectly) reassign or modify `gl` after render
+  81 |     const step = Math.min(delta, MAX_LIGHT_STEP)
+  82 |     const inGallery = GALLERY_MODES.has(mode)
+  83 |     const isProjecting = mode !== 'IDLE'
+  84 | 
+  85 |     /*
+  86 |      * The gallery is a different room. These three lights are aimed at a device
+  87 |      * 92 mm across and are directional, so they reach the wall five metres away
+  88 |      * as well — at full strength they flatten it from head-on and cancel the
+  89 |      * grazing light the wall hangs its own depth on. They go out, and the wall
+  90 |      * lights itself. The environment stays part-way up so the prints keep a
+  91 |      * little reflected room light in them rather than going matte.
+  92 |      */
+  93 |     const targetExposure = inGallery ? 1.0 : isProjecting ? 0.75 : 1.15
+  94 |     const targetEnvIntensity = inGallery ? 0.5 : isProjecting ? 0.6 : 1.6
+  95 |     const targetKey = inGallery ? 0 : isProjecting ? 1.2 : 3.4
+  96 |     const targetRim = inGallery ? 0 : isProjecting ? 0.6 : 1.8
+  97 |     const targetFill = inGallery ? 0 : isProjecting ? 0.15 : 0.45
+  98 | 
+  99 |     gl.toneMappingExposure = THREE.MathUtils.damp(gl.toneMappingExposure, targetExposure, 4, step)
+     :     ^|
+     :      `-- This modifies `gl`
+ 100 |     
+     `----
+  help: This argument is a function which may reassign or mutate `gl` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+    ,-[src/components/LightingSetup.jsx:10:14]
+  9 | const S = 1;
+ 10 | export const CONFIG = {
+    :              ^^^^^^
+ 11 |   studio: {
+    `----
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'scene.environmentIntensity', and 'gl.toneMappingExposure'
+    ,-[src/components/LightingSetup.jsx:78:6]
+ 75 |   React.useEffect(() => {
+ 76 |     scene.environmentIntensity = 1.6
+    :     ^^^^^
+ 77 |     gl.toneMappingExposure = 1.15
+    :     ^^
+ 78 |   }, [])
+    :      ^^
+ 79 |   
+    `----
+  help: Either include it or remove the dependency array.
+
+  ! eslint(no-unused-vars): Variable 'DARK_MS' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/scene/Projector.jsx:22:7]
+ 21 | // beat the insertion just cuts to a picture; with it, the projector warms up.
+ 22 | const DARK_MS = 400
+    :       ^^^|^^^
+    :          `-- 'DARK_MS' is declared here
+ 23 | const FLASH_MS = 90
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'FLASH_MS' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/scene/Projector.jsx:23:7]
+ 22 | const DARK_MS = 400
+ 23 | const FLASH_MS = 90
+    :       ^^^^|^^^
+    :           `-- 'FLASH_MS' is declared here
+ 24 | const FADE_IN_MS = 520
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'SCROLL_RANGE' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/scene/Projector.jsx:32:7]
+ 31 | const WINDOW = 0.3
+ 32 | const SCROLL_RANGE = 1 - WINDOW
+    :       ^^^^^^|^^^^^
+    :             `-- 'SCROLL_RANGE' is declared here
+ 33 | 
+    `----
+  help: Consider removing this declaration.
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Projector.jsx:62:5]
+ 51 |   const noise = useMemo(() => makeNoiseTexture(), [])
+ 52 |   const previewMaterial = useMemo(() => makePreviewMaterial(noise), [noise])
+    :         ^^^^^^^|^^^^^^^
+    :                `-- `previewMaterial` originates here
+ 53 |   const beamMaterial = useMemo(() => makeBeamMaterial(noise), [noise])
+ 54 | 
+ 55 |   useEffect(() => () => {
+ 56 |     noise.dispose()
+ 57 |     previewMaterial.dispose()
+ 58 |     beamMaterial.dispose()
+ 59 |   }, [noise, previewMaterial, beamMaterial])
+ 60 | 
+ 61 |   useEffect(() => {
+ 62 |     previewMaterial.uniforms.uMap.value = texture
+    :     ^^^^^^^^^^^^^^|^^^^^^^^^^^^^^
+    :                   `-- `previewMaterial` cannot be modified
+ 63 |     if (texture && texture.image) {
+    `----
+  help: Modifying a value previously passed as an argument to a hook is not allowed. Consider moving the modification before calling the hook
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Projector.jsx:52:9]
+ 51 |   const noise = useMemo(() => makeNoiseTexture(), [])
+ 52 |   const previewMaterial = useMemo(() => makePreviewMaterial(noise), [noise])
+    :         ^^^^^^^|^^^^^^^
+    :                `-- `previewMaterial` originates here
+ 53 |   const beamMaterial = useMemo(() => makeBeamMaterial(noise), [noise])
+    `----
+     ,-[src/scene/Projector.jsx:149:5]
+ 148 |     const u = previewMaterial.uniforms
+ 149 |     u.uTime.value = t
+     :     ^^^|^^^
+     :        `-- `previewMaterial` cannot be modified
+ 150 |     u.uOpacity.value = opacity
+     `----
+  help: Modifying a value previously passed as an argument to a hook is not allowed. Consider moving the modification before calling the hook
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Projector.jsx:53:9]
+ 52 |   const previewMaterial = useMemo(() => makePreviewMaterial(noise), [noise])
+ 53 |   const beamMaterial = useMemo(() => makeBeamMaterial(noise), [noise])
+    :         ^^^^^^|^^^^^
+    :               `-- `beamMaterial` originates here
+ 54 | 
+    `----
+     ,-[src/scene/Projector.jsx:160:5]
+ 159 |     const strength = Math.max(opacity, flash)
+ 160 |     beamMaterial.uniforms.uTime.value = t
+     :     ^^^^^^^^^^^^^|^^^^^^^^^^^^^
+     :                  `-- `beamMaterial` cannot be modified
+ 161 |     beamMaterial.uniforms.uStrength.value = strength
+     `----
+  help: Modifying a value previously passed as an argument to a hook is not allowed. Consider moving the modification before calling the hook
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): Cannot modify local variables after render completes
+     ,-[src/scene/Projector.jsx:149:5]
+ 124 | 
+ 125 |   useFrame(({ clock }) => {
+     :            ^^^^^^^^|^^^^^^^
+     :                    `-- This function may (indirectly) reassign or modify `previewMaterial` after render
+ 126 |     const t = clock.elapsedTime
+ 127 |     const elapsed = performance.now() - boot.current.start
+ 128 | 
+ 129 |     let opacity = 0
+ 130 |     let flash = 0
+ 131 | 
+ 132 |     if (boot.current.on) {
+ 133 |       opacity = Math.min(1, elapsed / FADE_IN_MS)
+ 134 |     } else {
+ 135 |       opacity = Math.max(0, boot.current.from * (1 - elapsed / FADE_OUT_MS))
+ 136 |     }
+ 137 |     opacityRef.current = opacity
+ 138 | 
+ 139 |     // Scroll the window down the page, dipping to black at the wrap so the
+ 140 |     // jump from the bottom of the page back to the top is never seen.
+ 141 |     const cycle = (t % SCROLL_PERIOD) / SCROLL_PERIOD
+ 142 |     const wrapFade =
+ 143 |       Math.min(1, cycle / 0.04) * (1 - THREE.MathUtils.smoothstep(cycle, 0.95, 1))
+ 144 | 
+ 145 |     // Shutter flicker: real projectors dim for a frame as the blade passes.
+ 146 |     const flicker = Math.sin(t * 60) > 0.98 ? 0.7 : 1
+ 147 | 
+ 148 |     const u = previewMaterial.uniforms
+ 149 |     u.uTime.value = t
+     :     ^^^|^^^
+     :        `-- This modifies `previewMaterial`
+ 150 |     u.uOpacity.value = opacity
+     `----
+  help: This argument is a function which may reassign or mutate `previewMaterial` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Stage.jsx:96:5]
+ 95 |   if (import.meta.env.DEV) {
+ 96 |     window.__gl = gl
+    :     ^^^|^^
+    :        `-- value cannot be modified
+ 97 |     window.__scene = scene
+    `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Stage.jsx:97:5]
+ 96 |     window.__gl = gl
+ 97 |     window.__scene = scene
+    :     ^^^|^^
+    :        `-- value cannot be modified
+ 98 |     window.__camera = camera
+    `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+    ,-[src/scene/Stage.jsx:98:5]
+ 97 |     window.__scene = scene
+ 98 |     window.__camera = camera
+    :     ^^^|^^
+    :        `-- value cannot be modified
+ 99 |     window.PROJECT_IDS = PROJECTS.map((p) => p.id)
+    `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Stage.jsx:99:5]
+  98 |     window.__camera = camera
+  99 |     window.PROJECT_IDS = PROJECTS.map((p) => p.id)
+     :     ^^^|^^
+     :        `-- value cannot be modified
+ 100 |     window.PHOTO_IDS = PHOTOS.map((p) => p.id)
+     `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Stage.jsx:100:5]
+  99 |     window.PROJECT_IDS = PROJECTS.map((p) => p.id)
+ 100 |     window.PHOTO_IDS = PHOTOS.map((p) => p.id)
+     :     ^^^|^^
+     :        `-- value cannot be modified
+ 101 |   }
+     `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Stage.jsx:117:5]
+  91 |   // switching projects, which is where preview textures would leak.
+  92 |   const gl = useThree((s) => s.gl)
+     :         ^|
+     :          `-- `gl` originates here
+  93 |   const scene = useThree((s) => s.scene)
+  94 |   const camera = useThree((s) => s.camera)
+  95 |   if (import.meta.env.DEV) {
+  96 |     window.__gl = gl
+  97 |     window.__scene = scene
+  98 |     window.__camera = camera
+  99 |     window.PROJECT_IDS = PROJECTS.map((p) => p.id)
+ 100 |     window.PHOTO_IDS = PHOTOS.map((p) => p.id)
+ 101 |   }
+ 102 | 
+ 103 |   /*
+ 104 |    * Let shader programs link without blocking the frame.
+ 105 |    *
+ 106 |    * After every link three asks the driver for the program's info log, and
+ 107 |    * that question forces the driver to finish linking before it can answer.
+ 108 |    * The cartridge materials all reach the scene in the single frame the
+ 109 |    * carousel opens, so the whole batch links synchronously there and the
+ 110 |    * transition stutters. Skipping the log lets drivers link in parallel and
+ 111 |    * hands the frame back immediately.
+ 112 |    *
+ 113 |    * The log is how a broken shader reports itself, and this scene has custom
+ 114 |    * GLSL, so the check stays on in development and is only skipped in builds.
+ 115 |    */
+ 116 |   useEffect(() => {
+ 117 |     gl.debug.checkShaderErrors = import.meta.env.DEV
+     :     ^^^^|^^^
+     :         `-- `gl` cannot be modified
+ 118 |   }, [gl])
+     `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! eslint(no-unused-vars): Variable 'actions' is declared but never used. Unused variables should start with a '_'.
+    ,-[temp.jsx:12:11]
+ 11 |   const { nodes, materials, animations } = useGLTF('/device.glb')
+ 12 |   const { actions } = useAnimations(animations, group)
+    :           ^^^|^^^
+    :              `-- 'actions' is declared here
+ 13 |   return (
+    `----
+  help: Consider removing this declaration.
+
+  ! react-hooks(exhaustive-deps): React Hook useMemo has missing dependencies: 'activeProject.color', 'activeProject.inkColor', and 'activeProject'
+     ,-[src/scene/ActiveCartridge.jsx:103:6]
+  74 |   const { instance, labelMat } = useMemo(() => {
+  75 |     if (!activeProject) return { instance: null, labelMat: null }
+     :          ^^^^^^^^^^^^^
+  76 |     const clone = SkeletonUtils.clone(scene)
+  77 |     let foundLabelMat = null
+  78 |     clone.traverse((o) => {
+  79 |       if (!o.isMesh) return
+  80 |       o.castShadow = false
+  81 |       o.receiveShadow = false
+  82 |       o.frustumCulled = false
+  83 |       o.material = o.material.clone()
+  84 |       o.material.transparent = true
+  85 |       o.material.depthWrite = true
+  86 |       o.material.needsUpdate = true
+  87 |       if (o.material.name === 'Cartridge_Shell') {
+  88 |         o.material.color.set(activeProject.color)
+     :                              ^^^^^^^^^^^^^
+  89 |         o.material.roughness = 0.88
+  90 |         o.material.metalness = 0.0
+  91 |         o.material.envMapIntensity = 0.3
+  92 |       } else if (o.material.name === 'Cartridge_Text') {
+  93 |         o.material.color.set(activeProject.inkColor ?? '#181A1C')
+     :                              ^^^^^^^^^^^^^
+  94 |         o.material.roughness = 0.92
+  95 |         o.material.metalness = 0.0
+  96 |       } else if (o.material.name === 'Cartridge_Label') {
+  97 |         foundLabelMat = o.material
+  98 |         o.material.roughness = 0.75
+  99 |         o.material.metalness = 0.0
+ 100 |       }
+ 101 |     })
+ 102 |     return { instance: clone, labelMat: foundLabelMat }
+ 103 |   }, [scene, activeProject?.id])
+     :      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 104 | 
+     `----
+  help: Either include it or remove the dependency array.
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has a complex expression in the dependency array.
+     ,-[src/scene/ActiveCartridge.jsx:153:7]
+ 152 |     anim.targetPos.copy(carouselPos).add(new THREE.Vector3(0, LIFT_HEIGHT, 0))
+ 153 |   }, [mode === 'INSERTING'])
+     :       ^^^^^^^^^^^^^^^^^^^^
+ 154 | 
+     `----
+  help: Extract the expression to a separate variable so it can be statically checked.
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'focusedIndex', and 'mode'
+     ,-[src/scene/ActiveCartridge.jsx:153:6]
+ 136 |   useEffect(() => {
+ 137 |     if (mode !== 'INSERTING' || !groupRef.current) return
+     :         ^^^^
+ 138 | 
+ 139 |     const anim = animRef.current
+ 140 |     const carouselPos = carouselWorldPos(focusedIndex, focusedIndex)
+     :                                          ^^^^^^^^^^^^
+ 141 |     anim.carouselPos.copy(carouselPos)
+ 142 | 
+ 143 |     // Position at carousel slot, lying flat with contacts towards the device
+ 144 |     groupRef.current.position.copy(carouselPos)
+ 145 |     groupRef.current.rotation.set(0, 0, 0)
+ 146 | 
+ 147 |     // Start lift stage: pick the cartridge up towards the camera
+ 148 |     playCartridgeLift()
+ 149 |     anim.stage = 'lift'
+ 150 |     anim.startTime = performance.now()
+ 151 |     anim.startPos.copy(carouselPos)
+ 152 |     anim.targetPos.copy(carouselPos).add(new THREE.Vector3(0, LIFT_HEIGHT, 0))
+ 153 |   }, [mode === 'INSERTING'])
+     :      ^^^^^^^^^^^^^^^^^^^^^^
+ 154 | 
+     `----
+  help: Either include it or remove the dependency array.
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has a complex expression in the dependency array.
+     ,-[src/scene/ActiveCartridge.jsx:169:7]
+ 168 |     anim.targetPos.copy(groupRef.current.position).setZ(anim.alignZ).add(new THREE.Vector3(0, LIFT_HEIGHT, 0))
+ 169 |   }, [mode === 'EJECTING'])
+     :       ^^^^^^^^^^^^^^^^^^^
+ 170 | 
+     `----
+  help: Extract the expression to a separate variable so it can be statically checked.
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has missing dependencies: 'focusedIndex', and 'mode'
+     ,-[src/scene/ActiveCartridge.jsx:169:6]
+ 156 |   useEffect(() => {
+ 157 |     if (mode !== 'EJECTING' || !groupRef.current) return
+     :         ^^^^
+ 158 | 
+ 159 |     const anim = animRef.current
+ 160 |     const carouselPos = carouselWorldPos(focusedIndex, focusedIndex)
+     :                                          ^^^^^^^^^^^^
+ 161 |     anim.carouselPos.copy(carouselPos)
+ 162 | 
+ 163 |     playCartridgeRelease()
+ 164 |     anim.stage = 'pull'
+ 165 |     anim.startTime = performance.now()
+ 166 |     anim.startPos.copy(groupRef.current.position)
+ 167 |     // Pull target: back out of the slot to the aligned position, then lift
+ 168 |     anim.targetPos.copy(groupRef.current.position).setZ(anim.alignZ).add(new THREE.Vector3(0, LIFT_HEIGHT, 0))
+ 169 |   }, [mode === 'EJECTING'])
+     :      ^^^^^^^^^^^^^^^^^^^^^
+ 170 | 
+     `----
+  help: Either include it or remove the dependency array.
+
+  ! react-hooks(exhaustive-deps): React Hook useMemo has missing dependencies: 'project.inkColor', and 'project.color'
+    ,-[src/scene/Cartridge.jsx:87:6]
+ 71 |       if (m.name === 'Cartridge_Shell') {
+ 72 |         m.color.set(project.color)
+    :                     ^^^^^^^
+ 73 |         m.roughness = 0.88
+ 74 |         m.metalness = 0.0
+ 75 |         m.envMapIntensity = 0.3
+ 76 |       } else if (m.name === 'Cartridge_Text') {
+ 77 |         m.color.set(project.inkColor ?? '#181A1C')
+    :                     ^^^^^^^
+ 78 |         m.roughness = 0.92
+ 79 |         m.metalness = 0.0
+ 80 |       } else if (m.name === 'Cartridge_Label') {
+ 81 |         foundLabelMat = m
+ 82 |         m.roughness = 0.75
+ 83 |         m.metalness = 0.0
+ 84 |       }
+ 85 |     })
+ 86 |     return { instance: clone, labelMat: foundLabelMat }
+ 87 |   }, [scene, project.id])
+    :      ^^^^^^^^^^^^^^^^^^^
+ 88 | 
+    `----
+  help: Either include it or remove the dependency array.
+
+  ! react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: project.id
+    ,-[src/scene/Cartridge.jsx:87:6]
+ 86 |     return { instance: clone, labelMat: foundLabelMat }
+ 87 |   }, [scene, project.id])
+    :      ^^^^^^^^^^^^^^^^^^^
+ 88 | 
+    `----
+  help: Either include it or remove the dependency array.
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Gallery.jsx:295:5]
+ 294 |   if (import.meta.env.DEV) {
+ 295 |     window.__gallery = { prints, bounds, range, target, inFrame, distance }
+     :     ^^^|^^
+     :        `-- value cannot be modified
+ 296 |   }
+     `----
+  help: Modifying a variable defined outside a component or hook is not allowed. Consider using an effect
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/scene/Gallery.jsx:94:8]
+ 93 |   const target = useRef(null)
+ 94 |   if (!target.current) {
+    :        ^^^^^^^|^^^^^^
+    :               `-- Cannot access ref value during render
+ 95 |     target.current = { x: (range.minX + range.maxX) / 2, y: range.maxY }
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Device.jsx:316:5]
+ 306 |   // Keep Blender's horizontal FOV regardless of window shape
+ 307 |   const { size, camera } = useThree()
+     :                 ^^^|^^
+     :                    `-- `camera` originates here
+ 308 |   useEffect(() => {
+ 309 |     // `camera` is whichever camera is currently default, and in the gallery
+ 310 |     // that is the wall's own — which wants its own field of view, not the one
+ 311 |     // framing a 92 mm device.
+ 312 |     if (inGallery) return
+ 313 |     const aspect = size.width / size.height
+ 314 |     const hfov = THREE.MathUtils.degToRad(CAM_HFOV)
+ 315 |     const vfov = 2 * Math.atan(Math.tan(hfov / 2) / Math.max(aspect, 0.0001))
+ 316 |     camera.fov = THREE.MathUtils.radToDeg(vfov)
+     :     ^^^|^^
+     :        `-- `camera` cannot be modified
+ 317 |     camera.updateProjectionMatrix()
+     `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): This value cannot be modified
+     ,-[src/scene/Device.jsx:455:7]
+ 319 | 
+ 320 |   const { nodes, materials, animations } = useGLTF(deviceGlb)
+     :                  ^^^^|^^^^
+     :                      `-- `materials` originates here
+ 321 |   const { actions, names, mixer } = useAnimations(animations, group)
+ 322 | 
+ 323 |   // Play all intro clips
+ 324 |   useEffect(() => {
+ 325 |     if (names && names.length > 0) {
+ 326 |       let finishedCount = 0
+ 327 | 
+ 328 |       names.forEach((name) => {
+ 329 |         const action = actions[name]
+ 330 |         action.setLoop(LoopOnce)
+ 331 |         action.clampWhenFinished = true
+ 332 |         action.play()
+ 333 |       })
+ 334 | 
+ 335 |       const onFinished = () => {
+ 336 |         finishedCount++
+ 337 |         if (finishedCount === names.length) {
+ 338 |           setIntroDone(true)
+ 339 |           markIntroDone()
+ 340 |         }
+ 341 |       }
+ 342 | 
+ 343 |       mixer.addEventListener('finished', onFinished)
+ 344 |       return () => mixer.removeEventListener('finished', onFinished)
+ 345 |     } else {
+ 346 |       setIntroDone(true)
+ 347 |       markIntroDone()
+ 348 |     }
+ 349 |   }, [actions, names, mixer])
+ 350 | 
+ 351 |   // Projects key toggle handler
+ 352 |   const handleProjectsKey = useCallback(() => {
+ 353 |     if (mode === 'IDLE') {
+ 354 |       openCarousel()
+ 355 |     } else if (mode === 'BROWSING') {
+ 356 |       closeCarousel()
+ 357 |     }
+ 358 |   }, [mode, openCarousel, closeCarousel])
+ 359 | 
+ 360 |   // Photography key handler
+ 361 |   const handlePhotographyKey = useCallback(() => {
+ 362 |     if (mode === 'IDLE') openGallery()
+ 363 |   }, [mode, openGallery])
+ 364 | 
+ 365 |   // Eject button handler
+ 366 |   const handleEject = useCallback((e) => {
+ 367 |     e.stopPropagation()
+ 368 |     playMechanicalClick()
+ 369 |     eject()
+ 370 |   }, [eject])
+ 371 | 
+ 372 |   // Eject button hover
+ 373 |   const handleEjectPointerOver = useCallback((e) => {
+ 374 |     if (!introDone || mode !== 'PROJECTING') return
+ 375 |     e.stopPropagation()
+ 376 |     document.body.style.cursor = 'pointer'
+ 377 |   }, [introDone, mode])
+ 378 | 
+ 379 |   const handleEjectPointerOut = useCallback((e) => {
+ 380 |     e.stopPropagation()
+ 381 |     document.body.style.cursor = 'auto'
+ 382 |   }, [])
+ 383 | 
+ 384 |   // Camera cinematic + screen flicker + elastic snap-back + explode view
+ 385 |   useFrame((state, delta) => {
+ 386 |     const step = Math.min(delta, MAX_EASE_STEP)
+ 387 | 
+ 388 |     /*
+ 389 |      * 0. Fade the device out for the gallery, and back in on the way home.
+ 390 |      *
+ 391 |      * The device is hidden for all three gallery modes. The camera only comes
+ 392 |      * back to the desk once the wall has faded out, so the device has to still
+ 393 |      * be gone at that moment; it fades back in on IDLE, in step with the stage
+ 394 |      * lights coming up.
+ 395 |      */
+ 396 |     if (group.current) {
+ 397 |       if (!fadeMaterials.current) {
+ 398 |         const seen = new Map()
+ 399 |         group.current.traverse((o) => {
+ 400 |           if (o.isMesh && o.material) seen.set(o.material, o.material.transparent)
+ 401 |         })
+ 402 |         fadeMaterials.current = [...seen].map(([material, transparent]) => ({ material, transparent }))
+ 403 |       }
+ 404 | 
+ 405 |       const target = inGallery ? 0 : 1
+ 406 |       const travel = step / DEVICE_FADE_SECONDS
+ 407 |       const fade = target > deviceFade.value
+ 408 |         ? Math.min(target, deviceFade.value + travel)
+ 409 |         : Math.max(target, deviceFade.value - travel)
+ 410 |       deviceFade.value = fade
+ 411 | 
+ 412 |       for (const { material, transparent } of fadeMaterials.current) {
+ 413 |         if (fade >= 1) {
+ 414 |           material.opacity = 1
+ 415 |           material.transparent = transparent
+ 416 |         } else {
+ 417 |           material.transparent = true
+ 418 |           material.opacity = fade
+ 419 |         }
+ 420 |       }
+ 421 |       // Out of the scene once invisible: the shadow pass renders depth and
+ 422 |       // ignores opacity, so a fully transparent device would still cast.
+ 423 |       group.current.visible = fade > 0
+ 424 | 
+ 425 |       /*
+ 426 |        * The fade hands the camera over, rather than a timer doing it.
+ 427 |        *
+ 428 |        * This is the same rule the cartridge follows: the animation reports that
+ 429 |        * it finished, so a slow machine cannot advance the mode before the thing
+ 430 |        * has actually happened. Timing it from outside meant the wall could take
+ 431 |        * the camera while the device was still half on screen, and the device
+ 432 |        * then vanished mid-cut. The guard inside the action makes the repeated
+ 433 |        * call a no-op.
+ 434 |        */
+ 435 |       if (fade === 0 && mode === 'OPENING_GALLERY') galleryOpened()
+ 436 |     }
+ 437 | 
+ 438 |     // 1. Camera cinematic intro
+ 439 |     if (!introDone && !inGallery) {
+ 440 |       introElapsedRef.current += delta
+ 441 |       sampleCamPath(introElapsedRef.current, state.camera.position)
+ 442 |       state.camera.lookAt(...CAM_TARGET)
+ 443 |     }
+ 444 | 
+ 445 |     // 2. Screen glow flicker
+ 446 |     if (materials.ScreenText) {
+ 447 |       const t = state.clock.elapsedTime
+ 448 |       let glow = 0
+ 449 | 
+ 450 |       if (t > 0.5 && t < 0.6) glow = 0.4
+ 451 |       else if (t > 0.7 && t < 0.8) glow = 0.7
+ 452 |       else if (t > 0.9 && t < 0.95) glow = 0.2
+ 453 |       else if (t > 1.1) glow = Math.min(1.0, (t - 1.1) * 2)
+ 454 | 
+ 455 |       materials.ScreenText.emissiveIntensity = glow
+     :       ^^^^^^^^^^|^^^^^^^^^
+     :                 `-- `materials` cannot be modified
+ 456 |       materials.ScreenText.emissive.setHex(0xffffff)
+     `----
+  help: Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(immutability): Cannot modify local variables after render completes
+     ,-[src/scene/Device.jsx:455:7]
+ 384 |   // Camera cinematic + screen flicker + elastic snap-back + explode view
+ 385 |   useFrame((state, delta) => {
+     :            ^^^^^^^^^|^^^^^^^^^
+     :                     `-- This function may (indirectly) reassign or modify `materials` after render
+ 386 |     const step = Math.min(delta, MAX_EASE_STEP)
+ 387 | 
+ 388 |     /*
+ 389 |      * 0. Fade the device out for the gallery, and back in on the way home.
+ 390 |      *
+ 391 |      * The device is hidden for all three gallery modes. The camera only comes
+ 392 |      * back to the desk once the wall has faded out, so the device has to still
+ 393 |      * be gone at that moment; it fades back in on IDLE, in step with the stage
+ 394 |      * lights coming up.
+ 395 |      */
+ 396 |     if (group.current) {
+ 397 |       if (!fadeMaterials.current) {
+ 398 |         const seen = new Map()
+ 399 |         group.current.traverse((o) => {
+ 400 |           if (o.isMesh && o.material) seen.set(o.material, o.material.transparent)
+ 401 |         })
+ 402 |         fadeMaterials.current = [...seen].map(([material, transparent]) => ({ material, transparent }))
+ 403 |       }
+ 404 | 
+ 405 |       const target = inGallery ? 0 : 1
+ 406 |       const travel = step / DEVICE_FADE_SECONDS
+ 407 |       const fade = target > deviceFade.value
+ 408 |         ? Math.min(target, deviceFade.value + travel)
+ 409 |         : Math.max(target, deviceFade.value - travel)
+ 410 |       deviceFade.value = fade
+ 411 | 
+ 412 |       for (const { material, transparent } of fadeMaterials.current) {
+ 413 |         if (fade >= 1) {
+ 414 |           material.opacity = 1
+ 415 |           material.transparent = transparent
+ 416 |         } else {
+ 417 |           material.transparent = true
+ 418 |           material.opacity = fade
+ 419 |         }
+ 420 |       }
+ 421 |       // Out of the scene once invisible: the shadow pass renders depth and
+ 422 |       // ignores opacity, so a fully transparent device would still cast.
+ 423 |       group.current.visible = fade > 0
+ 424 | 
+ 425 |       /*
+ 426 |        * The fade hands the camera over, rather than a timer doing it.
+ 427 |        *
+ 428 |        * This is the same rule the cartridge follows: the animation reports that
+ 429 |        * it finished, so a slow machine cannot advance the mode before the thing
+ 430 |        * has actually happened. Timing it from outside meant the wall could take
+ 431 |        * the camera while the device was still half on screen, and the device
+ 432 |        * then vanished mid-cut. The guard inside the action makes the repeated
+ 433 |        * call a no-op.
+ 434 |        */
+ 435 |       if (fade === 0 && mode === 'OPENING_GALLERY') galleryOpened()
+ 436 |     }
+ 437 | 
+ 438 |     // 1. Camera cinematic intro
+ 439 |     if (!introDone && !inGallery) {
+ 440 |       introElapsedRef.current += delta
+ 441 |       sampleCamPath(introElapsedRef.current, state.camera.position)
+ 442 |       state.camera.lookAt(...CAM_TARGET)
+ 443 |     }
+ 444 | 
+ 445 |     // 2. Screen glow flicker
+ 446 |     if (materials.ScreenText) {
+ 447 |       const t = state.clock.elapsedTime
+ 448 |       let glow = 0
+ 449 | 
+ 450 |       if (t > 0.5 && t < 0.6) glow = 0.4
+ 451 |       else if (t > 0.7 && t < 0.8) glow = 0.7
+ 452 |       else if (t > 0.9 && t < 0.95) glow = 0.2
+ 453 |       else if (t > 1.1) glow = Math.min(1.0, (t - 1.1) * 2)
+ 454 | 
+ 455 |       materials.ScreenText.emissiveIntensity = glow
+     :       ^^^^^^^^^^|^^^^^^^^^
+     :                 `-- This modifies `materials`
+ 456 |       materials.ScreenText.emissive.setHex(0xffffff)
+     `----
+  help: This argument is a function which may reassign or mutate `materials` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/immutability
+
+  ! react(purity): Cannot call impure function during render
+     ,-[src/scene/Device.jsx:144:53]
+ 143 |   const pressedY = baseY - 0.005
+ 144 |   const randomExplodeOffset = useMemo(() => 0.035 + Math.random() * 0.03, [])
+     :                                                     ^^^^^^|^^^^^^
+     :                                                           `-- Cannot call impure function
+ 145 |   const explodeTargetY = baseY + randomExplodeOffset
+     `----
+  help: `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component re-renders
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/purity
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+     ,-[src/scene/Device.jsx:346:7]
+ 323 |   // Play all intro clips
+ 324 |   useEffect(() => {
+     :   ^^^^|^^^^
+     :       `-- This is the containing effect
+ 325 |     if (names && names.length > 0) {
+ 326 |       let finishedCount = 0
+ 327 | 
+ 328 |       names.forEach((name) => {
+ 329 |         const action = actions[name]
+ 330 |         action.setLoop(LoopOnce)
+ 331 |         action.clampWhenFinished = true
+ 332 |         action.play()
+ 333 |       })
+ 334 | 
+ 335 |       const onFinished = () => {
+ 336 |         finishedCount++
+ 337 |         if (finishedCount === names.length) {
+ 338 |           setIntroDone(true)
+ 339 |           markIntroDone()
+ 340 |         }
+ 341 |       }
+ 342 | 
+ 343 |       mixer.addEventListener('finished', onFinished)
+ 344 |       return () => mixer.removeEventListener('finished', onFinished)
+ 345 |     } else {
+ 346 |       setIntroDone(true)
+     :       ^^^^^^|^^^^^
+     :             `-- Avoid calling setState() directly within an effect
+ 347 |       markIntroDone()
+     `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! react-hooks(exhaustive-deps): React Hook useEffect has a missing dependency: 'markIntroDone'
+     ,-[src/scene/Device.jsx:349:6]
+ 338 |           setIntroDone(true)
+ 339 |           markIntroDone()
+     :           ^^^^^^|^^^^^^
+     :                 `-- useEffect uses `markIntroDone` here
+ 340 |         }
+ 341 |       }
+ 342 | 
+ 343 |       mixer.addEventListener('finished', onFinished)
+ 344 |       return () => mixer.removeEventListener('finished', onFinished)
+ 345 |     } else {
+ 346 |       setIntroDone(true)
+ 347 |       markIntroDone()
+ 348 |     }
+ 349 |   }, [actions, names, mixer])
+     :      ^^^^^^^^^^^^^^^^^^^^^^^
+ 350 | 
+     `----
+  help: Either include it or remove the dependency array.
+
+Found 42 warnings and 0 errors.
+Finished in 18ms on 30 files with 104 rules using 10 threads.
