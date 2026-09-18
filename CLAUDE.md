@@ -23,14 +23,19 @@ npm run dev              # Vite dev server on :5173 — has the debug hooks belo
 npm run build            # prebuild re-optimises the models, then Vite builds
 npm run preview          # serve dist/ on :4173 — the only honest perf target
 npm run lint             # oxlint
+npm test                 # vitest, once
+npm run test:watch       # vitest, watching
+npm run coverage         # vitest with coverage, enforcing the thresholds
+npm run ci               # lint, coverage and build — what CI and the deploy run
 
 npm run optimize:models  # regenerate src/assets/glb/*.glb from glb/original/
 npm run previews         # re-screenshot project sites (needs extra installs, see below)
 npm run photos           # rebuild the photography wall from src/assets/photography/
 ```
 
-There are no tests and no test runner. Verification here is done by driving the
-running scene and measuring it — see **Verifying changes**.
+Tests cover the logic that decides what the scene should do; the drawing itself is
+verified by driving the running scene and measuring it — see **Verifying changes**
+and **What the tests cover** below.
 
 `npm run previews` needs Playwright, which is deliberately not installed because the
 browser download is large and previews only change when a project's site changes:
@@ -302,7 +307,9 @@ text on a still-light background.
   a **settle delay**, so a print only skimmed past is never requested; a **bounded
   queue** (four at a time, nearest the middle of the view first), so opening the
   gallery fills in from the centre outwards instead of firing a dozen requests
-  that all arrive late; and a **pan-speed gate** — `Gallery.jsx` calls
+  that all arrive late — the pump is coalesced into a microtask so that a whole
+  frame's worth of newly-visible prints is considered together, without which the
+  four slots go to whichever settled first, which is array order and not priority; and a **pan-speed gate** — `Gallery.jsx` calls
   `thumbStore.setPaused()` above `PAN_SETTLE_SPEED`, so flicking the length of the
   wall queues rows and drops them unfetched, and images arrive for wherever the
   pan comes to rest. A focused print passes `IMMEDIATE` and skips all of it: it is
@@ -347,6 +354,59 @@ text on a still-light background.
 - The models are preloaded from `index.html` by a small plugin in `vite.config.js`,
   using `crossorigin` that matches how three fetches them. Mismatch it and the
   browser downloads every model twice.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs `lint`, `coverage` and `build` on every push to
+main and every pull request. `npm run ci` is the same three in one command, which
+is what a deploy's build step should run so that a red test stops a release.
+
+**It does not deploy, and it is not what protects production.** Cloudflare Workers
+Builds publishes this repo from its own build, so only a failure *there* stops a
+release — which is why its build command must be `npm run ci` and not
+`npm run build`. This workflow exists for the pull request: it is the check to
+require in branch protection, and it names which stage broke rather than burying
+it in a deploy log. If deployment ever moves here, Workers Builds has to be turned
+off in the same change or the two will race.
+
+Note there is no `wrangler` config committed, so the deploy itself is not
+reproducible from this repo — it lives in the Cloudflare dashboard.
+
+Two things this repo needs from any build machine:
+
+- **devDependencies are required to build, not merely to test.** `prebuild` runs
+  the model optimiser through `@gltf-transform`. A build with `NODE_ENV=production`
+  skips them and fails in a way that looks nothing like its cause.
+- **Node comes from `.nvmrc`**, so the runner cannot drift from what the deploy
+  uses.
+
+## What the tests cover
+
+`npm test` runs Vitest over the modules that hold the rules: the state machine, the
+wall's layout arithmetic, the texture stores' loading and eviction policy, the
+preview texture hook, and the DOM overlay. `npm run coverage` enforces 90% across
+statements, branches, functions and lines for exactly those files — the list is in
+`vitest.config.js`, and it is scoped on purpose.
+
+**What is deliberately not unit-tested, and why.** Roughly two thirds of this
+codebase draws. `Device`, `Gallery`, `Print`, `Projector`, `Cartridge` and their
+neighbours are react-three-fiber components whose behaviour *is* a camera pose, a
+shader program, a layer mask or a texture upload. A jsdom mock of WebGL would only
+assert that the mock was called, and it would keep passing through exactly the
+failures this scene actually suffers — a camera seized by `OrbitControls`, a
+backdrop inside the wrong frustum, an ease that jumps on a long frame. Those are
+caught by driving the real thing, which is what **Verifying changes** is for. Adding
+them to the coverage list would raise a number and lower the signal.
+
+Two things to know when writing more:
+
+- **The texture stores are module-level singletons** holding a shared in-flight
+  counter and an eviction list. Tests take a fresh module per case
+  (`vi.resetModules()` then re-import) rather than trying to unwind each other's
+  state; anything less leaks, because a load left in flight never releases its slot
+  and the concurrency cap then starves every test after it.
+- **Loads start a microtask after they are queued**, so a test that advances timers
+  must also let microtasks run before asserting that a fetch began.
 
 ## Verifying changes
 

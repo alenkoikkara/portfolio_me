@@ -11,7 +11,11 @@
     "preview": "vite preview",
     "optimize:models": "node scripts/optimize-models.mjs",
     "prebuild": "node scripts/optimize-models.mjs",
-    "photos": "node scripts/prepare-photos.mjs"
+    "photos": "node scripts/prepare-photos.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "ci": "npm run lint && npm run coverage && npm run build"
   },
   "dependencies": {
     "@react-spring/three": "^10.1.2",
@@ -27,13 +31,19 @@
     "@gltf-transform/extensions": "^4.5.0",
     "@gltf-transform/functions": "^4.5.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "@vitest/coverage-v8": "^3.2.7",
+    "jsdom": "^29.1.1",
     "oxlint": "^1.79.0",
     "playwright": "^1.63.0",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^3.2.7"
   }
 }

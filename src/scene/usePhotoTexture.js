@@ -89,6 +89,7 @@ function createStore({ graceMs = 0, limit = 0, settleMs = SETTLE_MS } = {}) {
   const queue = []
   let inFlight = 0
   let paused = false
+  let pumpScheduled = false
 
   function forget(url) {
     const i = idle.indexOf(url)
@@ -162,6 +163,26 @@ function createStore({ graceMs = 0, limit = 0, settleMs = SETTLE_MS } = {}) {
     )
   }
 
+  /*
+   * Pump once for everything that became wanted in the same tick.
+   *
+   * Prints come into frame together — opening the gallery makes a dozen visible
+   * in one frame — so their settle timers all land in the same tick. Pumping
+   * from each one in turn would hand the four slots to whichever settled first,
+   * which is array order, and priority would only ever get to sort the backlog.
+   * Waiting for the tick to finish lets the whole batch be considered at once,
+   * which is what makes "nearest the middle of the view first" true of the
+   * loads that actually start first.
+   */
+  function schedulePump() {
+    if (pumpScheduled) return
+    pumpScheduled = true
+    queueMicrotask(() => {
+      pumpScheduled = false
+      pump()
+    })
+  }
+
   /** Start as many queued loads as the cap allows, nearest the view first. */
   function pump() {
     if (paused) return
@@ -206,7 +227,7 @@ function createStore({ graceMs = 0, limit = 0, settleMs = SETTLE_MS } = {}) {
         if (entry.aborted) return
         entry.state = 'queued'
         queue.push(url)
-        pump()
+        schedulePump()
       }
       const wait = opts.settleMs ?? settleMs
       if (wait > 0) entry.settleTimer = setTimeout(enqueue, wait)
