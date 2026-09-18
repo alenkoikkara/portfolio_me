@@ -166,5 +166,83 @@ export const GENERATED_PHOTOS = [
     "src": "/photos/full/img27.webp",
     "thumb": "/photos/thumb/img27.webp",
     "aspect": 1.3333
+  },
+  {
+    "id": "img28",
+    "src": "/photos/full/img28.webp",
+    "thumb": "/photos/thumb/img28.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img29",
+    "src": "/photos/full/img29.webp",
+    "thumb": "/photos/thumb/img29.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img30",
+    "src": "/photos/full/img30.webp",
+    "thumb": "/photos/thumb/img30.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img31",
+    "src": "/photos/full/img31.webp",
+    "thumb": "/photos/thumb/img31.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img32",
+    "src": "/photos/full/img32.webp",
+    "thumb": "/photos/thumb/img32.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img33",
+    "src": "/photos/full/img33.webp",
+    "thumb": "/photos/thumb/img33.webp",
+    "aspect": 1.7778
+  },
+  {
+    "id": "img34",
+    "src": "/photos/full/img34.webp",
+    "thumb": "/photos/thumb/img34.webp",
+    "aspect": 1.7778
+  },
+  {
+    "id": "img35",
+    "src": "/photos/full/img35.webp",
+    "thumb": "/photos/thumb/img35.webp",
+    "aspect": 1.3333
+  },
+  {
+    "id": "img36",
+    "src": "/photos/full/img36.webp",
+    "thumb": "/photos/thumb/img36.webp",
+    "aspect": 0.6731
+  },
+  {
+    "id": "img37",
+    "src": "/photos/full/img37.webp",
+    "thumb": "/photos/thumb/img37.webp",
+    "aspect": 2.0983
+  },
+  {
+    "id": "img38",
+    "src": "/photos/full/img38.webp",
+    "thumb": "/photos/thumb/img38.webp",
+    "aspect": 1
+  },
+  {
+    "id": "img39",
+    "src": "/photos/full/img39.webp",
+    "thumb": "/photos/thumb/img39.webp",
+    "aspect": 0.75
+  },
+  {
+    "id": "img40",
+    "src": "/photos/full/img40.webp",
+    "thumb": "/photos/thumb/img40.webp",
+    "aspect": 1
   }
 ]
