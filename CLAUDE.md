@@ -67,6 +67,14 @@ Two rules matter when adding behaviour:
 `insert()` while already `PROJECTING` sets `pendingIndex` and ejects first; `ejected()`
 then picks the pending one up. That is how switching projects mid-projection works.
 
+`goHome()` — the title in the corner — is the way back to rest from anywhere, and it
+follows the same shape. It routes through the exits that already exist rather than
+slamming the mode to `IDLE`: from `PROJECTING` it ejects, from a gallery mode it
+closes, and from a cartridge in flight it sets `pendingHome` so the running
+animation carries the request the rest of the way. A cartridge halfway to the slot
+would otherwise wink out of existence. `pendingHome` beats `pendingIndex`, so the
+way out wins over a project queued behind it.
+
 The photography key runs a second, parallel arm of the same machine:
 
 ```

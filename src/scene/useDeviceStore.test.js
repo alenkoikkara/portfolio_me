@@ -19,7 +19,7 @@ const reach = {
 /** Every action, so a guard can be checked against all of them from any mode. */
 const ACTIONS = [
   'openCarousel', 'closeCarousel', 'insert', 'seated', 'eject', 'ejected',
-  'openGallery', 'galleryOpened', 'closeGallery', 'galleryClosed',
+  'openGallery', 'galleryOpened', 'closeGallery', 'galleryClosed', 'goHome',
 ]
 
 beforeEach(() => {
@@ -30,6 +30,7 @@ beforeEach(() => {
     activeId: null,
     pendingIndex: null,
     focusedPhotoId: null,
+    pendingHome: false,
   })
 })
 
@@ -188,6 +189,121 @@ describe('the gallery arm', () => {
   })
 })
 
+describe('the way home', () => {
+  it('does nothing when already at rest', () => {
+    get().goHome()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('closes the carousel', () => {
+    reach.BROWSING()
+    get().goHome()
+    expect(mode()).toBe('IDLE')
+    expect(get().activeId).toBeNull()
+  })
+
+  it('ejects a seated cartridge and carries on home', () => {
+    reach.PROJECTING()
+    get().goHome()
+    // Not a jump to rest: the cartridge has to come out of the slot first.
+    expect(mode()).toBe('EJECTING')
+    expect(get().pendingHome).toBe(true)
+
+    get().ejected()
+    expect(mode()).toBe('IDLE')
+    expect(get().activeId).toBeNull()
+    expect(get().pendingHome).toBe(false)
+  })
+
+  it('lets a cartridge in flight land, then turns it round', () => {
+    reach.INSERTING()
+    get().goHome()
+    // Still travelling; abandoning it here would wink it out mid-air.
+    expect(mode()).toBe('INSERTING')
+    expect(get().pendingHome).toBe(true)
+
+    get().seated()
+    expect(mode()).toBe('EJECTING')
+
+    get().ejected()
+    expect(mode()).toBe('IDLE')
+    expect(get().pendingHome).toBe(false)
+  })
+
+  it('waits out a cartridge already on its way back', () => {
+    reach.EJECTING()
+    get().goHome()
+    expect(mode()).toBe('EJECTING')
+    get().ejected()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('takes precedence over a project queued behind it', () => {
+    reach.PROJECTING()
+    get().insert(2)
+    expect(get().pendingIndex).toBe(2)
+
+    get().goHome()
+    expect(get().pendingIndex).toBeNull()
+    get().ejected()
+    // Home, not the project that was queued.
+    expect(mode()).toBe('IDLE')
+    expect(get().activeId).toBeNull()
+  })
+
+  it('closes the wall the graceful way, clearing the open print', () => {
+    reach.GALLERY()
+    get().focusPhoto('img4')
+    get().goHome()
+    expect(mode()).toBe('CLOSING_GALLERY')
+    expect(get().focusedPhotoId).toBeNull()
+
+    get().galleryClosed()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('closes a wall that is still opening', () => {
+    reach.OPENING_GALLERY()
+    get().goHome()
+    expect(mode()).toBe('CLOSING_GALLERY')
+  })
+
+  it('leaves a wall that is already closing alone', () => {
+    reach.CLOSING_GALLERY()
+    get().goHome()
+    expect(mode()).toBe('CLOSING_GALLERY')
+    get().galleryClosed()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('reaches rest from every mode there is', () => {
+    for (const from of ['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING',
+      'OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY']) {
+      useDeviceStore.setState({ mode: 'IDLE', pendingHome: false, pendingIndex: null })
+      reach[from]()
+      get().goHome()
+      // Let whatever was running report in, as the scene would.
+      for (let i = 0; i < 4 && mode() !== 'IDLE'; i++) {
+        get().seated(); get().ejected(); get().galleryOpened(); get().galleryClosed()
+      }
+      expect(mode(), `goHome() from ${from} must reach IDLE`).toBe('IDLE')
+    }
+  })
+
+  it('does not leave the request set behind it', () => {
+    reach.PROJECTING()
+    get().goHome()
+    get().ejected()
+    expect(get().pendingHome).toBe(false)
+    // A later open must not immediately bounce back home.
+    get().openCarousel()
+    expect(mode()).toBe('BROWSING')
+    get().insert(0)
+    get().seated()
+    expect(mode()).toBe('PROJECTING')
+  })
+})
+
 describe('the two arms never cross', () => {
   it('will not open the gallery from anywhere but idle', () => {
     for (const from of ['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING']) {
@@ -226,6 +342,9 @@ describe('every transition guards on the current mode', () => {
     galleryOpened: ['OPENING_GALLERY'],
     closeGallery: ['GALLERY', 'OPENING_GALLERY'],
     galleryClosed: ['CLOSING_GALLERY'],
+    // From INSERTING and EJECTING it records the request without moving the
+    // mode, so those count as leaving it untouched.
+    goHome: ['BROWSING', 'PROJECTING', 'OPENING_GALLERY', 'GALLERY'],
   }
 
   it('leaves the mode untouched when called from anywhere else', () => {

@@ -54,19 +54,27 @@ const useDeviceStore = create((set, get) => ({
   pendingIndex: null,
   /** Photo filling the frame on the photography wall, by id. */
   focusedPhotoId: null,
+  /**
+   * Set when the visitor asked for the way out mid-animation.
+   *
+   * There is no transition from a cartridge in flight straight to rest, so the
+   * request is remembered and the animation that is already running carries it
+   * the rest of the way — the same shape as `pendingIndex`.
+   */
+  pendingHome: false,
 
   markIntroDone: () => set({ introDone: true }),
 
   openCarousel: () => {
     const { mode } = get()
     if (mode !== 'IDLE') return
-    set({ mode: 'BROWSING', focusedIndex: 0, activeId: null, pendingIndex: null })
+    set({ mode: 'BROWSING', focusedIndex: 0, activeId: null, pendingIndex: null, pendingHome: false })
   },
 
   closeCarousel: () => {
     const { mode } = get()
     if (mode !== 'BROWSING') return
-    set({ mode: 'IDLE', activeId: null, pendingIndex: null })
+    set({ mode: 'IDLE', activeId: null, pendingIndex: null, pendingHome: false })
   },
 
   focus: (index) => {
@@ -93,8 +101,14 @@ const useDeviceStore = create((set, get) => ({
 
   /** Called by insertion animation on completion */
   seated: () => {
-    const { mode } = get()
+    const { mode, pendingHome } = get()
     if (mode !== 'INSERTING') return
+    // Asked for the way out while this was still flying in: let it land, then
+    // send it straight back rather than abandoning it in the slot.
+    if (pendingHome) {
+      set({ mode: 'EJECTING', pendingIndex: null })
+      return
+    }
     set({ mode: 'PROJECTING' })
   },
 
@@ -104,12 +118,46 @@ const useDeviceStore = create((set, get) => ({
     set({ mode: 'EJECTING', pendingIndex: null })
   },
 
+  /**
+   * The way back to the start, from wherever the visitor is.
+   *
+   * It routes through the exits that already exist rather than slamming the
+   * mode to IDLE: a cartridge halfway to the slot would otherwise wink out of
+   * existence, and the wall would cut away instead of clearing. Where there is
+   * nothing to unwind it is immediate; where something is travelling it is
+   * remembered and the running animation reports it the rest of the way.
+   */
+  goHome: () => {
+    const { mode } = get()
+    if (mode === 'IDLE') return
+
+    if (GALLERY_MODES.has(mode)) {
+      // CLOSING_GALLERY is already on its way; leave it be.
+      if (mode !== 'CLOSING_GALLERY') set({ mode: 'CLOSING_GALLERY', focusedPhotoId: null })
+      return
+    }
+
+    if (mode === 'BROWSING') {
+      set({ mode: 'IDLE', activeId: null, pendingIndex: null, pendingHome: false })
+      return
+    }
+
+    if (mode === 'PROJECTING') {
+      set({ mode: 'EJECTING', pendingIndex: null, pendingHome: true })
+      return
+    }
+
+    // INSERTING or EJECTING: something is in flight, so let it finish and hand
+    // the request on rather than cutting it short.
+    set({ pendingIndex: null, pendingHome: true })
+  },
+
   /* ─── Photography wall ─── */
 
   openGallery: () => {
     const { mode } = get()
     if (mode !== 'IDLE') return
-    set({ mode: 'OPENING_GALLERY', focusedPhotoId: null })
+    set({ mode: 'OPENING_GALLERY', focusedPhotoId: null, pendingHome: false })
   },
 
   /** Called by the wall once it has dimmed in and its first textures are up. */
@@ -141,8 +189,14 @@ const useDeviceStore = create((set, get) => ({
 
   /** Called by ejection animation on completion */
   ejected: () => {
-    const { mode, pendingIndex } = get()
+    const { mode, pendingIndex, pendingHome } = get()
     if (mode !== 'EJECTING') return
+
+    // The way out wins over anything queued behind it.
+    if (pendingHome) {
+      set({ mode: 'IDLE', activeId: null, pendingIndex: null, pendingHome: false })
+      return
+    }
 
     if (pendingIndex !== null) {
       // Immediately insert the pending cartridge

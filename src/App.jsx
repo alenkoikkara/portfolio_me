@@ -21,12 +21,24 @@ function stageClass(mode) {
 
 function App() {
   const mode = useDeviceStore((s) => s.mode)
+  const goHome = useDeviceStore((s) => s.goHome)
 
   return (
     <div className={`${stageClass(mode)} w-full h-screen relative`}>
+      {/*
+        * The wrapper stays click-through so it cannot swallow drags on the
+        * canvas behind it; only the words themselves take the pointer.
+        */}
       <div className="absolute top-8 left-10 z-50 pointer-events-none">
         <h1 className="stage-title text-xs font-bold tracking-[0.0em] lowercase opacity-80">
-          alen koikkara
+          <button
+            type="button"
+            onClick={goHome}
+            aria-label="Back to the start"
+            className="pointer-events-auto cursor-pointer lowercase tracking-[inherit] transition-opacity duration-200 hover:opacity-60"
+          >
+            alen koikkara
+          </button>
         </h1>
       </div>
       <Canvas
