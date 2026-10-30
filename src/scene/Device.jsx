@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils, LoopOnce } from 'three'
 import deviceGlb from '../assets/glb/device.glb'
 import LightingSetup from '../components/LightingSetup'
-import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
+import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './useDeviceStore'
 import * as THREE from 'three'
 import { playMechanicalClick } from './audio'
 import deviceFade from './deviceFade'
@@ -151,7 +151,9 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   const [dismissed, setDismissed] = useState(false)
   // Mirror the --stage-ink values from index.css based on mode
   const mode = useDeviceStore((s) => s.mode)
-  const labelColor = mode === 'IDLE' ? '#111827' : '#f3f4f6'
+  // Dark ink wherever the page is light — at rest and under the about view's
+  // overlay — light ink where the room has been taken down.
+  const labelColor = mode === 'IDLE' || ABOUT_MODES.has(mode) ? '#111827' : '#f3f4f6'
 
   const baseY = position[1]
   const pressedY = baseY - 0.005
@@ -317,6 +319,8 @@ export default function Device({ slotAnchorRef }) {
   const eject = useDeviceStore((s) => s.eject)
   const openGallery = useDeviceStore((s) => s.openGallery)
   const galleryOpened = useDeviceStore((s) => s.galleryOpened)
+  const openAbout = useDeviceStore((s) => s.openAbout)
+  const inAbout = ABOUT_MODES.has(mode)
   /*
    * While the wall is up it owns the default camera, and every camera line
    * below writes to `state.camera` — that is, to whichever camera is default.
@@ -386,6 +390,15 @@ export default function Device({ slotAnchorRef }) {
   const openLink = useCallback((url) => {
     window.open(url, '_blank', 'noopener,noreferrer')
   }, [])
+
+  /*
+   * About key: opens the about view. Closing is the overlay's × and Escape —
+   * once the overlay is up it covers the device and takes the pointer, so the
+   * key itself cannot be reached to close it.
+   */
+  const handleAboutKey = useCallback(() => {
+    if (mode === 'IDLE') openAbout()
+  }, [mode, openAbout])
 
   // Photography key handler
   const handlePhotographyKey = useCallback(() => {
@@ -495,12 +508,13 @@ export default function Device({ slotAnchorRef }) {
     // controls take over in IDLE.
     if (introDone && !inGallery) {
       const upK = 1 - Math.exp(-step * CAM_EASE)
-      camUpRef.current.lerp(mode === 'IDLE' ? UP_IDLE : UP_OPEN, upK).normalize()
+      // The about view keeps the rest view's orientation; it only slides.
+      camUpRef.current.lerp(mode === 'IDLE' || inAbout ? UP_IDLE : UP_OPEN, upK).normalize()
       state.camera.up.copy(camUpRef.current)
     }
 
     // 3a. Open pose: glide to the flat, screen-aligned top-down view
-    if (introDone && mode !== 'IDLE' && !inGallery) {
+    if (introDone && mode !== 'IDLE' && !inAbout && !inGallery) {
       const framed = PROJECT_MODES.has(mode)
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(framed ? camScratch.projectTarget : camScratch.openTarget, k)
@@ -508,14 +522,15 @@ export default function Device({ slotAnchorRef }) {
       state.camera.lookAt(camTargetRef.current)
     }
 
-    // 3b. Elastic camera snap-back (only in IDLE)
+    // 3b. Elastic camera snap-back — at rest, and under the about overlay,
+    // which hides the device and wants the camera settled at its rest pose.
     //
     // Straight position ease, not a spherical one. Orbiting the azimuth is
     // degenerate directly overhead, which is exactly where the camera sits
     // when the carousel closes: a hair of movement in the look target flips
     // the azimuth by half a turn, sending the camera around the far side and
     // landing it rolled over. Easing the position needs no angles at all.
-    if (introDone && !isDraggingRef.current && mode === 'IDLE') {
+    if (introDone && !isDraggingRef.current && (mode === 'IDLE' || inAbout)) {
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(camScratch.restTarget, k)
       state.camera.position.lerp(camScratch.restPos, k)
@@ -651,7 +666,7 @@ export default function Device({ slotAnchorRef }) {
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_1" introDone={introDone} isExploded={isExploded} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
+            <DeviceButton name="Key_Top_1" introDone={introDone} isExploded={isExploded} onClick={handleAboutKey} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
             </DeviceButton>

@@ -31,6 +31,7 @@ npm run ci               # lint, coverage and build — what CI and the deploy r
 npm run optimize:models  # regenerate src/assets/glb/*.glb from glb/original/
 npm run previews         # re-screenshot project sites (needs extra installs, see below)
 npm run photos           # rebuild the photography wall from src/assets/photography/
+npm run constellations   # regenerate the about view's real constellation figures
 ```
 
 Tests cover the logic that decides what the scene should do; the drawing itself is
@@ -74,6 +75,118 @@ closes, and from a cartridge in flight it sets `pendingHome` so the running
 animation carries the request the rest of the way. A cartridge halfway to the slot
 would otherwise wink out of existence. `pendingHome` beats `pendingIndex`, so the
 way out wins over a project queued behind it.
+
+The about key runs a third arm:
+
+```
+IDLE ──openAbout──> OPENING_ABOUT ──aboutOpened──> ABOUT
+  <──aboutClosed── CLOSING_ABOUT <──closeAbout─────┘
+```
+
+A pane of frosted glass comes up over the scene, after Apple's Liquid Glass,
+and blurs the device into soft light and shadow; on it a constellation of
+milestones draws itself, with the bio to its right — or above it, on a narrow
+window. The page stays light and the room stays lit as at rest. The project
+chip in `Stage.jsx` was a blacklist that would have printed a title beside the
+bio, and is now a whitelist.
+
+**The glass is `LiquidGlass.jsx`: one shader on a plane filling the frame,**
+with the pane's rounded shape cut from it as a distance field in pixels — the
+pane is screen-aligned, so nothing about it needs geometry. Each frame it
+renders the scene into a quarter-size mipmapped buffer and draws, from that:
+the frost (a blur of two rings of taps from a coarse mip, washed toward white),
+a lens inside the bevel that bends what is behind inward with a faint colour
+fringe, a specular line just inside the edge that is brightest along the top,
+and a soft shadow on the page in the margin outside. What was learned getting
+there:
+
+- **drei's `MeshTransmissionMaterial` was tried first and dropped.** Its blur is
+  random jitter, which at this size reads as grain rather than frost.
+- **Tone-map the scene, then frost it — not the other way round.** The buffer
+  is linear and un-tone-mapped; the shader runs it through three's own
+  `toneMapping()` so the device seen through the glass is treated like the
+  device anywhere else, and only then mixes in the white. Frosting first and
+  tone-mapping the result turned the white grey (ACES pulls it down), and the
+  pane came out darker than the page — the opposite of glass.
+- **The buffer is rendered over the page's colour.** The canvas is transparent
+  over the page, so a buffer with no background shows the device floating on
+  black.
+- **The constellation is hidden for that pass.** It stands in front of the
+  glass, and left in, every star would show a second time inside the frost as
+  a blurred ghost of itself.
+- **Each tap is capped before averaging.** The buffer is HDR, and a glint off a
+  dark keycap survives any average as a bright speck.
+- **The pass reuses the frame's shadow maps** (`shadowMap.autoUpdate` off around
+  it), so the glass costs one extra colour render at a quarter size, not a
+  second shadow pass. It does nothing while its opacity is zero, and is
+  unmounted entirely outside the about modes.
+
+**The glass's fade moves the mode on** — up to `ABOUT`, down to `IDLE` — the same
+rule as everywhere else: the animation reports that it finished, not a timer.
+The constellation keeps drawing after the glass is up, so Escape works at once.
+Closing is the overlay's × and Escape (Overlay.jsx): once up, **the glass takes
+the pointer**, because the device's keys are still under it and a click on the
+bio's margin would otherwise press one — the social keys would open links from
+behind the glass. The about key therefore only opens.
+
+**It is a page over the scene, not part of it, so it rides with the camera.**
+`AboutView.jsx` copies the camera's pose into its group every frame, and
+everything in it is placed in camera space from screen pixels (`aboutLayout.js`):
+the glass 0.3 m in front of the lens, the content 0.25 m — both in front of the
+device, half a metre away — drawn in that order with depth testing off, so the
+device can never cut into a star. It fills the frame exactly whatever the camera
+is doing. It is mounted after the device, so its frame callback runs after the
+device has placed the camera and nothing lags by a frame.
+
+Side by side needs 500 px of sky for the constellation: labels on the same side
+of the path are two milestones apart, and at 1024 px wide two of them touched.
+That is decided from the sky a window would actually get, not from a width.
+
+**The milestones take the shape of a real constellation** with exactly as many
+stars as there are milestones — Polaris, Canis Minor, Triangulum, Crux,
+Cassiopeia, Lyra, Ursa Minor, Aquila, Auriga, Capricornus for one to ten — and
+its name is set under it. The figures are the standard stick figures from
+d3-celestial (BSD-3-Clause; the notice travels in the generated file),
+projected as seen on the sky, north up and east left. No constellation has a
+one-star figure, so one milestone is Polaris, labelled as a star. Milestones go
+to the stars left to right, so the timeline still reads in order, but the lines
+are the constellation's own, not a chain through the dates. Auriga and
+Capricornus replaced Leo and Cepheus: Cepheus has three stars 15 px apart, and
+Leo's sickle crowded its labels on a phone; no amount of label placement fixes
+stars that close.
+
+Labels are placed by `constellationLayout.js`: each tries eight sides of its
+star, then every label reconsiders against all the others until nothing
+improves — first-fit alone is order-dependent, and an early label can take the
+only room a crowded later one had. Figures above five stars drop the subtitle.
+Label widths are estimated from their text; the real rendered ones were
+measured at no more than 93% of the estimate. On a narrow window the band's
+height comes from a measured table, one height per star count, not a formula:
+a taller band scales the figure up and reshuffles the free spots, so seven
+stars that fit at 240 px collide at 270. A 320 px phone cannot fit ten.
+
+The reveal runs on one clock in `Constellation.jsx`, in seconds from the key:
+the bio at 0.22, ambient stars at 0.35, then each milestone star 0.14 s after
+the last in date order; each of the figure's lines draws once both its stars
+are out, and the figure's name comes up last. Leaving, all of
+it fades together. Lines grow by rewriting their geometry in the frame loop, not
+by React state — and their start points are memoised, because drei rewrites a
+line's geometry whenever `points` is a new array, and the mode changing mid-draw
+re-renders the component. Stars are ink; a faint one is ink mixed toward the
+page colour rather than made transparent, which lets the ambient stars be one
+instanced mesh with a single opacity for the fade.
+
+**Both text layers — the bio and the milestone labels — are drei `<Html
+transform sprite>`, scaled so one CSS pixel is one screen pixel.** drei draws a
+CSS pixel of a transformed `<Html>` as `distanceFactor / 400` world units;
+`aboutLayout.js` sets that to one screen pixel at the content's depth, per
+window. A fixed factor scales the text with the window — fine on one laptop, a
+quarter size on a phone — and any scale but 1 resamples it, which is what makes
+CSS3D text soft. Two traps there: drei sizes its wrapper to the whole canvas, so
+it is given `pointerEvents="none"` or it swallows every click on the page; and a
+child's `pointer-events: auto` overrides its parent's `none`, so the "no clicks
+until fully faded in" gate is set on the column itself, not on the element that
+fades.
 
 The photography key runs a second, parallel arm of the same machine:
 
@@ -157,6 +270,14 @@ the camera came back to the desk.
 | Photo texture caches (thumb + full) | `src/scene/usePhotoTexture.js` |
 | Photo catalogue | `src/data/photos.js` (+ generated `photos.generated.js`) |
 | Device fade, shared with its shadows | `src/scene/deviceFade.js` |
+| The bio column: fade, pointer gating | `src/scene/AboutPanel.jsx` |
+| About view: camera-riding group, mode reports | `src/scene/AboutView.jsx` |
+| The frosted glass pane and its shader | `src/scene/LiquidGlass.jsx` |
+| About view arithmetic: bio and constellation placement, depths, text scale | `src/scene/aboutLayout.js` |
+| The constellation: stars, milestone path and its reveal | `src/scene/Constellation.jsx` |
+| Where each star and label goes, in pixels | `src/scene/constellationLayout.js` |
+| About copy, its styles, and the milestones | `src/scene/about/AboutContent.jsx`, `about.css`, `timeline.js` |
+| Real constellation figures, 1–10 stars (generated) | `src/scene/about/constellations.generated.js` |
 
 Unused, kept only as history — do not extend, and check before assuming it runs:
 `src/components/DeviceModel.jsx` (superseded by `scene/Device.jsx`) and
@@ -169,8 +290,9 @@ Unused, kept only as history — do not extend, and check before assuming it run
   `0.008` tall and the camera's near plane is `0.001`. A near plane of `0.1` clips
   the entire model — this is the classic mistake here.
 - **The device never moves or rotates.** Every "the device slid down" effect is the
-  camera changing pose. There are three: rest, open, and projecting, all in
-  `Device.jsx`.
+  camera changing pose. There are three: rest, open and projecting, all in
+  `Device.jsx`. The about view keeps the rest pose; it frosts the device away
+  behind glass rather than moving the view.
 - **The open camera looks almost straight down**, which makes both `lookAt`'s roll and
   spherical azimuth degenerate. The up vector is therefore steered explicitly
   (world `+Y` at rest, world `-Z` when open) and the return home eases position
@@ -230,6 +352,25 @@ Depth and tilt come from an FNV-1a hash of the id, not from `Math.random`, so a
 photo hangs in the same place in every session and every build. Two independent
 streams are pulled from that hash: sharing one would correlate depth with tilt, and
 a wall where everything deeper also leans the same way reads as a pattern.
+
+### Edit the about panel
+
+The words are in `src/scene/about/AboutContent.jsx` and nothing else is — edit
+them there without touching the scene. The milestones are in
+`src/scene/about/timeline.js`, oldest first, and that is all there is to
+adding one: their count picks the constellation, so the seventh turns Lyra into
+Ursa Minor. Between one and ten — `constellationLayout.test.js` fails past ten,
+and fails if any label, at any count from one to ten, lands on another label, a
+star, the bio, the figure's name or off the screen, on any of the windows it
+checks. To change which constellation stands for a count, edit `CHOICES` in
+`scripts/prepare-constellations.mjs` and run `npm run constellations`; then run
+the tests, because a figure with tightly packed stars may not leave its labels
+room. Styles are in `about.css`, beside it, and
+every colour reads a `--stage-*` variable, so keep it that way: the panel sits
+on the light page, and a hard-coded or OS-dark-mode colour can put pale text on
+it. The typeface is the site's own, inherited. If the column grows taller than a
+short phone allows, it scrolls inside the space `aboutLayout.js` leaves for it
+rather than running off the screen.
 
 ### Change the 3D models
 
@@ -412,7 +553,7 @@ Two things this repo needs from any build machine:
 ## What the tests cover
 
 `npm test` runs Vitest over the modules that hold the rules: the state machine, the
-wall's layout arithmetic, the texture stores' loading and eviction policy, the
+wall's layout arithmetic, the about view's and its constellation's, the texture stores' loading and eviction policy, the
 preview texture hook, and the DOM overlay. `npm run coverage` enforces 90% across
 statements, branches, functions and lines for exactly those files — the list is in
 `vitest.config.js`, and it is scoped on purpose.

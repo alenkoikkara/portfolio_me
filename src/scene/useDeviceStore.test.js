@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
+import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
 
 const get = () => useDeviceStore.getState()
@@ -14,12 +14,16 @@ const reach = {
   OPENING_GALLERY: () => get().openGallery(),
   GALLERY: () => { get().openGallery(); get().galleryOpened() },
   CLOSING_GALLERY: () => { reach.GALLERY(); get().closeGallery() },
+  OPENING_ABOUT: () => get().openAbout(),
+  ABOUT: () => { get().openAbout(); get().aboutOpened() },
+  CLOSING_ABOUT: () => { reach.ABOUT(); get().closeAbout() },
 }
 
 /** Every action, so a guard can be checked against all of them from any mode. */
 const ACTIONS = [
   'openCarousel', 'closeCarousel', 'insert', 'seated', 'eject', 'ejected',
   'openGallery', 'galleryOpened', 'closeGallery', 'galleryClosed', 'goHome',
+  'openAbout', 'aboutOpened', 'closeAbout', 'aboutClosed',
 ]
 
 beforeEach(() => {
@@ -304,7 +308,70 @@ describe('the way home', () => {
   })
 })
 
+describe('the about panel', () => {
+  it('runs open → opened → close → closed', () => {
+    get().openAbout()
+    expect(mode()).toBe('OPENING_ABOUT')
+    get().aboutOpened()
+    expect(mode()).toBe('ABOUT')
+    get().closeAbout()
+    expect(mode()).toBe('CLOSING_ABOUT')
+    get().aboutClosed()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('can be turned round before the camera has arrived', () => {
+    // The about key pressed twice in quick succession.
+    get().openAbout()
+    get().closeAbout()
+    expect(mode()).toBe('CLOSING_ABOUT')
+    get().aboutClosed()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('goes home the graceful way, from open or still opening', () => {
+    for (const from of ['ABOUT', 'OPENING_ABOUT']) {
+      useDeviceStore.setState({ mode: 'IDLE' })
+      reach[from]()
+      get().goHome()
+      expect(mode(), `goHome() from ${from}`).toBe('CLOSING_ABOUT')
+    }
+  })
+
+  it('leaves a panel that is already closing alone', () => {
+    reach.CLOSING_ABOUT()
+    get().goHome()
+    expect(mode()).toBe('CLOSING_ABOUT')
+  })
+
+  it('names exactly the modes in which the about view is up', () => {
+    expect([...ABOUT_MODES].sort()).toEqual(['ABOUT', 'CLOSING_ABOUT', 'OPENING_ABOUT'])
+    for (const m of ABOUT_MODES) expect(GALLERY_MODES.has(m)).toBe(false)
+  })
+})
+
 describe('the two arms never cross', () => {
+  it('will not open the panel from anywhere but rest', () => {
+    for (const from of ['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING',
+      'OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY']) {
+      useDeviceStore.setState({ mode: 'IDLE', pendingHome: false, pendingIndex: null })
+      reach[from]()
+      get().openAbout()
+      expect(mode(), `openAbout() must not fire from ${from}`).toBe(from)
+    }
+  })
+
+  it('will not open the carousel or the wall while the panel is up', () => {
+    // The other keys are ignored while the panel is up, by the store's guards.
+    for (const from of ['OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT']) {
+      useDeviceStore.setState({ mode: 'IDLE' })
+      reach[from]()
+      get().openCarousel()
+      get().openGallery()
+      expect(mode(), `nothing else may fire from ${from}`).toBe(from)
+    }
+  })
+
   it('will not open the gallery from anywhere but idle', () => {
     for (const from of ['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING']) {
       useDeviceStore.setState({ mode: 'IDLE' })
@@ -328,6 +395,7 @@ describe('every transition guards on the current mode', () => {
   const ALL_MODES = [
     'IDLE', 'BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING',
     'OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY',
+    'OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT',
   ]
 
   /** Which mode each action is allowed to move the machine out of. */
@@ -342,9 +410,13 @@ describe('every transition guards on the current mode', () => {
     galleryOpened: ['OPENING_GALLERY'],
     closeGallery: ['GALLERY', 'OPENING_GALLERY'],
     galleryClosed: ['CLOSING_GALLERY'],
+    openAbout: ['IDLE'],
+    aboutOpened: ['OPENING_ABOUT'],
+    closeAbout: ['ABOUT', 'OPENING_ABOUT'],
+    aboutClosed: ['CLOSING_ABOUT'],
     // From INSERTING and EJECTING it records the request without moving the
     // mode, so those count as leaving it untouched.
-    goHome: ['BROWSING', 'PROJECTING', 'OPENING_GALLERY', 'GALLERY'],
+    goHome: ['BROWSING', 'PROJECTING', 'OPENING_GALLERY', 'GALLERY', 'OPENING_ABOUT', 'ABOUT'],
   }
 
   it('leaves the mode untouched when called from anywhere else', () => {

@@ -165,6 +165,46 @@ describe('the photography wall', () => {
   })
 })
 
+describe('the about panel', () => {
+  beforeEach(() => set({ mode: 'ABOUT' }))
+
+  it('offers a way out — a phone has no Escape key', () => {
+    render(<Overlay />)
+    expect(screen.getByLabelText('Close about')).toBeTruthy()
+    expect(screen.getByText('esc close')).toBeTruthy()
+  })
+
+  it('closes on the button', () => {
+    render(<Overlay />)
+    fireEvent.click(screen.getByLabelText('Close about'))
+    expect(get().mode).toBe('CLOSING_ABOUT')
+  })
+
+  it('closes on Escape, even before the view has finished sliding', () => {
+    for (const from of ['ABOUT', 'OPENING_ABOUT']) {
+      set({ mode: from })
+      const { unmount } = render(<Overlay />)
+      press('Escape')
+      expect(get().mode, `from ${from}`).toBe('CLOSING_ABOUT')
+      unmount()
+    }
+  })
+
+  it('shows none of the carousel\'s or the wall\'s chrome', () => {
+    render(<Overlay />)
+    expect(screen.queryByLabelText('Next project')).toBeNull()
+    expect(screen.queryByText('drag to pan')).toBeNull()
+    expect(screen.queryByText('↵ select')).toBeNull()
+  })
+
+  it('leaves the arrow keys alone', () => {
+    render(<Overlay />)
+    press('ArrowRight')
+    expect(get().focusedIndex).toBe(0)
+    expect(get().mode).toBe('ABOUT')
+  })
+})
+
 describe('the caption', () => {
   beforeEach(() => set({ mode: 'GALLERY' }))
 

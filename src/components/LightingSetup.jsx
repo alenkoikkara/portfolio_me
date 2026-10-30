@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { Environment, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
-import useDeviceStore, { GALLERY_MODES } from '../scene/useDeviceStore'
+import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceStore'
 import deviceFade from '../scene/deviceFade'
 
 // Exact 1:1 scale with hichord.js
@@ -58,7 +58,9 @@ const MAX_LIGHT_STEP = 0.1
  */
 function envIntensityFor(mode) {
   if (GALLERY_MODES.has(mode)) return 0.5
-  return mode === 'IDLE' ? 1.6 : 0.6
+  // The about view keeps the room exactly as lit as at rest; its overlay does
+  // the hiding.
+  return mode === 'IDLE' || ABOUT_MODES.has(mode) ? 1.6 : 0.6
 }
 
 const EnvPanel = ({ config }) => (
@@ -95,7 +97,9 @@ export default function LightingSetup() {
   useFrame((state, delta) => {
     const step = Math.min(delta, MAX_LIGHT_STEP)
     const inGallery = GALLERY_MODES.has(mode)
-    const isProjecting = mode !== 'IDLE'
+    // "Not at rest" — the carousel and the projector, which share a dimming.
+    // The about view is lit as at rest.
+    const isProjecting = mode !== 'IDLE' && !ABOUT_MODES.has(mode)
 
     /*
      * The gallery is a different room. These three lights are aimed at a device

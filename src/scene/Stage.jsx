@@ -5,19 +5,26 @@ import { PROJECTS } from '../data/projects'
 import { PHOTOS } from '../data/photos'
 import Cartridge from './Cartridge'
 import { Html } from '@react-three/drei'
-import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
+import useDeviceStore from './useDeviceStore'
 import Device from './Device'
 import Carousel from './Carousel'
 import ActiveCartridge from './ActiveCartridge'
 import Projector from './Projector'
 import Gallery from './Gallery'
+import AboutView from './AboutView'
+
+/** Modes in which a project is being browsed or shown. */
+const CHIP_MODES = new Set(['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING'])
 
 function ProjectChip() {
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const project = PROJECTS[focusedIndex]
 
-  if (mode === 'IDLE' || GALLERY_MODES.has(mode) || !project) return null
+  // A whitelist, like every other mode guard in the scene: the chip belongs to
+  // the cartridge arm and nothing else. Asking for "not IDLE and not the
+  // gallery" would have printed a project title beside the about panel.
+  if (!CHIP_MODES.has(mode) || !project) return null
 
   const isProjecting = mode === 'PROJECTING'
 
@@ -126,6 +133,7 @@ export default function Stage() {
       <Projector />
       <ProjectChip />
       <Gallery />
+      <AboutView />
     </Suspense>
   )
 }

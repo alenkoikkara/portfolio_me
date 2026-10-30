@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import useDeviceStore, { GALLERY_MODES } from '../scene/useDeviceStore'
+import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceStore'
 import { PHOTOS } from '../data/photos'
 
 /**
@@ -18,8 +18,10 @@ export default function Overlay() {
   const focusedPhotoId = useDeviceStore((s) => s.focusedPhotoId)
   const focusPhoto = useDeviceStore((s) => s.focusPhoto)
   const closeGallery = useDeviceStore((s) => s.closeGallery)
+  const closeAbout = useDeviceStore((s) => s.closeAbout)
 
   const inGallery = GALLERY_MODES.has(mode)
+  const inAbout = ABOUT_MODES.has(mode)
 
   // Global keyboard listener
   useEffect(() => {
@@ -52,6 +54,10 @@ export default function Overlay() {
         // the visitor was reading.
         if (focusedPhotoId) focusPhoto(null)
         else closeGallery()
+      } else if (inAbout && e.key === 'Escape') {
+        e.preventDefault()
+        // A no-op once already closing, by the store's own guard.
+        closeAbout()
       }
       // Arrow keys in the gallery pan the wall, and are handled by the camera
       // that owns the pan target rather than here.
@@ -59,7 +65,7 @@ export default function Overlay() {
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [mode, inGallery, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery])
+  }, [mode, inGallery, inAbout, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery, closeAbout])
 
   if (mode === 'IDLE') return null
 
@@ -90,6 +96,24 @@ export default function Overlay() {
           {focusedPhotoId ? <span>esc back</span> : <span>drag to pan</span>}
           {!focusedPhotoId && <span>click a print</span>}
           {!focusedPhotoId && <span>esc close</span>}
+        </div>
+      </div>
+    )
+  }
+
+  /*
+   * The about panel brings its own words, so the overlay adds only the way
+   * out: a close button, which a phone needs, having no Escape key, and the
+   * hint for those who do.
+   */
+  if (inAbout) {
+    return (
+      <div className="overlay">
+        <button className="overlay-close" onClick={closeAbout} aria-label="Close about">
+          ×
+        </button>
+        <div className="overlay-hint">
+          <span>esc close</span>
         </div>
       </div>
     )

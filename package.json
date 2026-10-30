@@ -12,6 +12,7 @@
     "optimize:models": "node scripts/optimize-models.mjs",
     "prebuild": "node scripts/optimize-models.mjs",
     "photos": "node scripts/prepare-photos.mjs",
+    "constellations": "node scripts/prepare-constellations.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

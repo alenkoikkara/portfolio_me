@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import Stage from './scene/Stage'
 import Overlay from './components/Overlay'
-import useDeviceStore, { GALLERY_MODES } from './scene/useDeviceStore'
+import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './scene/useDeviceStore'
 import * as THREE from 'three'
 
 /**
@@ -10,7 +10,9 @@ import * as THREE from 'three'
  * preview and its beam have something to read against.
  */
 function stageClass(mode) {
-  if (mode === 'IDLE') return 'stage'
+  // The about view keeps the light page: its glass frosts the device away
+  // against that same colour, not a change of room.
+  if (mode === 'IDLE' || ABOUT_MODES.has(mode)) return 'stage'
   if (mode === 'PROJECTING') return 'stage stage--dim stage--dark'
   // The gallery is a dark room hung with prints, so it goes all the way down —
   // the backdrop plane fills the frame, and the page behind it should match

@@ -45,6 +45,21 @@ import { PROJECTS } from '../data/projects'
 /** Modes in which the photography wall is on screen and owns the camera. */
 export const GALLERY_MODES = new Set(['OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY'])
 
+/*
+ * The about key runs a third arm:
+ *
+ *   IDLE          → OPENING_ABOUT (openAbout)
+ *   OPENING_ABOUT → ABOUT         (aboutOpened — the camera reports in)
+ *   ABOUT         → CLOSING_ABOUT (closeAbout)
+ *   CLOSING_ABOUT → IDLE          (aboutClosed — the camera reports in)
+ *
+ * The room goes to night — the dark stage, the lights down — while the view
+ * slides aside for a bio column and a constellation of milestones draws itself
+ * across the dark. The camera keeps the rest view's orientation throughout.
+ */
+/** Modes in which the about view is up, or on its way in or out. */
+export const ABOUT_MODES = new Set(['OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT'])
+
 const useDeviceStore = create((set, get) => ({
   mode: 'IDLE',
   // True once the opening animation has played out and the device is at rest.
@@ -137,6 +152,12 @@ const useDeviceStore = create((set, get) => ({
       return
     }
 
+    if (ABOUT_MODES.has(mode)) {
+      // Already on its way back if closing; otherwise take the normal exit.
+      if (mode !== 'CLOSING_ABOUT') set({ mode: 'CLOSING_ABOUT' })
+      return
+    }
+
     if (mode === 'BROWSING') {
       set({ mode: 'IDLE', activeId: null, pendingIndex: null, pendingHome: false })
       return
@@ -150,6 +171,36 @@ const useDeviceStore = create((set, get) => ({
     // INSERTING or EJECTING: something is in flight, so let it finish and hand
     // the request on rather than cutting it short.
     set({ pendingIndex: null, pendingHome: true })
+  },
+
+  /* ─── About panel ─── */
+
+  openAbout: () => {
+    const { mode } = get()
+    if (mode !== 'IDLE') return
+    set({ mode: 'OPENING_ABOUT' })
+  },
+
+  /** Called by the camera once it has slid across to make room for the panel. */
+  aboutOpened: () => {
+    const { mode } = get()
+    if (mode !== 'OPENING_ABOUT') return
+    set({ mode: 'ABOUT' })
+  },
+
+  // From OPENING_ABOUT too, so the key pressed twice in quick succession turns
+  // the view round mid-slide rather than being ignored.
+  closeAbout: () => {
+    const { mode } = get()
+    if (mode !== 'ABOUT' && mode !== 'OPENING_ABOUT') return
+    set({ mode: 'CLOSING_ABOUT' })
+  },
+
+  /** Called by the camera once it is back at rest. */
+  aboutClosed: () => {
+    const { mode } = get()
+    if (mode !== 'CLOSING_ABOUT') return
+    set({ mode: 'IDLE' })
   },
 
   /* ─── Photography wall ─── */
