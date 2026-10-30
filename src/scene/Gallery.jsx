@@ -6,6 +6,8 @@ import GalleryCamera from './GalleryCamera'
 import Print from './Print'
 import { fullStore, setPhotoRenderer, thumbStore } from './usePhotoTexture'
 import {
+  FOCUS_FILL_HEIGHT,
+  FOCUS_FILL_WIDTH,
   GALLERY_LAYER,
   PRINT_WIDTH,
   WALL_Z,
@@ -45,17 +47,16 @@ const PAN_SETTLE_SPEED = 0.5
  */
 const EXIT_MS = 600
 /**
- * The room behind the prints, matching `--stage-bg` of `.stage--dark`.
+ * The wall the prints hang on: the home page's own colour, `--stage-bg` of
+ * `.stage` in index.css.
  *
- * Kept in step with index.css by hand. It has to be the same colour the page is
- * transitioning to, because for one frame at the cut the viewer sees one replace
- * the other over the whole frame.
+ * Kept in step with index.css by hand. It has to be the same colour as the page
+ * behind the canvas, because for one frame at the cut the viewer sees one
+ * replace the other over the whole frame.
  */
-const BACKDROP = '#0b0c10'
+const BACKDROP = '#faf9f6'
 /** How close to the camera a focused print comes, as a fraction of the wall distance. */
 const FOCUS_GAP_RATIO = 0.35
-/** Fraction of the frame a focused print fills on its tighter axis. */
-const FOCUS_FILL = 0.88
 
 function clamp(v, lo, hi) {
   return v < lo ? lo : v > hi ? hi : v
@@ -362,8 +363,8 @@ function Wall() {
             entered={entered}
             focusZ={focusZ}
             focusScale={Math.min(
-              (2 * focusView.halfWidth * FOCUS_FILL) / p.w,
-              (2 * focusView.halfHeight * FOCUS_FILL) / p.h
+              (2 * focusView.halfWidth * FOCUS_FILL_WIDTH) / p.w,
+              (2 * focusView.halfHeight * FOCUS_FILL_HEIGHT) / p.h
             )}
             onSelect={handleSelect}
           />

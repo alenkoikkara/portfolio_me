@@ -222,7 +222,7 @@
  * Photography wall caption.
  *
  * Only the print filling the frame is captioned, and the caption sits directly
- * on the dark room with no panel behind it, so it reads these variables like
+ * on the wall with no panel behind it, so it reads these variables like
  * the rest of the overlay chrome rather than hard-coding a light-on-dark pair.
  */
 .overlay-caption {
@@ -257,6 +257,34 @@
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: lowercase;
+}
+
+/*
+ * The opened print's camera settings just under it, spread across its width —
+ * settings at the left edge, camera at the right. Placed and sized by the
+ * overlay from the print's size on screen; quiet type, like the caption, and
+ * like it waits out the print's flight rather than arriving over a moving image.
+ */
+.overlay-exposure {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  white-space: nowrap;
+  color: var(--stage-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-exposure--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 220ms;
 }
 
 @media (max-width: 640px) {

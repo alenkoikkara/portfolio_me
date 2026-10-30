@@ -11,13 +11,11 @@ import * as THREE from 'three'
  */
 function stageClass(mode) {
   // The about view keeps the light page: its glass frosts the device away
-  // against that same colour, not a change of room.
-  if (mode === 'IDLE' || ABOUT_MODES.has(mode)) return 'stage'
+  // against that same colour, not a change of room. The photography wall is
+  // hung on the home page's own colour too — its backdrop plane is that colour
+  // (BACKDROP in Gallery.jsx), so the page behind it matches on any overscroll.
+  if (mode === 'IDLE' || ABOUT_MODES.has(mode) || GALLERY_MODES.has(mode)) return 'stage'
   if (mode === 'PROJECTING') return 'stage stage--dim stage--dark'
-  // The gallery is a dark room hung with prints, so it goes all the way down —
-  // the backdrop plane fills the frame, and the page behind it should match
-  // rather than show a light edge on any overscroll.
-  if (GALLERY_MODES.has(mode)) return 'stage stage--dim stage--dark'
   return 'stage stage--dim'
 }
 
@@ -46,7 +44,9 @@ function App() {
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0.22, 0.42, 0.22], fov: 40, near: 0.001, far: 10 }}
+        /* The rest pose from Device.jsx, so the very first frame — before the
+           intro takes the camera over — is already framed where it will land. */
+        camera={{ position: [0.253, 0.4818, 0.253], fov: 40, near: 0.001, far: 10 }}
         gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,

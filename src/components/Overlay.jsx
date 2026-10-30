@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceStore'
 import { PHOTOS } from '../data/photos'
+import { formatSettings } from '../data/exif'
+import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
 
 /**
  * DOM overlay rendered outside the Canvas.
@@ -75,6 +77,10 @@ export default function Overlay() {
     // Only when something has actually been written about the photo. Falling
     // back to the id would print "img4" under a photograph.
     const captioned = Boolean(photo && (photo.caption || meta))
+    // The camera settings, read from the photo's EXIF when the wall was built.
+    // A photo whose EXIF was stripped has none, and shows no line at all.
+    const settings = formatSettings(photo?.exposure)
+    const camera = photo?.exposure?.camera ?? ''
 
     return (
       <div className="overlay">
@@ -90,6 +96,25 @@ export default function Overlay() {
         <div className={`overlay-caption ${captioned ? 'overlay-caption--visible' : ''}`}>
           {photo?.caption && <span className="overlay-caption-title">{photo.caption}</span>}
           {meta && <span className="overlay-caption-meta">{meta}</span>}
+        </div>
+
+        {/*
+          * Just under the opened print, and exactly as wide: settings at its
+          * left edge, camera at its right. The print is centred and fills
+          * FOCUS_FILL_WIDTH of the window's width or FOCUS_FILL_HEIGHT of its
+          * height, whichever it meets first (Gallery.jsx), and `min()` makes the
+          * same choice here — so the line tracks the print through a resize
+          * without any JavaScript watching it.
+          */}
+        <div
+          className={`overlay-exposure ${settings || camera ? 'overlay-exposure--visible' : ''}`}
+          style={photo ? {
+            width: `min(${FOCUS_FILL_WIDTH * 100}vw, ${FOCUS_FILL_HEIGHT * 100 * photo.aspect}vh)`,
+            top: `calc(50% + min(${FOCUS_FILL_HEIGHT * 50}vh, ${(FOCUS_FILL_WIDTH * 50) / photo.aspect}vw) + 14px)`,
+          } : undefined}
+        >
+          <span>{settings}</span>
+          <span>{camera}</span>
         </div>
 
         <div className="overlay-hint">

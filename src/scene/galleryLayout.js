@@ -9,7 +9,11 @@
  */
 export const COLUMNS = 5
 export const PRINT_WIDTH = 0.3
-export const GAP = 0.04
+/*
+ * Between prints: tight, so the wall reads as one body of work rather than
+ * separate frames — the margin at its edges (PAN_PADDING) is what gives it air.
+ */
+export const GAP = 0.02
 /** Column pitch: the width a print occupies including the gap beside it. */
 export const COLUMN_PITCH = PRINT_WIDTH + GAP
 /** How far prints vary in depth, in metres — enough to catch the light differently. */
@@ -121,11 +125,21 @@ export const GALLERY_LAYER = 1
 /** Vertical field of view of the gallery camera, in degrees. */
 export const GALLERY_FOV = 35
 
+/*
+ * How much of the frame an opened print fills: most of the width, but less of
+ * the height, to leave room under it for the line of camera settings. At the
+ * same 0.88 both ways, a landscape photo on a laptop left 54 px under itself,
+ * on top of the key hints at the bottom of the window.
+ */
+export const FOCUS_FILL_WIDTH = 0.88
+export const FOCUS_FILL_HEIGHT = 0.8
+
 /**
  * How much empty wall may show past the outermost prints when panned hard over.
  *
- * One gap — the same spacing that sits between prints — so the edge of the wall
- * reads as the layout breathing rather than as having run out of pictures.
+ * Four gaps: a clear margin, so the wall sits inside the window with room
+ * around it rather than running off its edges, but still a band and not a
+ * void.
  *
  * It used to be half a column pitch, which is a quarter of the screen's height.
  * That bought nothing at the vertical extremes: panning to the bottom put a band
@@ -133,7 +147,7 @@ export const GALLERY_FOV = 35
  * appeared to end well before the last row. The horizontal extremes are checked
  * against this too — the outermost column still comes fully into view.
  */
-export const PAN_PADDING = GAP
+export const PAN_PADDING = GAP * 4
 
 /**
  * How many column pitches should span the viewport width.

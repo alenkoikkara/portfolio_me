@@ -19,11 +19,17 @@
  * partially loaded, and every late arrival would reflow the wall under the
  * pointer.
  *
- * sharp ships as a devDependency already, so this needs no extra install.
+ * Each photo's camera settings — camera, aperture, shutter, ISO — are read
+ * from its EXIF here too and stored with it, for the line under a print when it
+ * is opened. A photo whose EXIF was stripped on export simply has none, and the
+ * script says which, so they can be re-exported with it kept.
+ *
+ * sharp and exif-reader are both devDependencies, so this needs no extra install.
  */
 import { mkdir, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readExposure, formatExposure } from '../src/data/exif.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC_DIR = join(ROOT, 'src', 'assets', 'photography')
@@ -48,6 +54,7 @@ async function load(name) {
 
 async function main() {
   const sharp = await load('sharp')
+  const exifReader = await load('exif-reader')
 
   await mkdir(FULL_DIR, { recursive: true })
   await mkdir(THUMB_DIR, { recursive: true })
@@ -79,6 +86,7 @@ async function main() {
   }
 
   const manifest = []
+  const withoutSettings = []
   for (const file of sources) {
     const id = basename(file, extname(file))
     const img = sharp(join(SRC_DIR, file), { failOn: 'error' })
@@ -96,13 +104,24 @@ async function main() {
     await img.clone().rotate().resize(THUMB_EDGE, THUMB_EDGE, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: THUMB_QUALITY }).toFile(join(THUMB_DIR, `${id}.webp`))
 
+    // A malformed EXIF block is treated like a missing one: the photo still
+    // goes on the wall, just without its settings line.
+    let exposure = null
+    try {
+      exposure = meta.exif ? readExposure(exifReader(meta.exif)) : null
+    } catch {
+      exposure = null
+    }
+    if (!exposure) withoutSettings.push(id)
+
     manifest.push({
       id,
       src: `/photos/full/${id}.webp`,
       thumb: `/photos/thumb/${id}.webp`,
       aspect: Number((width / height).toFixed(4)),
+      ...(exposure && { exposure }),
     })
-    console.log(`  ${id}  ${width}×${height}  aspect ${(width / height).toFixed(2)}`)
+    console.log(`  ${id}  ${width}×${height}  aspect ${(width / height).toFixed(2)}  ${formatExposure(exposure) || '(no camera settings)'}`)
   }
 
   await writeFile(
@@ -113,7 +132,11 @@ async function main() {
       `export const GENERATED_PHOTOS = ${JSON.stringify(manifest, null, 2)}\n`
   )
 
-  console.log(`\n${manifest.length} photos → public/photos/, manifest → src/data/photos.generated.js\n`)
+  console.log(`\n${manifest.length} photos → public/photos/, manifest → src/data/photos.generated.js`)
+  if (withoutSettings.length) {
+    console.log(`No camera settings in ${withoutSettings.length}: ${withoutSettings.join(', ')} — their EXIF was stripped on export.`)
+  }
+  console.log('')
 }
 
 main()

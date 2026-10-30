@@ -11,7 +11,22 @@ import deviceFade from './deviceFade'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
-const CAM_REST_POS = [0.22, 0.42, 0.22]
+
+/*
+ * How much further back than first framed the camera rests, along the same
+ * line to the device — the device is real-size and never scales, so a smaller
+ * device on screen means a camera standing further off. 1.15 draws it at about
+ * 87% of its original size. The intro fly-in is pulled back by the same factor
+ * so it still lands exactly on the rest pose, instead of coming in too close and
+ * drifting back out.
+ */
+const REST_PULLBACK = 1.15
+const pulledBack = ([x, y, z]) => [
+  CAM_TARGET[0] + (x - CAM_TARGET[0]) * REST_PULLBACK,
+  CAM_TARGET[1] + (y - CAM_TARGET[1]) * REST_PULLBACK,
+  CAM_TARGET[2] + (z - CAM_TARGET[2]) * REST_PULLBACK,
+]
+const CAM_REST_POS = pulledBack([0.22, 0.42, 0.22])
 /*
  * Open pose: the camera glides almost straight above the device so it reads
  * flat and screen-aligned, with the look target shifted towards the back edge
@@ -103,11 +118,11 @@ const DEVICE_FADE_SECONDS = 0.7
 const UP_IDLE = new THREE.Vector3(0, 1, 0)
 const UP_OPEN = new THREE.Vector3(0, 0, -1)
 const CAM_PATH = [
-  { t: 0.00, pos: [0.38, 0.10, 0.42] },
-  { t: 2.60, pos: [0.34, 0.18, 0.37] },
-  { t: 4.33, pos: [0.30, 0.26, 0.32] },
-  { t: 6.83, pos: [0.26, 0.34, 0.27] },
-  { t: 9.17, pos: [0.22, 0.42, 0.22] },
+  { t: 0.00, pos: pulledBack([0.38, 0.10, 0.42]) },
+  { t: 2.60, pos: pulledBack([0.34, 0.18, 0.37]) },
+  { t: 4.33, pos: pulledBack([0.30, 0.26, 0.32]) },
+  { t: 6.83, pos: pulledBack([0.26, 0.34, 0.27]) },
+  { t: 9.17, pos: CAM_REST_POS },
 ]
 const CAM_HFOV = 36.24
 
@@ -292,6 +307,9 @@ export default function Device({ slotAnchorRef }) {
     openTarget: new THREE.Vector3(...CAM_OPEN_TARGET),
     projectPos: new THREE.Vector3(...CAM_PROJECT_POS),
     projectTarget: new THREE.Vector3(...CAM_PROJECT_TARGET),
+    // Scratch for the snap-back, so it allocates nothing per frame.
+    offset: new THREE.Vector3(),
+    restOffset: new THREE.Vector3(),
   }), [])
 
   // Every material under the device root, with the `transparent` flag it was
@@ -525,16 +543,30 @@ export default function Device({ slotAnchorRef }) {
     // 3b. Elastic camera snap-back — at rest, and under the about overlay,
     // which hides the device and wants the camera settled at its rest pose.
     //
-    // Straight position ease, not a spherical one. Orbiting the azimuth is
+    // The camera's direction from its target and its distance from it are
+    // eased apart. A drag swings the camera round the device at a fixed
+    // distance, and easing the position in a straight line back to rest cuts
+    // the chord of that arc — through the inside of the sphere — so the camera
+    // passed up to a fifth nearer the device on its way back, and the device
+    // swelled and shrank as if zoomed. Easing the direction keeps the camera on
+    // the sphere; easing the distance on its own lets the one move that does
+    // change it, the carousel closing from higher up, still settle smoothly.
+    //
+    // Not a spherical ease: that works in angles, and orbiting the azimuth is
     // degenerate directly overhead, which is exactly where the camera sits
-    // when the carousel closes: a hair of movement in the look target flips
+    // when the carousel closes — a hair of movement in the look target flips
     // the azimuth by half a turn, sending the camera around the far side and
-    // landing it rolled over. Easing the position needs no angles at all.
+    // landing it rolled over. Blending direction vectors has no angles in it.
     if (introDone && !isDraggingRef.current && (mode === 'IDLE' || inAbout)) {
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(camScratch.restTarget, k)
-      state.camera.position.lerp(camScratch.restPos, k)
-      state.camera.lookAt(camTargetRef.current)
+      const target = camTargetRef.current
+      const offset = camScratch.offset.subVectors(state.camera.position, target)
+      const rest = camScratch.restOffset.subVectors(camScratch.restPos, camScratch.restTarget)
+      const distance = MathUtils.lerp(offset.length(), rest.length(), k)
+      offset.normalize().lerp(rest.normalize(), k).normalize()
+      state.camera.position.copy(target).addScaledVector(offset, distance)
+      state.camera.lookAt(target)
     }
 
     // 4. Exploded view animation (body & screen)

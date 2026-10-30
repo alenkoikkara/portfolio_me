@@ -19,9 +19,14 @@ import usePhotoTexture, { IMMEDIATE, fullStore, thumbStore } from './usePhotoTex
  * track the pan or be spread so thin it resolved nothing — and the depth jitter
  * reads through shading against the grazing wall light anyway, which is free.
  */
-const PLACEHOLDER = '#15161a'
-/** How far a print that is not the focused one is taken down. */
-const DIM_OPACITY = 0.22
+// A shade under the wall, so a print still loading reads as its frame's place
+// on the wall rather than a hole in it.
+const PLACEHOLDER = '#ecebe6'
+/*
+ * A print that is not the focused one goes all the way out, so an opened photo
+ * stands on the bare page colour — the backdrop — rather than over a faded wall.
+ */
+const DIM_OPACITY = 0
 
 function Print({ photo, x, y, z, rot, w, h, inFrame, priority, focused, dimmed, entered, focusZ, focusScale, onSelect }) {
   // `priority` is the print's distance from the middle of the view when it came
@@ -55,11 +60,18 @@ function Print({ photo, x, y, z, rot, w, h, inFrame, priority, focused, dimmed, 
       position={spring.position}
       rotation={spring.rotation}
       scale={spring.scale}
+      /*
+       * A dimmed print is invisible, so it must not be clickable either: its
+       * click passes through to the backdrop behind, which steps back to the
+       * wall, instead of opening a photo nobody could see.
+       */
       onClick={(e) => {
+        if (dimmed) return
         e.stopPropagation()
         onSelect(photo.id)
       }}
       onPointerOver={(e) => {
+        if (dimmed) return
         e.stopPropagation()
         document.body.style.cursor = 'pointer'
       }}

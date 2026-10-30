@@ -236,6 +236,37 @@ describe('the caption', () => {
   })
 })
 
+describe('the camera settings', () => {
+  beforeEach(() => set({ mode: 'GALLERY' }))
+
+  it('stay hidden until a print is opened', () => {
+    const { container } = render(<Overlay />)
+    expect(container.querySelector('.overlay-exposure--visible')).toBeNull()
+  })
+
+  it('appear under an opened print that carries them', () => {
+    const shot = PHOTOS.find((p) => p.exposure)
+    set({ focusedPhotoId: shot.id })
+    const { container } = render(<Overlay />)
+    const line = container.querySelector('.overlay-exposure--visible')
+    expect(line).toBeTruthy()
+    // Settings at the print's left edge, camera at its right.
+    const [left, right] = line.children
+    expect(left.textContent).toContain(`ISO ${shot.exposure.iso}`)
+    expect(right.textContent).toBe(shot.exposure.camera)
+    // Placed from the print's own aspect, so it sits under its bottom edge.
+    expect(line.style.top).toContain(`${shot.aspect}`)
+  })
+
+  it('say nothing for a print whose EXIF was stripped', () => {
+    const bare = PHOTOS.find((p) => !p.exposure)
+    if (!bare) return
+    set({ focusedPhotoId: bare.id })
+    const { container } = render(<Overlay />)
+    expect(container.querySelector('.overlay-exposure--visible')).toBeNull()
+  })
+})
+
 describe('keyboard listener lifecycle', () => {
   it('stops listening once it unmounts', () => {
     set({ mode: 'BROWSING' })

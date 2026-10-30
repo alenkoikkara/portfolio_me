@@ -15,13 +15,25 @@ export const GENERATED_PHOTOS = [
     "id": "img2",
     "src": "/photos/full/img2.webp",
     "thumb": "/photos/thumb/img2.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.00045004500450045,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img3",
     "src": "/photos/full/img3.webp",
     "thumb": "/photos/thumb/img3.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.001941747572815534,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img4",
@@ -33,19 +45,37 @@ export const GENERATED_PHOTOS = [
     "id": "img5",
     "src": "/photos/full/img5.webp",
     "thumb": "/photos/thumb/img5.webp",
-    "aspect": 0.75
+    "aspect": 0.75,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.0006680026720106881,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img6",
     "src": "/photos/full/img6.webp",
     "thumb": "/photos/thumb/img6.webp",
-    "aspect": 1.691
+    "aspect": 1.691,
+    "exposure": {
+      "camera": "Apple iPhone 6s",
+      "iso": 25,
+      "exposure": 0.0002339728591483388,
+      "aperture": 2.2
+    }
   },
   {
     "id": "img7",
     "src": "/photos/full/img7.webp",
     "thumb": "/photos/thumb/img7.webp",
-    "aspect": 1.3332
+    "aspect": 1.3332,
+    "exposure": {
+      "camera": "Apple iPhone 6s",
+      "iso": 25,
+      "exposure": 0.000273000273000273,
+      "aperture": 2.2
+    }
   },
   {
     "id": "img8",
@@ -63,7 +93,13 @@ export const GENERATED_PHOTOS = [
     "id": "img10",
     "src": "/photos/full/img10.webp",
     "thumb": "/photos/thumb/img10.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.000249003984063745,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img11",
@@ -87,7 +123,13 @@ export const GENERATED_PHOTOS = [
     "id": "img14",
     "src": "/photos/full/img14.webp",
     "thumb": "/photos/thumb/img14.webp",
-    "aspect": 1.5
+    "aspect": 1.5,
+    "exposure": {
+      "camera": "Canon EOS 700D",
+      "iso": 640,
+      "exposure": 0.005,
+      "aperture": 5.6
+    }
   },
   {
     "id": "img15",
@@ -99,7 +141,13 @@ export const GENERATED_PHOTOS = [
     "id": "img16",
     "src": "/photos/full/img16.webp",
     "thumb": "/photos/thumb/img16.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 200,
+      "exposure": 0.016666666666666666,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img17",
@@ -117,121 +165,241 @@ export const GENERATED_PHOTOS = [
     "id": "img19",
     "src": "/photos/full/img19.webp",
     "thumb": "/photos/thumb/img19.webp",
-    "aspect": 0.6666
+    "aspect": 0.6666,
+    "exposure": {
+      "camera": "Canon EOS 700D",
+      "iso": 800,
+      "exposure": 0.004,
+      "aperture": 22
+    }
   },
   {
     "id": "img20",
     "src": "/photos/full/img20.webp",
     "thumb": "/photos/thumb/img20.webp",
-    "aspect": 1.7783
+    "aspect": 1.7783,
+    "exposure": {
+      "camera": "Canon EOS 700D",
+      "iso": 6400,
+      "exposure": 0.003125,
+      "aperture": 5.6
+    }
   },
   {
     "id": "img21",
     "src": "/photos/full/img21.webp",
     "thumb": "/photos/thumb/img21.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 6s",
+      "iso": 25,
+      "exposure": 0.008,
+      "aperture": 2.2
+    }
   },
   {
     "id": "img22",
     "src": "/photos/full/img22.webp",
     "thumb": "/photos/thumb/img22.webp",
-    "aspect": 0.75
+    "aspect": 0.75,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 500,
+      "exposure": 0.02,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img23",
     "src": "/photos/full/img23.webp",
     "thumb": "/photos/thumb/img23.webp",
-    "aspect": 0.75
+    "aspect": 0.75,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 64,
+      "exposure": 0.008333333333333333,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img24",
     "src": "/photos/full/img24.webp",
     "thumb": "/photos/thumb/img24.webp",
-    "aspect": 0.9507
+    "aspect": 0.9507,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.0018115942028985507,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img25",
     "src": "/photos/full/img25.webp",
     "thumb": "/photos/thumb/img25.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 125,
+      "exposure": 0.016666666666666666,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img26",
     "src": "/photos/full/img26.webp",
     "thumb": "/photos/thumb/img26.webp",
-    "aspect": 0.7499
+    "aspect": 0.7499,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 64,
+      "exposure": 0.02,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img27",
     "src": "/photos/full/img27.webp",
     "thumb": "/photos/thumb/img27.webp",
-    "aspect": 1.3333
+    "aspect": 1.3333,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 40,
+      "exposure": 0.00390625,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img28",
     "src": "/photos/full/img28.webp",
     "thumb": "/photos/thumb/img28.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 500,
+      "exposure": 0.04,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img29",
     "src": "/photos/full/img29.webp",
     "thumb": "/photos/thumb/img29.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 32,
+      "exposure": 0.007462686567164179,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img30",
     "src": "/photos/full/img30.webp",
     "thumb": "/photos/thumb/img30.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.00013599891200870393,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img31",
     "src": "/photos/full/img31.webp",
     "thumb": "/photos/thumb/img31.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.003003003003003003,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img32",
     "src": "/photos/full/img32.webp",
     "thumb": "/photos/thumb/img32.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 500,
+      "exposure": 0.04,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img33",
     "src": "/photos/full/img33.webp",
     "thumb": "/photos/thumb/img33.webp",
-    "aspect": 1.7778
+    "aspect": 1.7778,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.0006510416666666666,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img34",
     "src": "/photos/full/img34.webp",
     "thumb": "/photos/thumb/img34.webp",
-    "aspect": 1.7778
+    "aspect": 1.7778,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 50,
+      "exposure": 0.0017331022530329288,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img35",
     "src": "/photos/full/img35.webp",
     "thumb": "/photos/thumb/img35.webp",
-    "aspect": 1.3333
+    "aspect": 1.3333,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 100,
+      "exposure": 0.008333333333333333,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img36",
     "src": "/photos/full/img36.webp",
     "thumb": "/photos/thumb/img36.webp",
-    "aspect": 0.6731
+    "aspect": 0.6731,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 320,
+      "exposure": 0.016666666666666666,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img37",
     "src": "/photos/full/img37.webp",
     "thumb": "/photos/thumb/img37.webp",
-    "aspect": 2.0983
+    "aspect": 2.0983,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 40,
+      "exposure": 0.008333333333333333,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img38",
     "src": "/photos/full/img38.webp",
     "thumb": "/photos/thumb/img38.webp",
-    "aspect": 1
+    "aspect": 1,
+    "exposure": {
+      "camera": "Apple iPhone 13",
+      "iso": 40,
+      "exposure": 0.005,
+      "aperture": 1.6
+    }
   },
   {
     "id": "img39",

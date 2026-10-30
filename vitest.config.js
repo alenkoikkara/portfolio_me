@@ -39,6 +39,7 @@ export default defineConfig({
         'src/scene/usePreviewTexture.js',
         'src/scene/deviceFade.js',
         'src/data/photos.js',
+        'src/data/exif.js',
         'src/components/Overlay.jsx',
       ],
       thresholds: {

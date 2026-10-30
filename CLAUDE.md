@@ -200,13 +200,14 @@ swapping which camera is default is a cut rather than a glide — so **both cuts
 arranged to land on an empty frame of one colour that the desk and the wall share**,
 and nothing is ever seen changing.
 
-`OPENING_GALLERY` is the beat where the device fades out and the stage dims
-together, while the wall — mounted but five metres behind and out of frame — gets
+`OPENING_GALLERY` is the beat where the device fades out — on the home page's
+own colour, which the wall is hung on too, so the page itself never changes — while
+the wall — mounted but five metres behind and out of frame — gets
 its textures on the wire. The device's fade calls `galleryOpened()`, so the camera
 cannot change hands while the desk is still on screen; the prints then come up into
 the empty frame. `CLOSING_GALLERY` is the reverse: the prints clear with the camera
 still on the wall, then it hands back to a desk that is still faded out, and the
-device and the room come up together on `IDLE`.
+device fades back in on `IDLE`.
 
 **The wall renders on its own layer (`GALLERY_LAYER`), and only the gallery camera
 enables it.** This is load-bearing, not tidiness. The backdrop has to stay filled at
@@ -227,10 +228,12 @@ while the wall is mounted and disables it on the way out. Anything else put on a
 layer needs the same, and the failure will look like a dead mesh rather than a
 layer problem.
 
-Three values then have to agree so the cut itself is invisible: the stage dim
-(`700ms` on `.stage` in `index.css`), the device fade (`DEVICE_FADE_SECONDS` in
-`Device.jsx`), and the backdrop colour (`BACKDROP` in `Gallery.jsx`, which must equal
-`--stage-bg` of `.stage--dark`). The backdrop is **unlit and `toneMapped={false}`**
+Two values then have to agree so the cut itself is invisible: the device fade
+(`DEVICE_FADE_SECONDS` in `Device.jsx`), which has to finish before the camera
+changes hands, and the backdrop colour (`BACKDROP` in `Gallery.jsx`, which must
+equal `--stage-bg` of `.stage` — the home page's colour, which the gallery keeps;
+it was a dark room once, with the stage dimming to `.stage--dark` over 700 ms in
+step with the fade). The backdrop is **unlit and `toneMapped={false}`**
 for the last of those — a lit material comes out of the tone mapper some way off its
 authored value, and any gap between it and the page behind the canvas shows as a
 flash at the moment the cameras swap.
@@ -269,6 +272,7 @@ the camera came back to the desk.
 | Gallery camera and its pan input | `src/scene/GalleryCamera.jsx` |
 | Photo texture caches (thumb + full) | `src/scene/usePhotoTexture.js` |
 | Photo catalogue | `src/data/photos.js` (+ generated `photos.generated.js`) |
+| Camera settings: EXIF reading and wording | `src/data/exif.js` |
 | Device fade, shared with its shadows | `src/scene/deviceFade.js` |
 | The bio column: fade, pointer gating | `src/scene/AboutPanel.jsx` |
 | About view: camera-riding group, mode reports | `src/scene/AboutView.jsx` |
@@ -289,15 +293,28 @@ Unused, kept only as history — do not extend, and check before assuming it run
 - **Real-world scale, in metres.** The device is 92 × 98 × 15 mm, so a keycap is
   `0.008` tall and the camera's near plane is `0.001`. A near plane of `0.1` clips
   the entire model — this is the classic mistake here.
+- **To change how big the device looks at rest, move the camera, not the device.**
+  `REST_PULLBACK` in `Device.jsx` stands the rest pose further back along the same
+  line, and pulls the intro fly-in back by the same factor so it still lands
+  exactly on rest. Scaling the model instead would break the real-world scale the
+  cartridges, slot and projector are all built to.
 - **The device never moves or rotates.** Every "the device slid down" effect is the
   camera changing pose. There are three: rest, open and projecting, all in
   `Device.jsx`. The about view keeps the rest pose; it frosts the device away
   behind glass rather than moving the view.
 - **The open camera looks almost straight down**, which makes both `lookAt`'s roll and
   spherical azimuth degenerate. The up vector is therefore steered explicitly
-  (world `+Y` at rest, world `-Z` when open) and the return home eases position
-  directly. **Never reintroduce spherical interpolation for the camera** — it sends
+  (world `+Y` at rest, world `-Z` when open). **Never reintroduce spherical
+  interpolation for the camera** — it works in angles, and from overhead it sends
   the view around the far side and lands it upside down.
+- **The return home eases the camera's direction and its distance apart** — a
+  blend of direction vectors, with no angles in it, so the overhead case above is
+  safe. Easing the position in a straight line, as it once did, cut the chord of
+  the arc a drag had swung the camera through: the camera passed up to 19% nearer
+  the device on its way back, and the device swelled and shrank as if zoomed.
+  Measured after the fix: the distance holds at exactly the rest distance through
+  the whole return from a drag, and the carousel's close from overhead still
+  turns steadily home, upright, without once swinging away.
 - In the open view, **screen-up is world `-Z`** — the edge carrying the slot and lens.
 - **The photography wall is somewhere else, not something the device becomes.** It
   hangs at `WALL_Z = -5`, five metres behind the device, with its own camera. That is
@@ -338,6 +355,24 @@ every build, so a stale model cannot ship; the photo manifest has no such
 protection, and a photo added without running the script simply will not be on the
 wall. It is left out of the build on purpose — re-encoding every original on every
 build would be slow, and the originals change far less often than the code.
+
+**Camera settings are read from the file, not written by hand.** The script parses
+each original's EXIF (`exif-reader`) and stores the raw numbers — camera, ISO,
+exposure in seconds, f-number — as `exposure` on the manifest entry; the overlay
+formats them into the line under an opened print ("Apple iPhone 13 · ƒ/1.6 ·
+1/1536s · ISO 50"), with the settings at the print's left edge and the camera at
+its right. The reading and the wording both live in `src/data/exif.js`,
+shared by the script and the UI. A photo whose EXIF was stripped on export gets no
+line rather than an empty one, and the script lists those at the end of its run —
+re-export with metadata kept to fix one.
+
+That line is placed in CSS from the same fractions the camera uses to frame a
+focused print (`FOCUS_FILL_WIDTH` / `FOCUS_FILL_HEIGHT` in `galleryLayout.js`), so
+it sits under the image's bottom edge and spans exactly its width for any aspect.
+While a print is open every other one fades out completely and stops taking
+clicks, so it stands on the bare page colour; a click where a hidden print hangs
+falls through to the backdrop and steps back to the wall. Height is 80% rather than the
+whole frame to leave room for it; change those constants and both follow.
 
 Files are ordered numerically, not lexically, so `img2` comes before `img10`. That
 order is what the masonry pack consumes, so it decides where each photo hangs.
@@ -414,7 +449,8 @@ the filter, not the raw noise, and were chosen by metering.
 
 `src/components/Overlay.jsx` for markup and keyboard, `src/index.css` for styling.
 The overlay re-themes with the scene through `--stage-*` custom properties on the
-wrapper in `App.jsx`: light at rest, dim while browsing, darker while projecting.
+wrapper in `App.jsx`: light at rest and on the photography wall and the about
+view, dim while browsing, darker while projecting.
 Read those variables rather than hard-coding colours, or the element will not follow
 the room lights down.
 
@@ -471,11 +507,12 @@ text on a still-light background.
   wall queues rows and drops them unfetched, and images arrive for wherever the
   pan comes to rest. A focused print passes `IMMEDIATE` and skips all of it: it is
   the one image the viewer is actually waiting on.
-- **The pan limits stop at the pictures, not past them.** `PAN_PADDING` is one
-  `GAP` — the same spacing that sits between prints — so the edge of the wall reads
-  as the layout breathing. It was half a column pitch, which is a quarter of the
-  screen height: panning to the bottom then put an empty band under every column at
-  once, and the same above, and the wall appeared to have ended well before its last
+- **The pan limits stop just past the pictures.** `PAN_PADDING` is four `GAP`s
+  (80 mm against 20 mm between prints), so the wall sits inside the window with a
+  clear margin while the prints themselves hang tight together. It was once half a
+  column pitch, which is a quarter of the screen height: panning to the bottom then
+  put an empty band under every column at once, and the same above, and the wall
+  appeared to have ended well before its last
   row. Note the bottom edge is still *ragged*, because masonry columns rarely end
   level — with the current twenty they differ by about 0.3 m. That is the layout,
   not a bug; packing tallest-first would cut it to about 0.06 m at the cost of file

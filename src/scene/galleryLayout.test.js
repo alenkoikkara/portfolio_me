@@ -214,10 +214,11 @@ describe('panRange', () => {
     expect(emptyAbove).toBeCloseTo(PAN_PADDING, 10)
   })
 
-  it('never pads by more than the gap between prints', () => {
+  it('pads the edges more than the gaps, but well short of half a column', () => {
     // The defect this guards: a padding of half a column pitch put a quarter of
     // a screen of empty backdrop under the wall at the bottom of every pan.
-    expect(PAN_PADDING).toBeLessThanOrEqual(GAP)
+    expect(PAN_PADDING).toBeGreaterThan(GAP)
+    expect(PAN_PADDING).toBeLessThan(COLUMN_PITCH / 2)
   })
 
   it('still brings the outermost column fully into view', () => {
