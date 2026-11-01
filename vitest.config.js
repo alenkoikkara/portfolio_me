@@ -33,6 +33,7 @@ export default defineConfig({
       include: [
         'src/scene/galleryLayout.js',
         'src/scene/aboutLayout.js',
+        'src/scene/cameraFov.js',
         'src/scene/constellationLayout.js',
         'src/scene/useDeviceStore.js',
         'src/scene/usePhotoTexture.js',

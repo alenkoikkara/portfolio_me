@@ -220,6 +220,24 @@ Sizing the plane to stay out of frame would have to be re-derived whenever the w
 or viewport changed, and being wrong by a little brings the whole failure back. The
 wall's two lights sit on the layer too, which is also what keeps them off the device.
 
+**The gallery's hints sit on a pill of Liquid Glass drawn in the canvas, not in
+CSS** (`GlassPill.jsx`). Apple's glass bends what is behind it, and
+`backdrop-filter` only blurs — it refracts solely through SVG filters, which
+Safari does not run. The DOM element (`data-glass-pill` in `Overlay.jsx`) keeps
+the words and its padding sets the pill's size; each frame the pill reads that
+rect and eases toward it, so it morphs when the text changes. It draws last
+(`renderOrder` 1000) and, in `onBeforeRender`, copies the part of the frame
+already drawn behind it with `copyFramebufferToTexture`, then refracts that. That
+copy is of the finished, tone-mapped frame, so the colours through the glass
+match the page exactly — a second render into a target would skip tone mapping
+and come out graded differently. The glass stays clear — barely a pixel of
+blur, with the look carried by the rim's lensing — and **the words adapt
+instead, as Apple's do**: a few times a second it reads one row of pixels back
+from behind the pill and turns each word white over dark content and ink over
+light, with a gap between the two thresholds so a word over a mid-grey print
+does not flicker. Frosting the glass until dark ink read over a dark print was
+tried first; it made the pill a grey lozenge, which is what it is not.
+
 **A layer hides things from the pointer as well as from a camera.** A `Raycaster`
 tests layer 0 and nothing else unless told otherwise, so moving the wall onto its
 own layer silently took every print out of reach of a click — no error, the prints
@@ -257,6 +275,7 @@ the camera came back to the desk.
 |---|---|
 | Canvas, renderer flags, debug hooks, shader warm-up | `src/scene/Stage.jsx` |
 | Device model, all cameras, keys, intro playback | `src/scene/Device.jsx` |
+| The device camera's field of view per window shape | `src/scene/cameraFov.js` |
 | Cartridge strip layout and per-slot poses | `src/scene/Carousel.jsx` |
 | One cartridge instance (mesh clone, materials, label) | `src/scene/Cartridge.jsx` |
 | The cartridge that flies into the slot | `src/scene/ActiveCartridge.jsx` |
@@ -277,6 +296,7 @@ the camera came back to the desk.
 | The bio column: fade, pointer gating | `src/scene/AboutPanel.jsx` |
 | About view: camera-riding group, mode reports | `src/scene/AboutView.jsx` |
 | The frosted glass pane and its shader | `src/scene/LiquidGlass.jsx` |
+| Liquid Glass pill under a DOM element (the gallery's hints) | `src/scene/GlassPill.jsx` |
 | About view arithmetic: bio and constellation placement, depths, text scale | `src/scene/aboutLayout.js` |
 | The constellation: stars, milestone path and its reveal | `src/scene/Constellation.jsx` |
 | Where each star and label goes, in pixels | `src/scene/constellationLayout.js` |
@@ -298,6 +318,15 @@ Unused, kept only as history — do not extend, and check before assuming it run
   line, and pulls the intro fly-in back by the same factor so it still lands
   exactly on rest. Scaling the model instead would break the real-world scale the
   cartridges, slot and projector are all built to.
+- **The device is the same share of the window's height on every desktop shape.**
+  `cameraFov.js` locks the *vertical* field of view from an aspect of 1.25 up, at
+  what a 16:9 window always had, so 5:4, 16:10, 16:9 and ultrawide all measure the
+  device at 55% of the height. It was once a fixed horizontal FOV for every
+  window, which made it a share of the *width*: 41% of the height at 4:3 and 73%
+  on an ultrawide. Phones and portrait windows keep the horizontal lock, since
+  there width is what runs out, and the two rules blend between aspects 1 and
+  1.25. `aboutLayout.js` reads the same module to turn pixels into camera space,
+  so the about view cannot drift from the camera.
 - **The device never moves or rotates.** Every "the device slid down" effect is the
   camera changing pose. There are three: rest, open and projecting, all in
   `Device.jsx`. The about view keeps the rest pose; it frosts the device away

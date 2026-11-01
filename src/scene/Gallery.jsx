@@ -4,6 +4,7 @@ import { PHOTOS } from '../data/photos'
 import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
 import GalleryCamera from './GalleryCamera'
 import Print from './Print'
+import GlassPill from './GlassPill'
 import { fullStore, setPhotoRenderer, thumbStore } from './usePhotoTexture'
 import {
   FOCUS_FILL_HEIGHT,
@@ -325,6 +326,9 @@ function Wall() {
         focusTarget={focusTarget}
         dragRef={dragRef}
       />
+
+      {/* The glass under the overlay's hints (Overlay.jsx), drawn here so it can bend the wall. */}
+      <GlassPill selector="[data-glass-pill]" show={mode === 'GALLERY'} />
 
       <group ref={wallRef} position={[0, 0, WALL_Z]}>
         {/*

@@ -219,6 +219,33 @@
 }
 
 /*
+ * The photography wall's hints, on a pill of Liquid Glass. On the wall they sit
+ * over photographs rather than the bare page, where faint text on its own is
+ * lost against a busy print. The glass is not CSS: it is drawn in the canvas
+ * under this element (GlassPill.jsx), because Apple's glass bends what is
+ * behind it and `backdrop-filter` can only blur. This sets the pill's size —
+ * its padding is the glass around the words — and is shifted out by that
+ * padding, so the words stay exactly where the other modes put them.
+ */
+.overlay-hint--glass {
+  bottom: 20px;
+  left: calc(2.5rem - 16px);
+  padding: 9px 16px;
+  color: var(--stage-ink);
+}
+
+.overlay-hint--glass > span {
+  opacity: 0.85;
+  transition: color 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Over a dark print the glass stays clear and the word turns white, as Apple's do. */
+.overlay-hint--glass > span[data-tone='light'] {
+  color: #ffffff;
+  opacity: 0.95;
+}
+
+/*
  * Photography wall caption.
  *
  * Only the print filling the frame is captioned, and the caption sits directly

@@ -8,6 +8,7 @@ import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './useDeviceStore'
 import * as THREE from 'three'
 import { playMechanicalClick } from './audio'
 import deviceFade from './deviceFade'
+import { verticalFov } from './cameraFov'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
@@ -124,7 +125,6 @@ const CAM_PATH = [
   { t: 6.83, pos: pulledBack([0.26, 0.34, 0.27]) },
   { t: 9.17, pos: CAM_REST_POS },
 ]
-const CAM_HFOV = 36.24
 
 function smoothstep(t) { return t * t * (3 - 2 * t) }
 
@@ -347,17 +347,14 @@ export default function Device({ slotAnchorRef }) {
    */
   const inGallery = GALLERY_MODES.has(mode)
 
-  // Keep Blender's horizontal FOV regardless of window shape
+  // The same device size on any desktop-shaped window; see cameraFov.js.
   const { size, camera } = useThree()
   useEffect(() => {
     // `camera` is whichever camera is currently default, and in the gallery
     // that is the wall's own — which wants its own field of view, not the one
     // framing a 92 mm device.
     if (inGallery) return
-    const aspect = size.width / size.height
-    const hfov = THREE.MathUtils.degToRad(CAM_HFOV)
-    const vfov = 2 * Math.atan(Math.tan(hfov / 2) / Math.max(aspect, 0.0001))
-    camera.fov = THREE.MathUtils.radToDeg(vfov)
+    camera.fov = verticalFov(size.width / Math.max(size.height, 1))
     camera.updateProjectionMatrix()
   }, [size.width, size.height, camera, inGallery])
 

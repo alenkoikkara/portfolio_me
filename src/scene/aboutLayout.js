@@ -11,8 +11,7 @@
  * exactly whatever the camera is doing, and nothing here needs the rest pose.
  */
 
-/** Horizontal field of view, degrees — must match `CAM_HFOV` in Device.jsx. */
-export const HFOV = 36.24
+import { tanHalfVertical } from './cameraFov'
 
 export const PANEL_WIDTH = 340
 /** Margin kept clear at the window's edges, in CSS px. */
@@ -82,11 +81,11 @@ const GLASS_BEVEL = 22
 export const GLASS_ORDER = 10
 export const CONTENT_ORDER = 11
 
-const tanHalf = Math.tan((HFOV * Math.PI) / 360)
-
 /** Metres per screen pixel, on a plane facing the camera `depth` metres away. */
-export function pixelAt(depth, width) {
-  return (2 * depth * tanHalf) / Math.max(width, 1)
+export function pixelAt(depth, width, height) {
+  const w = Math.max(width, 1)
+  const h = Math.max(height, 1)
+  return (2 * depth * tanHalfVertical(w / h)) / h
 }
 
 /**
@@ -95,16 +94,16 @@ export function pixelAt(depth, width) {
  * at exactly its CSS size: legible on a phone, where a fixed factor shrinks it
  * to a quarter, and sharp, because the browser never has to resample it.
  */
-export function distanceFactorAt(depth, width) {
-  return 400 * pixelAt(depth, width)
+export function distanceFactorAt(depth, width, height) {
+  return 400 * pixelAt(depth, width, height)
 }
 
 /** A screen pixel, `depth` metres in front of the camera, in camera space. */
 export function cameraSpaceAt(px, py, depth, width, height) {
   const w = Math.max(width, 1)
   const h = Math.max(height, 1)
-  const frameWidth = 2 * depth * tanHalf
-  return [(px / w - 0.5) * frameWidth, (0.5 - py / h) * frameWidth * (h / w), -depth]
+  const frameHeight = 2 * depth * tanHalfVertical(w / h)
+  return [(px / w - 0.5) * frameHeight * (w / h), (0.5 - py / h) * frameHeight, -depth]
 }
 
 /**
@@ -157,7 +156,7 @@ export function aboutLayout(width, height, count) {
     ? { x0: EDGE, x1: panel.x - GAP, y0: CHROME_TOP, y1: h - CHROME_BOTTOM }
     : { x0: EDGE / 2, x1: w - EDGE / 2, y0: CHROME_TOP, y1: sky.y1 }
 
-  const glassPixel = pixelAt(GLASS_DEPTH, w)
+  const glassPixel = pixelAt(GLASS_DEPTH, w, h)
   return {
     layout: side ? 'side' : 'stacked',
     sky,
@@ -165,13 +164,13 @@ export function aboutLayout(width, height, count) {
     panel: {
       ...panel,
       position: cameraSpaceAt(panel.x, panel.y, CONTENT_DEPTH, w, h),
-      distanceFactor: distanceFactorAt(CONTENT_DEPTH, w),
+      distanceFactor: distanceFactorAt(CONTENT_DEPTH, w, h),
     },
     content: {
       depth: CONTENT_DEPTH,
       // Metres per screen pixel on the content plane, for sizing in pixels.
-      pixel: pixelAt(CONTENT_DEPTH, w),
-      distanceFactor: distanceFactorAt(CONTENT_DEPTH, w),
+      pixel: pixelAt(CONTENT_DEPTH, w, h),
+      distanceFactor: distanceFactorAt(CONTENT_DEPTH, w, h),
       origin: cameraSpaceAt(0, 0, CONTENT_DEPTH, w, h),
     },
     // The plane the pane is drawn on fills the frame; the pane's rounded shape

@@ -117,7 +117,12 @@ export default function Overlay() {
           <span>{camera}</span>
         </div>
 
-        <div className="overlay-hint">
+        {/*
+          * On glass: here the hints sit over photographs, not the bare page. The
+          * glass itself is drawn in the canvas under this element (GlassPill.jsx),
+          * which finds it by the data attribute and follows its size.
+          */}
+        <div className="overlay-hint overlay-hint--glass" data-glass-pill>
           {focusedPhotoId ? <span>esc back</span> : <span>drag to pan</span>}
           {!focusedPhotoId && <span>click a print</span>}
           {!focusedPhotoId && <span>esc close</span>}

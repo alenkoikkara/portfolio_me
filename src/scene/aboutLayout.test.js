@@ -5,22 +5,21 @@ import {
   cameraSpaceAt,
   distanceFactorAt,
   pixelAt,
-  HFOV,
   PANEL_WIDTH,
   GLASS_DEPTH,
   CONTENT_DEPTH,
   GLASS_ORDER,
   CONTENT_ORDER,
 } from './aboutLayout'
-
-const tanHalf = Math.tan((HFOV * Math.PI) / 360)
+import { tanHalfVertical } from './cameraFov'
 
 /** Where a camera-space point lands on screen, in CSS px. */
 function project([x, y, z], w, h) {
   const depth = -z
+  const tanV = tanHalfVertical(w / h)
   return [
-    (x / (depth * tanHalf) + 1) / 2 * w,
-    (1 - y / (depth * tanHalf * (h / w))) / 2 * h,
+    (x / (depth * tanV * (w / h)) + 1) / 2 * w,
+    (1 - y / (depth * tanV)) / 2 * h,
   ]
 }
 
@@ -137,9 +136,9 @@ describe('placing things in front of the camera', () => {
   it('draws the glass on a plane that fills the frame, with the pane inset inside it', () => {
     for (const [w, h] of Object.values(WINDOWS)) {
       const { glass } = aboutLayout(w, h, 6)
-      const frameWidth = 2 * GLASS_DEPTH * tanHalf
-      expect(glass.frameWidth).toBeCloseTo(frameWidth, 12)
-      expect(glass.frameHeight).toBeCloseTo(frameWidth * (h / w), 12)
+      const frameHeight = 2 * GLASS_DEPTH * tanHalfVertical(w / h)
+      expect(glass.frameHeight).toBeCloseTo(frameHeight, 12)
+      expect(glass.frameWidth).toBeCloseTo(frameHeight * (w / h), 12)
       // The pane's edge has to be on screen to bend anything, and its corners
       // and bevel have to fit inside it.
       expect(glass.inset).toBeGreaterThan(0)
@@ -152,10 +151,10 @@ describe('placing things in front of the camera', () => {
     // drei draws a CSS pixel as distanceFactor / 400 world units.
     for (const [w, h] of Object.values(WINDOWS)) {
       const layout = aboutLayout(w, h, 6)
-      expect(layout.panel.distanceFactor / 400).toBeCloseTo(pixelAt(CONTENT_DEPTH, w), 12)
+      expect(layout.panel.distanceFactor / 400).toBeCloseTo(pixelAt(CONTENT_DEPTH, w, h), 12)
       expect(layout.content.distanceFactor / 400).toBeCloseTo(layout.content.pixel, 12)
     }
-    expect(distanceFactorAt(1, 400)).toBeCloseTo(2 * tanHalf, 12)
+    expect(distanceFactorAt(1, 400, 300)).toBeCloseTo((400 * 2 * tanHalfVertical(400 / 300)) / 300, 12)
   })
 
   it('survives a zero-sized canvas during layout', () => {
