@@ -42,6 +42,7 @@ export default defineConfig({
         'src/data/photos.js',
         'src/data/exif.js',
         'src/components/Overlay.jsx',
+        'src/components/LoadingScreen.jsx',
       ],
       thresholds: {
         statements: 90,

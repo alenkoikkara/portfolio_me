@@ -269,6 +269,34 @@ IDLE", which silently meant the cartridge strip also rendered through the galler
 modes — invisible while the wall's camera was up, then flashing into shot the moment
 the camera came back to the desk.
 
+### Loading and the intro
+
+The page opens on a greeting — hello, नमस्ते, こんにちは, hej — over the page
+colour (`LoadingScreen.jsx`), each word's letters painted with a gradient of its
+own light hue (`background-clip: text`, padded so Devanagari matras and
+descenders are not clipped) and nothing behind them. All four words are on the page at once,
+stacked, with only the active one shown: that is what lets each word come into
+focus as the last dissolves (the fade, 700 ms, outlasts half of each 900 ms
+turn), rather than one replacing the other with a gap of empty page. Two store
+flags hand it over to the scene:
+
+- `sceneReady` is set by `Device.jsx` on its *second* frame callback. Callbacks
+  run before each frame is drawn, so the second is the first to come after a
+  drawn frame: by then the models are in and their shaders linked, and that
+  first-frame stall happened behind the greeting rather than in the intro.
+- `curtainUp` is set by the greeting as it starts to lift, and **it is what
+  starts the intro.** Until then the animation mixer's `timeScale` is 0 and
+  the camera's fly-in clock does not advance, so the intro holds on its first
+  frame; without that it began the moment the device mounted and was half over
+  before anyone could see it.
+
+The greeting says all four words once whatever happens — on a warm cache the
+scene is ready before "hello" has faded — then leaves at the next word boundary
+once `sceneReady` is true, going round again if loading is slower. **The
+decision to leave is made only inside the word's own timer, at the boundary.**
+Watching `sceneReady` from an effect, as it first did, lifted the instant the
+scene arrived and cut the showing word off mid-fade.
+
 ### Who owns what
 
 | Concern | File |
@@ -284,6 +312,7 @@ the camera came back to the desk.
 | All sound, synthesised at runtime | `src/scene/audio.js` |
 | Lights and environment | `src/components/LightingSetup.jsx` |
 | DOM overlay: arrows, description, keyboard | `src/components/Overlay.jsx` |
+| Loading screen: "hello" in four languages, curtain hand-off | `src/components/LoadingScreen.jsx` |
 | Project catalogue | `src/data/projects.js` |
 | Photography wall, culling, focus | `src/scene/Gallery.jsx` |
 | One print (mesh, textures, springs) | `src/scene/Print.jsx` |

@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import Stage from './scene/Stage'
 import Overlay from './components/Overlay'
+import LoadingScreen from './components/LoadingScreen'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './scene/useDeviceStore'
 import * as THREE from 'three'
 
@@ -56,6 +57,7 @@ function App() {
         <Stage />
       </Canvas>
       <Overlay />
+      <LoadingScreen />
     </div>
   )
 }

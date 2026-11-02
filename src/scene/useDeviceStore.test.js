@@ -444,3 +444,14 @@ describe('every transition guards on the current mode', () => {
     expect(mode()).toBe('IDLE')
   })
 })
+
+describe('loading', () => {
+  it('records when the scene has drawn and when the greeting lifts', () => {
+    useDeviceStore.setState({ sceneReady: false, curtainUp: false })
+    get().markSceneReady()
+    expect(get().sceneReady).toBe(true)
+    expect(get().curtainUp).toBe(false)
+    get().raiseCurtain()
+    expect(get().curtainUp).toBe(true)
+  })
+})

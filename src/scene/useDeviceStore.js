@@ -62,6 +62,12 @@ export const ABOUT_MODES = new Set(['OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT'])
 
 const useDeviceStore = create((set, get) => ({
   mode: 'IDLE',
+  // True once the device has drawn its first frame — models loaded and its
+  // shaders linked — which is what the loading screen waits on.
+  sceneReady: false,
+  // True once the loading screen has begun to lift. The intro holds on its
+  // first frame until then, so the fly-in is never spent behind the greeting.
+  curtainUp: false,
   // True once the opening animation has played out and the device is at rest.
   introDone: false,
   focusedIndex: 0,
@@ -78,6 +84,8 @@ const useDeviceStore = create((set, get) => ({
    */
   pendingHome: false,
 
+  markSceneReady: () => set({ sceneReady: true }),
+  raiseCurtain: () => set({ curtainUp: true }),
   markIntroDone: () => set({ introDone: true }),
 
   openCarousel: () => {

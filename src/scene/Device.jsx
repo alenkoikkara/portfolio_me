@@ -329,6 +329,9 @@ export default function Device({ slotAnchorRef }) {
   const isDraggingRef = useRef(false)
   const [introDone, setIntroDone] = useState(false)
   const markIntroDone = useDeviceStore((s) => s.markIntroDone)
+  const markSceneReady = useDeviceStore((s) => s.markSceneReady)
+  const curtainUp = useDeviceStore((s) => s.curtainUp)
+  const framesRun = useRef(0)
 
   // Zustand store
   const mode = useDeviceStore((s) => s.mode)
@@ -388,6 +391,16 @@ export default function Device({ slotAnchorRef }) {
       markIntroDone()
     }
   }, [actions, names, mixer])
+
+  /*
+   * The clips start with the model, but stand still on their first frame
+   * while the loading screen is up, and the camera's fly-in waits with them
+   * (below) — the intro is the first thing a visitor sees, not something
+   * already half over when the greeting lifts.
+   */
+  useEffect(() => {
+    mixer.timeScale = curtainUp ? 1 : 0
+  }, [mixer, curtainUp])
 
   // Projects key toggle handler
   const handleProjectsKey = useCallback(() => {
@@ -493,9 +506,14 @@ export default function Device({ slotAnchorRef }) {
       if (fade === 0 && mode === 'OPENING_GALLERY') galleryOpened()
     }
 
+    // This runs before each frame is drawn, so the second call is the first
+    // that comes after one: the models are in and their shaders linked, and
+    // the loading screen may lift.
+    if (framesRun.current < 2 && ++framesRun.current === 2) markSceneReady()
+
     // 1. Camera cinematic intro
     if (!introDone && !inGallery) {
-      introElapsedRef.current += delta
+      if (curtainUp) introElapsedRef.current += delta
       sampleCamPath(introElapsedRef.current, state.camera.position)
       state.camera.lookAt(...CAM_TARGET)
     }
