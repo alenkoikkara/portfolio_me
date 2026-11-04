@@ -51,7 +51,7 @@ The site is being rebuilt as one day told through light — `hichord-story-plan.
 is the master plan, worked phase by phase. **All six phases are in**: the page
 behind the transparent canvas is the sky of the hour, the device is lit by its
 sun, each section is a chapter at its own hour, the day opens before dawn on
-the Prologue (see **Loading and the intro**), and each chapter plays its chord
+the greeting's lift (see **Loading and the intro**), and each chapter plays its chord
 (see **Add a sound**); Contact holds its chord until the visitor reaches out,
 and a full visit can be played back as a song; and the ambient polish below
 keeps the room alive without anything shouting.
@@ -172,7 +172,7 @@ keeps the room alive without anything shouting.
 - **The ink never changes.** `--ink`, `--ink-muted`, `--rule`, `--accent` and
   `--accent-deep` are fixed tokens in `story.css`, and `story/palette.js`
   holds the canvas's copies — change one, change both. Amber (`--accent`) is
-  for marks only — the Prologue's horizon, the current milestone's ring —
+  for marks only — the current milestone's ring —
   and `--accent-deep` is the one accent dark enough for words (link hover).
   The about view's glass frosts to white at every hour, and the
   constellation is an astronomer's chart: solid ink dots with no glow, and
@@ -394,6 +394,15 @@ light, with a gap between the two thresholds so a word over a mid-grey print
 does not flicker. Frosting the glass until dark ink read over a dark print was
 tried first; it made the pill a grey lozenge, which is what it is not.
 
+**The story's corner sits on the same glass** (`HudGlass.jsx`, mounted in
+`Stage.jsx`): `data-hud-glass` on `StoryHUD`'s wrapper, whose padding is the
+glass and whose position is shifted out by it so the words stay put. Two
+lines of text in a capsule read as a stadium, so it passes `radius` for a
+rounded pane instead. It fades out under the projector's veil
+(`INSERTING`, `PROJECTING`, `EJECTING`): the veil is DOM behind the canvas
+and the glass composites the sky's own gradient, so there it would glow
+white on a dark room.
+
 **A layer hides things from the pointer as well as from a camera.** A `Raycaster`
 tests layer 0 and nothing else unless told otherwise, so moving the wall onto its
 own layer silently took every print out of reach of a click — no error, the prints
@@ -438,7 +447,7 @@ flags hand it over to the scene:
   run before each frame is drawn, so the second is the first to come after a
   drawn frame: by then the models are in and their shaders linked, and that
   first-frame stall happened behind the greeting rather than in the intro.
-- `curtainUp` is set by the Prologue's Begin (or a deep link), and **it is
+- `curtainUp` is set as the greeting lifts (or by a deep link), and **it is
   what starts the intro.** Until then the animation mixer's `timeScale` is 0 and
   the camera's fly-in clock does not advance, so the intro holds on its first
   frame; without that it began the moment the device mounted and was half over
@@ -451,23 +460,27 @@ decision to leave is made only inside the word's own timer, at the boundary.**
 Watching `sceneReady` from an effect, as it first did, lifted the instant the
 scene arrived and cut the showing word off mid-fade.
 
-**Beneath the greeting is the Prologue** (`story/dom/Prologue.jsx`): Chicago at
-05:40, the name, a caption and **Begin**. The day starts there — `sky.hours`
-defaults to `PROLOGUE_HOUR` — and the canvas is held at opacity 0 until Begin,
-so the device assembles in the first light instead of sitting half-built behind
-the Prologue's text; it still renders underneath, which is what `sceneReady`
-needs. One Begin button, not the plan's "with sound / quietly" pair, until
-sound exists.
+**There is no Begin screen.** The greeting lifting is what begins the day:
+`LoadingScreen` calls `beginDay` (`navigate.js`) as it starts to fade, which
+starts the story and raises the curtain. A Prologue with "begin with sound /
+begin quietly" stood between the two until the user had it removed. The day
+starts at 05:40 — `sky.hours` defaults to `PROLOGUE_HOUR` — and the canvas is
+held at opacity 0 until then, so the device assembles in the first light
+instead of sitting half-built under the greeting; it still renders
+underneath, which is what `sceneReady` needs. **It always begins quietly**:
+no click has happened yet, and browsers start sound only from one, so sound
+waits for the corner's toggle or M — which is also why there is no sunrise
+chord.
 
-Begin (`beginDay` in `navigate.js`) starts the story and **raises the curtain —
-the greeting no longer does.** The first sunrise lasts `SUNRISE_MS`, which is
+The first sunrise lasts `SUNRISE_MS`, which is
 the intro's own length (`INTRO_SECONDS` in `scene/intro.js`, where the camera's
 fly-in ends), so the sun and the device land on 08:10 together; the plan's 3.2 s
 would have had the sun up long before the device finished assembling. A
 returning visitor (`hichord:seen` in local storage) or one asking for reduced
 motion gets the quick sunrise and the device already assembled.
 
-Until the device is at rest, **any click or key skips** (`skipSunrise`): the
+Until the device is at rest, **any click or key skips** (`skipSunrise`, in
+`story/dom/SunriseSkip.jsx`, which also shows the hint): the
 spin lands (`skipTravel`) and `skipIntro` puts every clip on its last frame and
 the fly-in clock at its end. The camera then eases home from wherever it had
 reached — the same ease a drag lets go into — so a skip mid-flight still reads
@@ -475,11 +488,11 @@ as motion. The listeners are on capture, so the click that skips does not also
 land on whatever was under it.
 
 **Deep links** (`startFromAddress`): a chapter's address loaded cold skips the
-Prologue, the sunrise and the intro and goes straight into the chapter at its
+sunrise and the intro and goes straight into the chapter at its
 hour (`startAt`). It runs before the routing hook, and that hook ignores a
 chapter already out of date when its effect fires — otherwise the cold load,
-read as the Prologue in the same flush, put the address back to `/`. An
-address with no section yet (`/contact`) falls to the Prologue, which
+read as the day not yet begun (`'prologue'`) in the same flush, put the
+address back to `/`. An address with no section yet falls to home, which
 *replaces* it rather than leaving a step for the back button.
 
 ### Who owns what
@@ -510,7 +523,7 @@ address with no section yet (`/contact`) falls to the Prologue, which
 | The story's corner: name, clock, chapter caption | `src/story/dom/StoryHUD.jsx` |
 | The `?` list of keyboard shortcuts | `src/story/dom/KeyHelp.jsx` |
 | The fixed ink and accent, for the canvas | `src/story/palette.js` |
-| The Prologue: 05:40, Begin, click-to-skip the sunrise | `src/story/dom/Prologue.jsx` |
+| Click-to-skip the first sunrise, and its hint | `src/story/dom/SunriseSkip.jsx` |
 | Contact: the panel, reaching out | `src/components/ContactPanel.jsx` |
 | Social links and the published email | `src/data/contact.js` |
 | The epilogue: a visit played back, share links | `src/story/dom/SongPrompt.jsx` |
@@ -533,6 +546,7 @@ address with no section yet (`/contact`) falls to the Prologue, which
 | About view: camera-riding group, mode reports | `src/scene/AboutView.jsx` |
 | The frosted glass pane and its shader | `src/scene/LiquidGlass.jsx` |
 | Liquid Glass pill under a DOM element (the gallery's hints) | `src/scene/GlassPill.jsx` |
+| Liquid Glass under the story's corner, off under the projector's veil | `src/story/scene/HudGlass.jsx` |
 | About view arithmetic: bio and constellation placement, depths, text scale | `src/scene/aboutLayout.js` |
 | The constellation: stars, milestone path and its reveal | `src/scene/Constellation.jsx` |
 | Where each star and label goes, in pixels | `src/scene/constellationLayout.js` |
@@ -714,15 +728,14 @@ the filter, not the raw noise, and were chosen by metering.
 `audio()` returns null while it is off, so with sound off no context is ever
 created — every sound, old and new, already returned early on a null context.
 Off suspends a live context, which silences even a running projector reel. It
-is turned on only inside a click (the Prologue's "begin with sound", the toggle
-in the story's corner, or M), because browsers start audio only from a gesture.
+is turned on only inside a click (the toggle in the story's corner, or M), because browsers start audio only from a gesture.
 The story store's `soundOn` mirrors it for the UI.
 
 **The music is synthesised here too**, not with Tone.js as the story plan
 suggested: one more dependency and download for a handful of notes, and its own
 context to keep in step with this one. Each chapter's chord (`story/chords.js`,
 all in D major, sharing common tones so any order voice-leads) is strummed by
-`playChord` on entering the chapter, and the sunrise's on Begin; the small keys
+`playChord` on entering the chapter; the small keys
 (LinkedIn, GitHub, Medium, explode) ring a pentatonic `playNote` under their
 click. A pad voice is two sines — a body and a fast-dying tine an octave and a
 fifth up, which reads as an electric piano — through a low-pass and a reverb

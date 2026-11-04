@@ -7,7 +7,6 @@
  * laptop speakers, raise the first note of a chord an octave.
  */
 export const CHORDS = {
-  sunrise: ['D2', 'A2', 'E3', 'F#3', 'A3'], // Dadd9 — the sun comes up
   projects: ['D2', 'F#3', 'A3', 'C#4', 'E4'], // Dmaj9 (I) — bright, midday
   photography: ['B1', 'F#3', 'A3', 'D4'], // Bm7 (vi) — warm, a little wistful
   about: ['G1', 'F#3', 'B3', 'D4'], // Gmaj7 (IV) — dreamy, night

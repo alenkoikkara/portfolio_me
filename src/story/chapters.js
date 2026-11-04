@@ -19,7 +19,6 @@ export const CHAPTERS = {
 
 export const SECTION_CHAPTERS = Object.keys(CHAPTERS)
 
-export const PROLOGUE_CAPTION = 'Chicago, before the city wakes.'
 export const CONTACT_RESOLVED_CAPTION = 'See you tomorrow.'
 
 /** Home's caption is whatever the hour makes it. */

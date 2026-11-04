@@ -5,7 +5,7 @@ import Overlay from './components/Overlay'
 import LoadingScreen from './components/LoadingScreen'
 import SkyBackground from './story/dom/SkyBackground'
 import StoryHUD from './story/dom/StoryHUD'
-import Prologue from './story/dom/Prologue'
+import SunriseSkip from './story/dom/SunriseSkip'
 import SongPrompt from './story/dom/SongPrompt'
 import useStoryStore from './story/useStoryStore'
 import { startFromAddress } from './story/navigate'
@@ -33,9 +33,9 @@ function App() {
 
   // The device's modes become the story's chapters, and each chapter a page.
   useEffect(() => bridgeDeviceToStory(), [])
-  // A chapter's address loaded cold goes straight into it, past the Prologue —
+  // A chapter's address loaded cold goes straight into it, past the sunrise —
   // before the routing below, which would otherwise read the cold load as the
-  // Prologue and put the address back to '/'.
+  // day not yet begun and put the address back to '/'.
   useEffect(() => { startFromAddress(window.location.pathname) }, [])
   useStoryRouting()
 
@@ -46,9 +46,10 @@ function App() {
       {/* The name (the way home), the clock and the chapter's caption. */}
       <StoryHUD />
       {/*
-        * Out of sight until the visitor begins: the device assembles in the
-        * first light, rather than sitting half-built behind the Prologue. It
-        * still renders underneath, which is what the greeting waits on.
+        * Out of sight until the day begins, as the greeting lifts: the device
+        * assembles in the first light rather than sitting half-built under the
+        * greeting. It still renders underneath, which is what the greeting
+        * waits on.
         */}
       <Canvas
         className={`transition-opacity duration-[1600ms] ease-out ${started ? 'opacity-100' : 'opacity-0'}`}
@@ -67,7 +68,7 @@ function App() {
       </Canvas>
       <Overlay />
       <SongPrompt />
-      <Prologue />
+      <SunriseSkip />
       <LoadingScreen />
     </div>
   )

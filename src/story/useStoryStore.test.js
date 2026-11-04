@@ -160,10 +160,10 @@ describe('the beginning', () => {
     expect(get().toTime).toBeCloseTo(HOME_HOUR, 6)
   })
 
-  it('begins with sound only when asked', () => {
+  it('begins quietly: sound waits for a click', () => {
     useStoryStore.setState({ soundOn: false })
-    get().begin(true)
-    expect(get().soundOn).toBe(true)
+    get().begin()
+    expect(get().soundOn).toBe(false)
   })
 
   it('gives a returning visitor the quick sunrise', () => {

@@ -72,9 +72,9 @@ const useDeviceStore = create((set, get) => ({
   // True once the device has drawn its first frame — models loaded and its
   // shaders linked — which is what the loading screen waits on.
   sceneReady: false,
-  // True once the visitor has begun — the Prologue's Begin, or a deep link
+  // True once the day has begun — the greeting lifting, or a deep link
   // straight into a chapter. The intro holds on its first frame until then,
-  // so the fly-in is never spent behind the greeting or the Prologue.
+  // so the fly-in is never spent behind the greeting.
   curtainUp: false,
   // True when the intro should jump to its end rather than play: a click
   // during the sunrise, a returning visitor, reduced motion, or a deep link.

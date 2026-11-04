@@ -7,7 +7,7 @@ const SITE_TITLE = 'alen koikkara'
 /** The number keys, in the order the sections sit on the device. */
 const KEY_ORDER = ['projects', 'photography', 'about', 'contact']
 
-// Home and the Prologue are both the site's own address.
+// Home and the day not yet begun ('prologue') are both the site's own address.
 const pathFor = (chapter) => CHAPTERS[chapter]?.path ?? '/'
 
 /*
@@ -34,8 +34,8 @@ export default function useStoryRouting() {
     if (replaying) {
       if (window.location.pathname === path) replaying = false
     } else if (window.location.pathname !== path) {
-      // The Prologue replaces an address it cannot show (a section with no
-      // page yet) rather than adding a step the back button would return to.
+      // Before the day begins, an address it cannot show (a section with no
+      // page yet) is replaced rather than left as a step for the back button.
       const write = chapter === 'prologue' ? 'replaceState' : 'pushState'
       window.history[write]({}, '', path + window.location.search)
     }

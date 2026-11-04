@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, act } from '@testing-library/react'
 import LoadingScreen, { GREETINGS, WORD_STEP, LIFT_MS } from './LoadingScreen'
 import useDeviceStore from '../scene/useDeviceStore'
+import useStoryStore from '../story/useStoryStore'
 
 const advance = (ms) => act(() => { vi.advanceTimersByTime(ms) })
 /*
@@ -15,7 +16,9 @@ const lifting = (container) => container.firstChild?.className.includes('opacity
 
 beforeEach(() => {
   vi.useFakeTimers()
+  window.localStorage.clear()
   useDeviceStore.setState({ sceneReady: false, curtainUp: false })
+  useStoryStore.setState({ chapter: 'prologue', started: false, soundOn: false })
 })
 afterEach(() => vi.useRealTimers())
 
@@ -76,12 +79,15 @@ describe('the loading screen', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('leaves the curtain to the Prologue: lifting starts nothing', () => {
+  it('begins the day as it lifts, quietly', () => {
     useDeviceStore.setState({ sceneReady: true })
     render(<LoadingScreen />)
     advance(20)
-    words(GREETINGS.length)
-    advance(LIFT_MS)
-    expect(useDeviceStore.getState().curtainUp).toBe(false)
+    words(GREETINGS.length - 1)
+    expect(useStoryStore.getState().started).toBe(false)
+    words(1)
+    expect(useStoryStore.getState().started).toBe(true)
+    expect(useStoryStore.getState().soundOn).toBe(false)
+    expect(useDeviceStore.getState().curtainUp).toBe(true)
   })
 })

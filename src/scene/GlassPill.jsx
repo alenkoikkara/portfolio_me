@@ -81,6 +81,7 @@ const fragmentShader = /* glsl */ `
   uniform vec2 uCenter;
   uniform vec2 uHalf;
   uniform float uDpr;
+  uniform float uRadius;
   uniform float uOpacity;
   uniform vec3 uSkyTop;
   uniform vec3 uSkyBottom;
@@ -115,7 +116,8 @@ const fragmentShader = /* glsl */ `
 
   void main() {
     vec2 p = gl_FragCoord.xy;
-    float radius = uHalf.y;
+    // A capsule unless a corner radius was asked for; never rounder than one.
+    float radius = uRadius > 0.0 ? min(uRadius, uHalf.y) : uHalf.y;
     float d = roundRect(p - uCenter, uHalf, radius);
     float aa = 0.75 * uDpr;
     float coverage = 1.0 - smoothstep(-aa, aa, d);
@@ -182,9 +184,11 @@ const fragmentShader = /* glsl */ `
  * the eye does — after tone mapping and colour conversion — rather than a
  * second render of the scene that would have to be graded to match.
  *
- * `show` fades it in and out; it costs nothing at zero.
+ * `show` fades it in and out; it costs nothing at zero. `radius` (CSS px)
+ * rounds its corners by that much instead, for an element taller than a line:
+ * a capsule around a block of text reads as a stadium, not glass.
  */
-export default function GlassPill({ selector, show }) {
+export default function GlassPill({ selector, show, radius = 0 }) {
   const gl = useThree((s) => s.gl)
 
   const texture = useRef(null)
@@ -213,6 +217,7 @@ export default function GlassPill({ selector, show }) {
       uQuadCenter: { value: new THREE.Vector2() },
       uQuadHalf: { value: new THREE.Vector2() },
       uDpr: { value: 1 },
+      uRadius: { value: 0 },
       uOpacity: { value: 0 },
       // The canvas stores sRGB; the page is mixed in before decoding.
       uSkyTop: { value: new THREE.Vector3() },
@@ -275,6 +280,7 @@ export default function GlassPill({ selector, show }) {
     u.uOpacity.value = opacity.current
     u.uTone.value = tone.current
     u.uDpr.value = dpr
+    u.uRadius.value = radius * dpr
     u.uCenter.value.set(s.x, s.y)
     u.uHalf.value.set(s.w, s.h)
     const spread = SHADOW_SPREAD * dpr

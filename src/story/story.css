@@ -3,11 +3,11 @@
  * all day, so dark ink reads at every hour and nothing flips. The canvas's
  * copies are in palette.js.
  *
- *   --accent        amber, for marks only — the horizon, the current milestone
+ *   --accent        amber, for marks only — the current milestone's ring
  *   --accent-deep   the one accent dark enough for words on white
  *
  * Then the sky's variables, before the first frame writes them: 05:40, where
- * the day starts, so the Prologue's first paint already matches its sky.
+ * the day starts, so the first paint under the loader already matches it.
  */
 :root {
   --ink: #17181c;
@@ -201,92 +201,9 @@
   font-family: inherit;
 }
 
-/* ─── The Prologue: 05:40, before the city wakes ─── */
+/* ─── While the first sunrise plays ─── */
 
-.prologue {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  padding: 0 24px;
-  text-align: center;
-  color: var(--ink);
-}
-
-.prologue__time {
-  margin: 0 0 18px;
-  color: var(--ink-muted);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  font-variant-numeric: tabular-nums;
-}
-
-.prologue__name {
-  margin: 0 0 10px;
-  font-size: clamp(36px, 7vw, 56px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.prologue__caption {
-  margin: 0 0 40px;
-  color: var(--ink-muted);
-  font-size: 15px;
-}
-
-.prologue__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-}
-
-.prologue__begin {
-  padding: 12px 26px;
-  border-radius: 999px;
-  border: 1px solid var(--rule);
-  background: transparent;
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: border-color 200ms ease;
-}
-
-.prologue__begin:hover,
-.prologue__begin:focus-visible {
-  border-color: var(--ink);
-  outline: none;
-}
-
-.prologue__begin--primary {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
-}
-
-/* A thin amber line across the bottom of the sky, where the sun will come up. */
-.prologue__horizon {
-  position: fixed;
-  left: 10vw;
-  right: 10vw;
-  bottom: 22vh;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent) 35%, var(--accent) 65%, transparent);
-  transform-origin: center;
-  animation: prologue-horizon 2.4s 0.4s both cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes prologue-horizon {
-  from { transform: scaleX(0.04); opacity: 0; }
-  to { transform: scaleX(1); opacity: 0.7; }
-}
-
-.prologue__skip {
+.sunrise-skip {
   position: fixed;
   left: 50%;
   bottom: 28px;
@@ -299,12 +216,8 @@
   transition: opacity 600ms ease;
 }
 
-.prologue__skip--gone {
+.sunrise-skip--gone {
   opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .prologue__horizon { animation-duration: 1ms; animation-delay: 0s; }
 }
 
 /* ─── The epilogue: one quiet line on home ─── */

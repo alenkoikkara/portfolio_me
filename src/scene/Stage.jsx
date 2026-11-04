@@ -12,6 +12,7 @@ import ActiveCartridge from './ActiveCartridge'
 import Projector from './Projector'
 import Gallery from './Gallery'
 import AboutView from './AboutView'
+import HudGlass from '../story/scene/HudGlass'
 
 /** Modes in which a project is being browsed or shown. */
 const CHIP_MODES = new Set(['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING'])
@@ -134,6 +135,7 @@ export default function Stage() {
       <ProjectChip />
       <Gallery />
       <AboutView />
+      <HudGlass />
     </Suspense>
   )
 }

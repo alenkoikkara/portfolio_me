@@ -55,7 +55,7 @@ export default function StoryHUD() {
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  // The Prologue has the name, the hour and the caption of its own.
+  // Before the day begins the greeting has the page to itself.
   if (!started) return null
 
   const section = CHAPTERS[chapter]
@@ -67,7 +67,15 @@ export default function StoryHUD() {
   return (
     // Click-through, so it cannot swallow drags on the canvas behind it; only
     // the name, the sound toggle and the shortcuts' ? take the pointer.
-    <div className="story-hud pointer-events-none absolute left-10 top-8 z-50">
+    //
+    // It sits on a pane of Liquid Glass drawn in the canvas (HudGlass.jsx),
+    // which takes its size from this element: the padding is the glass around
+    // the words, and the position is shifted out by it, so the words stay
+    // where they were.
+    <div
+      data-hud-glass
+      className="story-hud pointer-events-none absolute left-[calc(2.5rem-16px)] top-[calc(2rem-12px)] z-50 px-4 py-3"
+    >
       <div className="flex items-baseline gap-3">
         <h1 className="stage-title text-xs font-bold lowercase opacity-80">
           <button

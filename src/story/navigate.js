@@ -56,13 +56,13 @@ export function canOpenChapter(chapter) {
 }
 
 /**
- * The Prologue's Begin: the sun comes up and the device assembles in it. A
- * returning visitor, or one who asked for less motion, gets the quick sunrise
- * with the device already assembled.
+ * The day begins, as the greeting lifts: the sun comes up and the device
+ * assembles in it. A returning visitor, or one who asked for less motion, gets
+ * the quick sunrise with the device already assembled.
  */
-export function beginDay(withSound = false) {
+export function beginDay() {
   if (useStoryStore.getState().started) return
-  const quick = useStoryStore.getState().begin(withSound)
+  const quick = useStoryStore.getState().begin()
   const device = useDeviceStore.getState()
   device.raiseCurtain()
   if (quick) device.skipIntro()
@@ -75,7 +75,7 @@ export function skipSunrise() {
 }
 
 /**
- * A chapter's address loaded cold: no Prologue, no sunrise and no intro —
+ * A chapter's address loaded cold: no sunrise and no intro —
  * straight into the chapter at its hour. Returns whether the address was one.
  */
 export function startFromAddress(path) {

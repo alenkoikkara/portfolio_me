@@ -74,7 +74,7 @@ const useStoryStore = create((set, get) => {
   })
 
   return {
-    // False until the visitor begins: the Prologue, before dawn.
+    // False until the day begins, as the greeting lifts: before dawn.
     started: false,
     chapter: 'prologue',
     fromTime: sky.hours,
@@ -91,13 +91,14 @@ const useStoryStore = create((set, get) => {
     sharedSong: typeof window !== 'undefined' ? songFromQuery(window.location.search) : null,
 
     /**
-     * The Prologue's Begin: the sun comes up, 05:40 to 08:10. Returns whether
+     * The day begins, as the greeting lifts: the sun comes up, 05:40 to 08:10.
+     * Always quietly — no click has happened yet, and browsers start sound only
+     * from one. Returns whether
      * it is the quick sunrise — a returning visitor, or reduced motion — in
      * which case the device should start assembled rather than play its intro.
      */
-    begin(withSound = false) {
+    begin() {
       if (get().started) return false
-      if (withSound) get().setSound(true)
       const quick = seenBefore() || prefersReducedMotion()
       markSeen()
       const to = nextOccurrence(sky.hours, HOME_HOUR)
@@ -106,12 +107,10 @@ const useStoryStore = create((set, get) => {
         chapter: 'home',
         ...travel(to, prefersReducedMotion() ? REDUCED_TRAVEL_MS : quick ? QUICK_SUNRISE_MS : SUNRISE_MS),
       })
-      // The sun comes up on a chord. Silent unless sound was chosen.
-      playChord(CHORDS.sunrise, { duration: 4.5, velocity: 0.5 })
       return quick
     },
 
-    /** A deep link: straight into a chapter at its hour, no Prologue and no spin. */
+    /** A deep link: straight into a chapter at its hour, no sunrise and no spin. */
     startAt(chapter) {
       const cfg = CHAPTERS[chapter]
       if (!cfg) return

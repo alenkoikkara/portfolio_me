@@ -39,7 +39,7 @@ export default defineConfig({
         'src/story/navigate.js',
         'src/story/useStoryRouting.js',
         'src/story/dom/KeyHelp.jsx',
-        'src/story/dom/Prologue.jsx',
+        'src/story/dom/SunriseSkip.jsx',
         'src/story/dom/SongPrompt.jsx',
         'src/components/ContactPanel.jsx',
         'src/scene/aboutLayout.js',

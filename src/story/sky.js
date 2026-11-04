@@ -1,6 +1,6 @@
 import { createSkySample } from './sampleSky'
 
-/** 05:40, before dawn — where the day starts, behind the Prologue. */
+/** 05:40, before dawn — where the day starts, under the greeting. */
 export const PROLOGUE_HOUR = 5 + 40 / 60
 /** 08:10, morning — where Begin's sunrise lands, and home's first light. */
 export const HOME_HOUR = 8 + 10 / 60

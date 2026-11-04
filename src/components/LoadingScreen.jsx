@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import useDeviceStore from '../scene/useDeviceStore'
+import { beginDay } from '../story/navigate'
 
 /*
  * "Hello" in the languages of the places that made this — once through, at
@@ -37,8 +38,10 @@ const EASE = 'cubic-bezier(0.45, 0, 0.25, 1)'
  * first frame (`sceneReady`). If loading takes longer it simply goes round
  * again. It never leaves mid-word: a word cut off reads as a glitch.
  *
- * Lifting reveals the Prologue beneath it, at 05:40; the Prologue's Begin is
- * what raises the curtain and starts the device's intro.
+ * Lifting begins the day: the sun comes up from 05:40 and the device
+ * assembles in it as the greeting fades. Quietly — browsers start sound only
+ * from a click, so it waits for the corner's toggle or M. A deep link has
+ * already begun the day, and then this starts nothing.
  */
 export default function LoadingScreen() {
   // How many words have been shown, counting from 0 across every pass.
@@ -64,6 +67,7 @@ export default function LoadingScreen() {
       const saidThemAll = shown + 1 >= GREETINGS.length
       if (saidThemAll && useDeviceStore.getState().sceneReady) {
         setLifting(true)
+        beginDay()
       } else {
         setShown((n) => n + 1)
       }
