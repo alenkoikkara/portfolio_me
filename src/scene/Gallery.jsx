@@ -5,6 +5,7 @@ import useDeviceStore, { GALLERY_MODES } from './useDeviceStore'
 import GalleryCamera from './GalleryCamera'
 import Print from './Print'
 import GlassPill from './GlassPill'
+import { playShutter } from './audio'
 import { fullStore, setPhotoRenderer, thumbStore } from './usePhotoTexture'
 import {
   FOCUS_FILL_HEIGHT,
@@ -47,15 +48,6 @@ const PAN_SETTLE_SPEED = 0.5
  * lands early would show the wall disappearing rather than the room changing.
  */
 const EXIT_MS = 600
-/**
- * The wall the prints hang on: the home page's own colour, `--stage-bg` of
- * `.stage` in index.css.
- *
- * Kept in step with index.css by hand. It has to be the same colour as the page
- * behind the canvas, because for one frame at the cut the viewer sees one
- * replace the other over the whole frame.
- */
-const BACKDROP = '#faf9f6'
 /** How close to the camera a focused print comes, as a fraction of the wall distance. */
 const FOCUS_GAP_RATIO = 0.35
 
@@ -255,7 +247,10 @@ function Wall() {
       // A press that turned into a pan ends in a click on whatever print the
       // pointer landed over; that must not also open it.
       if (dragRef.current) return
-      focusPhoto(focusedPhotoId === id ? null : id)
+      const opening = focusedPhotoId !== id
+      // The golden hour's shutter, as a print is brought up to look at.
+      if (opening) playShutter()
+      focusPhoto(opening ? id : null)
     },
     [focusPhoto, focusedPhotoId]
   )
@@ -332,19 +327,21 @@ function Wall() {
 
       <group ref={wallRef} position={[0, 0, WALL_Z]}>
         {/*
-          * The room behind the prints. It is large enough to fill the frame at
-          * any pan, which is what lets the switch onto this camera land on a
-          * dark frame instead of on whatever the device scene was showing.
+          * The wall behind the prints, which is the sky: this plane draws
+          * nothing (`colorWrite` off), so the page behind the transparent canvas
+          * — the sky of the hour — shows through. That is also what keeps the
+          * cut onto this camera invisible, since the desk and the wall see the
+          * very same sky. It painted a colour of its own once, which had to be
+          * kept equal to the page's by hand and flashed at the cut when it was
+          * not; now there is nothing to keep equal.
+          *
+          * It is still here because it is the click target: a click on the wall
+          * between prints steps back out of a focused print. It is large enough
+          * to catch one at any pan.
           */}
         <mesh position={[0, 0, -0.06]} onClick={handleBackdrop}>
           <planeGeometry args={[60, 60]} />
-          {/*
-            * Unlit and untone-mapped, so it renders as exactly the colour named
-            * above. A lit material here would come out of the tone mapper some
-            * way off that value, and the gap between it and the page behind the
-            * canvas is precisely what showed as a flash at the cut.
-            */}
-          <meshBasicMaterial color={BACKDROP} toneMapped={false} />
+          <meshBasicMaterial colorWrite={false} depthWrite={false} />
         </mesh>
 
         <ambientLight intensity={0.45} />

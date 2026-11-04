@@ -1,48 +1,57 @@
+import { useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Stage from './scene/Stage'
 import Overlay from './components/Overlay'
 import LoadingScreen from './components/LoadingScreen'
-import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './scene/useDeviceStore'
+import SkyBackground from './story/dom/SkyBackground'
+import StoryHUD from './story/dom/StoryHUD'
+import Prologue from './story/dom/Prologue'
+import SongPrompt from './story/dom/SongPrompt'
+import useStoryStore from './story/useStoryStore'
+import { startFromAddress } from './story/navigate'
+import useStoryRouting from './story/useStoryRouting'
+import { bridgeDeviceToStory } from './story/bridge'
+import useDeviceStore from './scene/useDeviceStore'
 import * as THREE from 'three'
 
 /**
- * Pick the stage theme for the current mode. Pressing the projects key takes
- * the room lights down, and the projector takes them down further, so the
- * preview and its beam have something to read against.
+ * Pick the stage theme for the current mode. Everywhere the page is the sky of
+ * the hour; only the projector takes the room's lights down over it — as a
+ * cartridge seats, then darker while it projects — so the preview and its beam
+ * have something to read against. Browsing the carousel is the projects
+ * chapter's midday, and stays in its light.
  */
 function stageClass(mode) {
-  // The about view keeps the light page: its glass frosts the device away
-  // against that same colour, not a change of room. The photography wall is
-  // hung on the home page's own colour too — its backdrop plane is that colour
-  // (BACKDROP in Gallery.jsx), so the page behind it matches on any overscroll.
-  if (mode === 'IDLE' || ABOUT_MODES.has(mode) || GALLERY_MODES.has(mode)) return 'stage'
   if (mode === 'PROJECTING') return 'stage stage--dim stage--dark'
-  return 'stage stage--dim'
+  if (mode === 'INSERTING') return 'stage stage--dim'
+  return 'stage'
 }
 
 function App() {
   const mode = useDeviceStore((s) => s.mode)
-  const goHome = useDeviceStore((s) => s.goHome)
+  const started = useStoryStore((s) => s.started)
+
+  // The device's modes become the story's chapters, and each chapter a page.
+  useEffect(() => bridgeDeviceToStory(), [])
+  // A chapter's address loaded cold goes straight into it, past the Prologue —
+  // before the routing below, which would otherwise read the cold load as the
+  // Prologue and put the address back to '/'.
+  useEffect(() => { startFromAddress(window.location.pathname) }, [])
+  useStoryRouting()
 
   return (
     <div className={`${stageClass(mode)} w-full h-screen relative`}>
+      {/* Behind the canvas, which is transparent: the page is the sky. */}
+      <SkyBackground />
+      {/* The name (the way home), the clock and the chapter's caption. */}
+      <StoryHUD />
       {/*
-        * The wrapper stays click-through so it cannot swallow drags on the
-        * canvas behind it; only the words themselves take the pointer.
+        * Out of sight until the visitor begins: the device assembles in the
+        * first light, rather than sitting half-built behind the Prologue. It
+        * still renders underneath, which is what the greeting waits on.
         */}
-      <div className="absolute top-8 left-10 z-50 pointer-events-none">
-        <h1 className="stage-title text-xs font-bold tracking-[0.0em] lowercase opacity-80">
-          <button
-            type="button"
-            onClick={goHome}
-            aria-label="Back to the start"
-            className="pointer-events-auto cursor-pointer lowercase tracking-[inherit] transition-opacity duration-200 hover:opacity-60"
-          >
-            alen koikkara
-          </button>
-        </h1>
-      </div>
       <Canvas
+        className={`transition-opacity duration-[1600ms] ease-out ${started ? 'opacity-100' : 'opacity-0'}`}
         shadows
         dpr={[1, 2]}
         /* The rest pose from Device.jsx, so the very first frame — before the
@@ -57,6 +66,8 @@ function App() {
         <Stage />
       </Canvas>
       <Overlay />
+      <SongPrompt />
+      <Prologue />
       <LoadingScreen />
     </div>
   )

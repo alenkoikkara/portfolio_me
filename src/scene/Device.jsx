@@ -6,9 +6,14 @@ import deviceGlb from '../assets/glb/device.glb'
 import LightingSetup from '../components/LightingSetup'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './useDeviceStore'
 import * as THREE from 'three'
-import { playMechanicalClick } from './audio'
+import { playMechanicalClick, playNote } from './audio'
+import { GRACE_NOTES } from '../story/chords'
+import { SOCIAL_LINKS } from '../data/contact'
+import { prefersReducedMotion } from '../story/environment'
+import useStoryStore from '../story/useStoryStore'
 import deviceFade from './deviceFade'
-import { verticalFov } from './cameraFov'
+import { INTRO_SECONDS } from './intro'
+import { verticalFov, restDistanceScale } from './cameraFov'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
@@ -45,19 +50,6 @@ const CAM_OPEN_TARGET = [0, 0.008, -0.1]
  */
 const CAM_PROJECT_POS = [0, 0.7, -0.12]
 const CAM_PROJECT_TARGET = [0, 0.008, -0.14]
-/**
- * Where the three logo buttons go.
- *
- * Opened in a new tab so the scene is not torn down behind the visitor — the
- * intro, the wall's textures and any open print would all have to be rebuilt on
- * the way back. `noopener` is what stops the opened page reaching back through
- * `window.opener`; `noreferrer` keeps this URL out of its analytics.
- */
-const SOCIAL_LINKS = {
-  github: 'https://github.com/alenkoikkara',
-  linkedin: 'https://www.linkedin.com/in/alenkoikkara/',
-  medium: 'https://medium.com/@alendennis77',
-}
 
 /** Modes framed for the projector rather than the carousel. */
 const PROJECT_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
@@ -117,13 +109,17 @@ const DEVICE_FADE_SECONDS = 0.7
  * edge of the device the slot and lens sit on.
  */
 const UP_IDLE = new THREE.Vector3(0, 1, 0)
+/** The idle sway: ±0.4° over nine seconds, around the vertical. */
+const SWAY_RADIANS = THREE.MathUtils.degToRad(0.4)
+const SWAY_PERIOD = 9
+const SWAY_AXIS = new THREE.Vector3(0, 1, 0)
 const UP_OPEN = new THREE.Vector3(0, 0, -1)
 const CAM_PATH = [
   { t: 0.00, pos: pulledBack([0.38, 0.10, 0.42]) },
   { t: 2.60, pos: pulledBack([0.34, 0.18, 0.37]) },
   { t: 4.33, pos: pulledBack([0.30, 0.26, 0.32]) },
   { t: 6.83, pos: pulledBack([0.26, 0.34, 0.27]) },
-  { t: 9.17, pos: CAM_REST_POS },
+  { t: INTRO_SECONDS, pos: CAM_REST_POS },
 ]
 
 function smoothstep(t) { return t * t * (3 - 2 * t) }
@@ -154,6 +150,22 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   const buttonRef = useRef()
   const [clicked, setClicked] = useState(false)
   const [hovered, setHovered] = useState(false)
+
+  /*
+   * Pressed by the song rather than the visitor (`pressKey` in the store): the
+   * key goes down and comes back up in time with its chord, and nothing opens.
+   * The press seen at mount is skipped, so mounting never replays an old one.
+   */
+  const pressedKey = useDeviceStore((s) => s.pressedKey)
+  const seenPress = useRef(pressedKey?.at)
+  useEffect(() => {
+    if (!pressedKey || pressedKey.at === seenPress.current) return
+    seenPress.current = pressedKey.at
+    if (pressedKey.name !== name) return
+    setClicked(true)
+    const timer = setTimeout(() => setClicked(false), 220)
+    return () => clearTimeout(timer)
+  }, [pressedKey, name])
   /*
    * Whether the annotation was dismissed by a click rather than by the pointer
    * leaving. It is taken away without animating in that case: retracting it
@@ -164,11 +176,12 @@ function DeviceButton({ position, description, labelDirection = 'down', children
    * belongs, since the pointer is on its way out anyway.
    */
   const [dismissed, setDismissed] = useState(false)
-  // Mirror the --stage-ink values from index.css based on mode
-  const mode = useDeviceStore((s) => s.mode)
-  // Dark ink wherever the page is light — at rest and under the about view's
-  // overlay — light ink where the room has been taken down.
-  const labelColor = mode === 'IDLE' || ABOUT_MODES.has(mode) ? '#111827' : '#f3f4f6'
+  /*
+   * The page's own ink, read straight from the CSS variable: it follows the
+   * sky (dark by day, light by night) and the room going down, with no copy of
+   * either rule kept here. The label is DOM, under the stage, so it inherits.
+   */
+  const labelColor = 'var(--stage-ink)'
 
   const baseY = position[1]
   const pressedY = baseY - 0.005
@@ -180,6 +193,8 @@ function DeviceButton({ position, description, labelDirection = 'down', children
     e.stopPropagation()
     setClicked(true)
     playMechanicalClick()
+    // The small keys each ring a note of D major pentatonic, under the click.
+    if (GRACE_NOTES[name]) playNote(GRACE_NOTES[name])
     setTimeout(() => setClicked(false), 150)
     // Retract the leader line and its label: the button has been read and
     // acted on, so the annotation has done its job. The pointer is still over
@@ -258,11 +273,12 @@ function DeviceButton({ position, description, labelDirection = 'down', children
               <path
                 d={pathD}
                 fill="none"
-                stroke={labelColor}
                 strokeWidth="1.5"
                 strokeDasharray={pathLength}
                 strokeDashoffset={hovered ? 0 : pathLength}
                 style={{
+                  // As a style, not an attribute: SVG presentation attributes take no CSS variables.
+                  stroke: labelColor,
                   transition: dismissed
                     ? 'stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)'
                     : 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1), stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -331,6 +347,7 @@ export default function Device({ slotAnchorRef }) {
   const markIntroDone = useDeviceStore((s) => s.markIntroDone)
   const markSceneReady = useDeviceStore((s) => s.markSceneReady)
   const curtainUp = useDeviceStore((s) => s.curtainUp)
+  const introSkipped = useDeviceStore((s) => s.introSkipped)
   const framesRun = useRef(0)
 
   // Zustand store
@@ -341,7 +358,12 @@ export default function Device({ slotAnchorRef }) {
   const openGallery = useDeviceStore((s) => s.openGallery)
   const galleryOpened = useDeviceStore((s) => s.galleryOpened)
   const openAbout = useDeviceStore((s) => s.openAbout)
+  const openContact = useDeviceStore((s) => s.openContact)
   const inAbout = ABOUT_MODES.has(mode)
+  // The modes that keep the device at rest: home itself, and the two sections
+  // laid over it — the about view's glass and the contact panel.
+  const atRest = mode === 'IDLE' || inAbout || mode === 'CONTACT'
+  const reducedMotion = useMemo(() => prefersReducedMotion(), [])
   /*
    * While the wall is up it owns the default camera, and every camera line
    * below writes to `state.camera` — that is, to whichever camera is default.
@@ -360,6 +382,13 @@ export default function Device({ slotAnchorRef }) {
     camera.fov = verticalFov(size.width / Math.max(size.height, 1))
     camera.updateProjectionMatrix()
   }, [size.width, size.height, camera, inGallery])
+
+  // Nearer at rest on a phone (cameraFov.js); the intro's fly-in is drawn in by
+  // the same factor so it still lands exactly on rest.
+  const restScale = restDistanceScale(size.width / Math.max(size.height, 1))
+  useEffect(() => {
+    camScratch.restPos.set(...CAM_REST_POS).sub(camScratch.restTarget).multiplyScalar(restScale).add(camScratch.restTarget)
+  }, [restScale, camScratch])
 
   const { nodes, materials, animations } = useGLTF(deviceGlb)
   const { actions, names, mixer } = useAnimations(animations, group)
@@ -402,6 +431,24 @@ export default function Device({ slotAnchorRef }) {
     mixer.timeScale = curtainUp ? 1 : 0
   }, [mixer, curtainUp])
 
+  /*
+   * Jump the intro to its end state: every clip to its last frame and the
+   * camera's fly-in clock to its end. From there the camera eases home from
+   * wherever it had got to, the same ease a drag lets go into, rather than
+   * cutting — so a skip mid-flight still reads as motion, only quicker.
+   */
+  useEffect(() => {
+    if (!introSkipped || introDone) return
+    for (const name of names ?? []) {
+      const action = actions[name]
+      action.time = action.getClip().duration
+    }
+    mixer.update(0)
+    introElapsedRef.current = INTRO_SECONDS
+    setIntroDone(true)
+    markIntroDone()
+  }, [introSkipped, introDone, actions, names, mixer, markIntroDone])
+
   // Projects key toggle handler
   const handleProjectsKey = useCallback(() => {
     if (mode === 'IDLE') {
@@ -415,7 +462,19 @@ export default function Device({ slotAnchorRef }) {
    * Opening happens straight out of the click handler, with no await in
    * between, or a browser treats it as an unsolicited popup and blocks it.
    */
+  /*
+   * Where the three logo buttons go (SOCIAL_LINKS, in data/contact.js).
+   *
+   * Opened in a new tab so the scene is not torn down behind the visitor — the
+   * intro, the wall's textures and any open print would all have to be rebuilt
+   * on the way back. `noopener` is what stops the opened page reaching back
+   * through `window.opener`; `noreferrer` keeps this URL out of its analytics.
+   *
+   * From the contact chapter, following one is reaching out, and resolves its
+   * held chord; anywhere else that call does nothing.
+   */
   const openLink = useCallback((url) => {
+    useStoryStore.getState().resolveContact()
     window.open(url, '_blank', 'noopener,noreferrer')
   }, [])
 
@@ -427,6 +486,10 @@ export default function Device({ slotAnchorRef }) {
   const handleAboutKey = useCallback(() => {
     if (mode === 'IDLE') openAbout()
   }, [mode, openAbout])
+
+  const handleContactKey = useCallback(() => {
+    if (mode === 'IDLE') openContact()
+  }, [mode, openContact])
 
   // Photography key handler
   const handlePhotographyKey = useCallback(() => {
@@ -515,6 +578,7 @@ export default function Device({ slotAnchorRef }) {
     if (!introDone && !inGallery) {
       if (curtainUp) introElapsedRef.current += delta
       sampleCamPath(introElapsedRef.current, state.camera.position)
+      state.camera.position.sub(camScratch.restTarget).multiplyScalar(restScale).add(camScratch.restTarget)
       state.camera.lookAt(...CAM_TARGET)
     }
 
@@ -542,12 +606,12 @@ export default function Device({ slotAnchorRef }) {
     if (introDone && !inGallery) {
       const upK = 1 - Math.exp(-step * CAM_EASE)
       // The about view keeps the rest view's orientation; it only slides.
-      camUpRef.current.lerp(mode === 'IDLE' || inAbout ? UP_IDLE : UP_OPEN, upK).normalize()
+      camUpRef.current.lerp(atRest ? UP_IDLE : UP_OPEN, upK).normalize()
       state.camera.up.copy(camUpRef.current)
     }
 
     // 3a. Open pose: glide to the flat, screen-aligned top-down view
-    if (introDone && mode !== 'IDLE' && !inAbout && !inGallery) {
+    if (introDone && !atRest && !inGallery) {
       const framed = PROJECT_MODES.has(mode)
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(framed ? camScratch.projectTarget : camScratch.openTarget, k)
@@ -572,12 +636,16 @@ export default function Device({ slotAnchorRef }) {
     // when the carousel closes — a hair of movement in the look target flips
     // the azimuth by half a turn, sending the camera around the far side and
     // landing it rolled over. Blending direction vectors has no angles in it.
-    if (introDone && !isDraggingRef.current && (mode === 'IDLE' || inAbout)) {
+    if (introDone && !isDraggingRef.current && atRest) {
       const k = 1 - Math.exp(-step * CAM_EASE)
       camTargetRef.current.lerp(camScratch.restTarget, k)
       const target = camTargetRef.current
       const offset = camScratch.offset.subVectors(state.camera.position, target)
       const rest = camScratch.restOffset.subVectors(camScratch.restPos, camScratch.restTarget)
+      // Home only, and never with reduced motion: the faintest drift, so the
+      // device reads as alive. The device itself still never moves — the
+      // rest camera swings ±0.4° around it, which looks the same.
+      if (mode === 'IDLE' && !reducedMotion) rest.applyAxisAngle(SWAY_AXIS, SWAY_RADIANS * Math.sin((state.clock.elapsedTime * 2 * Math.PI) / SWAY_PERIOD))
       const distance = MathUtils.lerp(offset.length(), rest.length(), k)
       offset.normalize().lerp(rest.normalize(), k).normalize()
       state.camera.position.copy(target).addScaledVector(offset, distance)
@@ -703,7 +771,7 @@ export default function Device({ slotAnchorRef }) {
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_3" introDone={introDone} isExploded={isExploded} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
+            <DeviceButton name="Key_Bot_3" introDone={introDone} isExploded={isExploded} onClick={handleContactKey} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_1.geometry} material={materials.ContactAmber} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_2.geometry} material={materials.Dark} />
             </DeviceButton>

@@ -38,6 +38,26 @@ export function tanHalfVertical(aspect) {
   return narrow + (TAN_HALF_V_DESKTOP - narrow) * t
 }
 
+/*
+ * On a phone the device is framed closer at rest: width-locked, it filled
+ * only 37% of a portrait window, a small object in a lot of sky. The rest
+ * pose (and the intro that lands on it) comes in to half its distance,
+ * which puts it near 70% across. Only the rest pose — narrowing the field of
+ * view instead would crop the carousel and the projector's preview too.
+ * Blended out between a 0.8 portrait and a square window, so resizing across
+ * the boundary eases the device's size rather than jumping it.
+ */
+const PHONE_REST_SCALE = 0.5
+const PHONE_ASPECT = 0.8
+
+/** How much nearer the rest pose stands on a window of this shape: 1 on desktop. */
+export function restDistanceScale(aspect) {
+  const a = Math.max(aspect, 0.0001)
+  if (a >= 1) return 1
+  if (a <= PHONE_ASPECT) return PHONE_REST_SCALE
+  return PHONE_REST_SCALE + (1 - PHONE_REST_SCALE) * ((a - PHONE_ASPECT) / (1 - PHONE_ASPECT))
+}
+
 /** The vertical field of view in degrees, as three's PerspectiveCamera wants it. */
 export function verticalFov(aspect) {
   return (2 * Math.atan(tanHalfVertical(aspect)) * 180) / Math.PI

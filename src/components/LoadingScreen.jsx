@@ -37,12 +37,10 @@ const EASE = 'cubic-bezier(0.45, 0, 0.25, 1)'
  * first frame (`sceneReady`). If loading takes longer it simply goes round
  * again. It never leaves mid-word: a word cut off reads as a glitch.
  *
- * Lifting raises the curtain in the store, which is what starts the device's
- * intro, so the fly-in plays in full in front of the visitor.
+ * Lifting reveals the Prologue beneath it, at 05:40; the Prologue's Begin is
+ * what raises the curtain and starts the device's intro.
  */
 export default function LoadingScreen() {
-  const raiseCurtain = useDeviceStore((s) => s.raiseCurtain)
-
   // How many words have been shown, counting from 0 across every pass.
   const [shown, setShown] = useState(0)
   // False for the first frame only, so even the first word fades in.
@@ -66,13 +64,12 @@ export default function LoadingScreen() {
       const saidThemAll = shown + 1 >= GREETINGS.length
       if (saidThemAll && useDeviceStore.getState().sceneReady) {
         setLifting(true)
-        raiseCurtain()
       } else {
         setShown((n) => n + 1)
       }
     }, WORD_STEP)
     return () => clearTimeout(next)
-  }, [shown, lifting, raiseCurtain])
+  }, [shown, lifting])
 
   useEffect(() => {
     if (!lifting) return undefined

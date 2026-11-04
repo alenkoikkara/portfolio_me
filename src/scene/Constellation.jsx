@@ -5,19 +5,29 @@ import * as THREE from 'three'
 import { constellationLayout } from './constellationLayout'
 import { MILESTONES } from './about/timeline'
 import { CONTENT_ORDER } from './aboutLayout'
+import { INK, ACCENT } from '../story/palette'
 
 /*
- * Ink on the page: the stars are the `--stage-ink` of the light theme, and the
- * faint ones fade toward the page colour rather than toward transparency — see
- * the ambient stars below.
+ * An astronomer's chart in ink on white glass: solid ink dots, no glow, and
+ * hairline lines between them. The ink is the page's `--ink` (palette.js), so
+ * the stars match the labels beside them; the faint ambient stars are ink mixed
+ * toward the white frost rather than made transparent — see below.
  */
-const INK = '#111827'
-const PAGE = '#faf9f6'
+const PAPER = new THREE.Color('#ffffff')
 /** Sizes on screen, in CSS px. */
 const CORE_RADIUS = 3
-const HALO_RADIUS = 7
-const HALO_ALPHA = 0.12
-const LINE_ALPHA = 0.45
+const RING_INNER = 5.5
+const RING_OUTER = 6.5
+/*
+ * The current milestone — the newest, last in the timeline — wears a thin
+ * amber ring, and the ring breathes between these two over a 2.5 s cycle once
+ * it is out: the one thing still moving after the constellation has drawn.
+ */
+const BREATH_LOW = 0.5
+const BREATH_HIGH = 1
+const BREATH_SECONDS = 2.5
+const CURRENT_ID = MILESTONES[MILESTONES.length - 1].id
+const LINE_ALPHA = 0.3
 
 /*
  * The reveal, in seconds from the moment the about key is pressed. The glass
@@ -53,6 +63,7 @@ const prefersReducedMotion = () =>
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 
 const circle = new THREE.CircleGeometry(1, 24)
+const ring = new THREE.RingGeometry(RING_INNER, RING_OUTER, 48)
 
 /*
  * Every material here is drawn after the glass with depth testing off, so the
@@ -74,38 +85,35 @@ const onGlass = { transparent: true, opacity: 0, depthTest: false, depthWrite: f
 export default function Constellation({ layout, present }) {
   const plan = useMemo(() => constellationLayout(layout, MILESTONES), [layout])
 
-  const materials = useMemo(() => {
-    const make = () => new THREE.MeshBasicMaterial({ color: INK, ...onGlass })
-    return {
-      ambient: new THREE.MeshBasicMaterial(onGlass),
-      cores: MILESTONES.map(make),
-      halos: MILESTONES.map(make),
-    }
-  }, [])
+  const materials = useMemo(() => ({
+    ambient: new THREE.MeshBasicMaterial(onGlass),
+    cores: MILESTONES.map(() => new THREE.MeshBasicMaterial({ color: INK, ...onGlass })),
+    ring: new THREE.MeshBasicMaterial({ color: ACCENT, ...onGlass }),
+  }), [])
   useLayoutEffect(() => () => {
     materials.ambient.dispose()
-    for (const m of [...materials.cores, ...materials.halos]) m.dispose()
+    materials.ring.dispose()
+    for (const m of materials.cores) m.dispose()
   }, [materials])
 
   /*
    * The ambient stars are one instanced mesh, not forty: they never move or
    * change on their own, so a draw call each would buy nothing. Their
-   * faintness goes into each instance's colour — ink mixed toward the page, so
-   * a faint star is a pale one, which on a light page reads as fainter — and
-   * leaves the material's opacity free for the fade.
+   * faintness goes into each instance's colour — ink mixed toward the white
+   * frost, so a faint star is one closer to the glass — and leaves the
+   * material's opacity free for the fade.
    */
   const ambientRef = useRef()
   useLayoutEffect(() => {
     const mesh = ambientRef.current
     if (!mesh) return
     const m = new THREE.Matrix4()
-    const page = new THREE.Color(PAGE)
     const ink = new THREE.Color(INK)
-    const c = new THREE.Color()
+    const tint = new THREE.Color()
     plan.ambient.forEach((s, i) => {
       m.makeScale(s.radius, s.radius, 1).setPosition(s.x, -s.y, 0)
       mesh.setMatrixAt(i, m)
-      mesh.setColorAt(i, c.copy(page).lerp(ink, s.alpha))
+      mesh.setColorAt(i, tint.copy(PAPER).lerp(ink, s.alpha))
     })
     mesh.count = plan.ambient.length
     mesh.instanceMatrix.needsUpdate = true
@@ -139,8 +147,11 @@ export default function Constellation({ layout, present }) {
   )
   const nameRef = useRef()
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const instant = prefersReducedMotion()
+    const breath = instant
+      ? BREATH_LOW
+      : BREATH_LOW + (BREATH_HIGH - BREATH_LOW) * (0.5 - 0.5 * Math.cos((state.clock.elapsedTime * 2 * Math.PI) / BREATH_SECONDS))
     const step = Math.min(delta, MAX_STEP)
     if (present) {
       elapsed.current = instant ? Infinity : elapsed.current + step
@@ -160,7 +171,7 @@ export default function Constellation({ layout, present }) {
       if (group) group.scale.setScalar(local === 0 ? 0.0001 : easeOutBack(local))
       const shown = clamp01((t - starAt(i)) / (STAR_POP * 0.7)) * fade
       materials.cores[i].opacity = shown
-      materials.halos[i].opacity = shown * HALO_ALPHA
+      if (star.id === CURRENT_ID) materials.ring.opacity = shown * breath
 
       const label = labelRefs.current[i]
       if (label) label.style.opacity = String(clamp01((t - labelAt(i)) / LABEL_FADE) * fade)
@@ -206,7 +217,7 @@ export default function Constellation({ layout, present }) {
 
         {plan.stars.map((star, i) => (
           <group key={star.id} position={[star.x, -star.y, 0]} ref={(g) => { starRefs.current[i] = g }} scale={0.0001}>
-            <mesh geometry={circle} material={materials.halos[i]} scale={HALO_RADIUS} renderOrder={CONTENT_ORDER} />
+            {star.id === CURRENT_ID && <mesh geometry={ring} material={materials.ring} renderOrder={CONTENT_ORDER} />}
             <mesh geometry={circle} material={materials.cores[i]} scale={CORE_RADIUS} renderOrder={CONTENT_ORDER} />
           </group>
         ))}

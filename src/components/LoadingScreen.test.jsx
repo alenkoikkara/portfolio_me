@@ -11,6 +11,7 @@ const advance = (ms) => act(() => { vi.advanceTimersByTime(ms) })
  */
 const words = (n) => { for (let i = 0; i < n; i++) advance(WORD_STEP) }
 const showing = (container) => container.querySelector('[data-active]')
+const lifting = (container) => container.firstChild?.className.includes('opacity-0') ?? false
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -44,9 +45,9 @@ describe('the loading screen', () => {
     advance(20)
     words(GREETINGS.length - 1)
     expect(showing(container).textContent).toBe(GREETINGS.at(-1).word)
-    expect(useDeviceStore.getState().curtainUp).toBe(false)
+    expect(lifting(container)).toBe(false)
     words(1)
-    expect(useDeviceStore.getState().curtainUp).toBe(true)
+    expect(lifting(container)).toBe(true)
   })
 
   it('goes round again while the scene is still loading, and leaves at a word boundary', () => {
@@ -57,9 +58,9 @@ describe('the loading screen', () => {
     expect(showing(container).textContent).toBe(GREETINGS[0].word)
     act(() => useDeviceStore.setState({ sceneReady: true }))
     // Mid-word: it finishes the word first.
-    expect(useDeviceStore.getState().curtainUp).toBe(false)
+    expect(lifting(container)).toBe(false)
     advance(WORD_STEP / 2)
-    expect(useDeviceStore.getState().curtainUp).toBe(true)
+    expect(lifting(container)).toBe(true)
   })
 
   it('fades out, then leaves the page entirely', () => {
@@ -73,5 +74,14 @@ describe('the loading screen', () => {
     expect(showing(container)).toBeNull()
     advance(LIFT_MS)
     expect(container.innerHTML).toBe('')
+  })
+
+  it('leaves the curtain to the Prologue: lifting starts nothing', () => {
+    useDeviceStore.setState({ sceneReady: true })
+    render(<LoadingScreen />)
+    advance(20)
+    words(GREETINGS.length)
+    advance(LIFT_MS)
+    expect(useDeviceStore.getState().curtainUp).toBe(false)
   })
 })

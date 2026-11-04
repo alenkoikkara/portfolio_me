@@ -57,6 +57,13 @@ export const GALLERY_MODES = new Set(['OPENING_GALLERY', 'GALLERY', 'CLOSING_GAL
  * slides aside for a bio column and a constellation of milestones draws itself
  * across the dark. The camera keeps the rest view's orientation throughout.
  */
+/*
+ * And the contact key a fourth, the simplest:
+ *
+ *   IDLE    → CONTACT (openContact)
+ *   CONTACT → IDLE    (closeContact)
+ */
+
 /** Modes in which the about view is up, or on its way in or out. */
 export const ABOUT_MODES = new Set(['OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT'])
 
@@ -65,9 +72,13 @@ const useDeviceStore = create((set, get) => ({
   // True once the device has drawn its first frame — models loaded and its
   // shaders linked — which is what the loading screen waits on.
   sceneReady: false,
-  // True once the loading screen has begun to lift. The intro holds on its
-  // first frame until then, so the fly-in is never spent behind the greeting.
+  // True once the visitor has begun — the Prologue's Begin, or a deep link
+  // straight into a chapter. The intro holds on its first frame until then,
+  // so the fly-in is never spent behind the greeting or the Prologue.
   curtainUp: false,
+  // True when the intro should jump to its end rather than play: a click
+  // during the sunrise, a returning visitor, reduced motion, or a deep link.
+  introSkipped: false,
   // True once the opening animation has played out and the device is at rest.
   introDone: false,
   focusedIndex: 0,
@@ -86,6 +97,7 @@ const useDeviceStore = create((set, get) => ({
 
   markSceneReady: () => set({ sceneReady: true }),
   raiseCurtain: () => set({ curtainUp: true }),
+  skipIntro: () => set({ introSkipped: true }),
   markIntroDone: () => set({ introDone: true }),
 
   openCarousel: () => {
@@ -171,6 +183,11 @@ const useDeviceStore = create((set, get) => ({
       return
     }
 
+    if (mode === 'CONTACT') {
+      set({ mode: 'IDLE' })
+      return
+    }
+
     if (mode === 'PROJECTING') {
       set({ mode: 'EJECTING', pendingIndex: null, pendingHome: true })
       return
@@ -180,6 +197,32 @@ const useDeviceStore = create((set, get) => ({
     // the request on rather than cutting it short.
     set({ pendingIndex: null, pendingHome: true })
   },
+
+  /* ─── Contact ─── */
+
+  /*
+   * One mode, no transitional ones: the contact panel is DOM over the device at
+   * rest, and fades in CSS. Nothing in the scene moves, so nothing has to
+   * report that it has arrived.
+   */
+  openContact: () => {
+    if (get().mode !== 'IDLE') return
+    set({ mode: 'CONTACT' })
+  },
+
+  closeContact: () => {
+    if (get().mode !== 'CONTACT') return
+    set({ mode: 'IDLE' })
+  },
+
+  /*
+   * A key pressed by the music rather than the visitor: the song plays the
+   * keys of the chapters in the order they were visited. Only the press is
+   * animated — nothing opens. `at` makes a second press of the same key a
+   * change the key can see.
+   */
+  pressedKey: null,
+  pressKey: (name) => set({ pressedKey: { name, at: performance.now() } }),
 
   /* ─── About panel ─── */
 

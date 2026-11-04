@@ -32,6 +32,16 @@ export default defineConfig({
        */
       include: [
         'src/scene/galleryLayout.js',
+        'src/story/sampleSky.js',
+        'src/story/chapters.js',
+        'src/story/useStoryStore.js',
+        'src/story/bridge.js',
+        'src/story/navigate.js',
+        'src/story/useStoryRouting.js',
+        'src/story/dom/KeyHelp.jsx',
+        'src/story/dom/Prologue.jsx',
+        'src/story/dom/SongPrompt.jsx',
+        'src/components/ContactPanel.jsx',
         'src/scene/aboutLayout.js',
         'src/scene/cameraFov.js',
         'src/scene/constellationLayout.js',

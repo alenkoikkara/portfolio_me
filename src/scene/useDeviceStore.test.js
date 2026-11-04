@@ -17,6 +17,7 @@ const reach = {
   OPENING_ABOUT: () => get().openAbout(),
   ABOUT: () => { get().openAbout(); get().aboutOpened() },
   CLOSING_ABOUT: () => { reach.ABOUT(); get().closeAbout() },
+  CONTACT: () => get().openContact(),
 }
 
 /** Every action, so a guard can be checked against all of them from any mode. */
@@ -24,6 +25,7 @@ const ACTIONS = [
   'openCarousel', 'closeCarousel', 'insert', 'seated', 'eject', 'ejected',
   'openGallery', 'galleryOpened', 'closeGallery', 'galleryClosed', 'goHome',
   'openAbout', 'aboutOpened', 'closeAbout', 'aboutClosed',
+  'openContact', 'closeContact',
 ]
 
 beforeEach(() => {
@@ -396,6 +398,7 @@ describe('every transition guards on the current mode', () => {
     'IDLE', 'BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING',
     'OPENING_GALLERY', 'GALLERY', 'CLOSING_GALLERY',
     'OPENING_ABOUT', 'ABOUT', 'CLOSING_ABOUT',
+    'CONTACT',
   ]
 
   /** Which mode each action is allowed to move the machine out of. */
@@ -414,9 +417,11 @@ describe('every transition guards on the current mode', () => {
     aboutOpened: ['OPENING_ABOUT'],
     closeAbout: ['ABOUT', 'OPENING_ABOUT'],
     aboutClosed: ['CLOSING_ABOUT'],
+    openContact: ['IDLE'],
+    closeContact: ['CONTACT'],
     // From INSERTING and EJECTING it records the request without moving the
     // mode, so those count as leaving it untouched.
-    goHome: ['BROWSING', 'PROJECTING', 'OPENING_GALLERY', 'GALLERY', 'OPENING_ABOUT', 'ABOUT'],
+    goHome: ['BROWSING', 'PROJECTING', 'OPENING_GALLERY', 'GALLERY', 'OPENING_ABOUT', 'ABOUT', 'CONTACT'],
   }
 
   it('leaves the mode untouched when called from anywhere else', () => {
@@ -442,6 +447,26 @@ describe('every transition guards on the current mode', () => {
     useDeviceStore.setState({ mode: 'IDLE' })
     get().seated()
     expect(mode()).toBe('IDLE')
+  })
+})
+
+describe('the contact arm', () => {
+  it('opens from rest and closes back to it, and goHome takes it home', () => {
+    get().openContact()
+    expect(mode()).toBe('CONTACT')
+    get().closeContact()
+    expect(mode()).toBe('IDLE')
+    get().openContact()
+    get().goHome()
+    expect(mode()).toBe('IDLE')
+  })
+
+  it('records a key pressed by the song, distinct from the last press of the same key', () => {
+    get().pressKey('Key_Top_0')
+    const first = get().pressedKey
+    get().pressKey('Key_Top_0')
+    expect(get().pressedKey.name).toBe('Key_Top_0')
+    expect(get().pressedKey).not.toBe(first)
   })
 })
 

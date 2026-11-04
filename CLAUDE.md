@@ -45,6 +45,162 @@ use, is already a devDependency.)
 
 ## Architecture
 
+### The sky: one day in Chicago
+
+The site is being rebuilt as one day told through light — `hichord-story-plan.md`
+is the master plan, worked phase by phase. **All six phases are in**: the page
+behind the transparent canvas is the sky of the hour, the device is lit by its
+sun, each section is a chapter at its own hour, the day opens before dawn on
+the Prologue (see **Loading and the intro**), and each chapter plays its chord
+(see **Add a sound**); Contact holds its chord until the visitor reaches out,
+and a full visit can be played back as a song; and the ambient polish below
+keeps the room alive without anything shouting.
+
+- **`src/story/sky.js` holds the hour, as a plain mutable object — never React
+  state.** `sky.hours` counts monotonically from Day 1 00:00 (29.5 is Day 2,
+  05:30); `sky.sample` is the sky at that hour. `SkyDriver.jsx` samples it every
+  frame and everything else reads `sky.sample`. In dev, `?t=18.9` starts at
+  18:54 and `window.__sky.hours = 23.5` scrubs it live.
+- **The day's look is the keyframe table in `src/story/skyKeys.js`**, eased
+  between by `sampleSky.js`. Azimuths are *on screen* from the rest camera —
+  0° from the left, 90° from behind, 180° from the right — and `sunDirection`
+  turns the compass 45° to make that true, because the rest camera looks
+  diagonally back at the device, not down -Z. **The page is near white at every
+  hour** — the plan's revision: night is a cool white with an ink star chart,
+  not navy — so the time is told by the shadow and the light on the device,
+  and the colours are taken from the plan as written, with two measured
+  exceptions in the sun: **midday's sun swung to 40° and lowered to 58°** — the glossy keycaps mirror the sun to the opposite
+  side at its own height, and straight behind at 64° that went straight into
+  the rest camera (in front at about 53°), while at 72° it passed 18° from the
+  carousel's near-overhead camera; either way the tops and labels burned out;
+  and midday and afternoon **stopped down** a little.
+- **`SkyDriver.jsx` replaces the studio's three fixed lights** with one sun
+  (the only shadow caster) and a hemisphere fill, and drives the environment
+  map's strength and the exposure. Its `*_SCALE` constants bring the table's
+  relative levels to this scene, matched at midday against the old rig. **The
+  modes still dim on top of the sky** (`modeLight`): the projector takes the
+  room down from the moment a cartridge starts seating, and the gallery puts
+  the sun and sky out so the wall lights itself — eased as before, and
+  `sky.light` carries the result to the shadows. **Browsing the carousel no
+  longer dims anything:** it is the projects chapter's midday, and a dark veil
+  there would hide the very light the chapter is about. Phase 6's blinds are
+  meant to take over the projector's dimming.
+- **Chapters (`src/story/chapters.js`) are the sections read as hours**, and
+  `useStoryStore.js` is the story: which chapter, and the clock's current spin
+  (from where, to where, since when). `bridge.js` is its only input — one
+  subscription turning device modes into chapters (closing modes are left out,
+  so a section still on screen keeps its chapter until rest) — so the sections
+  themselves never learn the story exists. **Time only moves forward**
+  (`nextOccurrence`): About to Photography races through the night into Day 2.
+  **Every spin sets off from `sky.hours` as it is now**, so a spin interrupted
+  by another carries on from the light on screen. **Going home holds the
+  light.** `SkyDriver` moves `sky.hours` along a spin only while one is
+  running and leaves a settled clock alone, which is what keeps `?t=` and
+  `__sky` scrubbing working.
+- **Each chapter is a page** (`useStoryRouting.js`): its own address and title,
+  the back and forward buttons, and the keys 1–4 (listed by the corner's `?`). `navigate.js` opens a chapter
+  from anywhere — the device only opens a section from rest, so from elsewhere
+  it goes home through `goHome` and opens on arrival; a later request replaces
+  a waiting one. While a back or forward is replayed, the chapters passed
+  through on the way push no history of their own. **The host must serve
+  `index.html` for a chapter's address** (Cloudflare's single-page fallback,
+  set in the dashboard) or a reload on `/about` 404s before any of this runs.
+- **The story's corner (`StoryHUD.jsx`)** is the name — still the way home —
+  the clock, and the chapter's title and caption, top left rather than the
+  plan's bottom left: the bottom left is the key hints', the gallery
+  caption's, and the about view keeps only 56 px there. `aboutLayout.js`'s
+  `CHROME_TOP` grew to 88 to make room. The clock is written straight into the
+  DOM from `sky.hours` each animation frame, never through React. It counts
+  whole minutes with a hair of tolerance: hours are stored as fractions, and
+  08:10 is a rounding error under itself — it read 08:09.
+- **Contact is the fourth section, and the simplest**: one device mode,
+  `CONTACT`, opened by its key from rest, with no transitional modes — the
+  panel (`components/ContactPanel.jsx`) is DOM beside the device at rest and
+  fades in CSS, so nothing has to report that it arrived. `Device.jsx` treats
+  it as rest (`atRest`), like the about view. Entering it **holds** its chord
+  (`holdChord`), a suspended V; **reaching out** — writing, copying the
+  address, following any link, the device's own link keys included — calls
+  `resolveContact`, which resolves the chord home and swaps the caption to "See
+  you tomorrow." Leaving without reaching out just lets the chord fade. The
+  links and the address live in `data/contact.js`, shared with the device's
+  keys; **`CONTACT_EMAIL` is null until Alen sets it**, and with it null there
+  is no email row at all.
+- **The epilogue (`story/dom/SongPrompt.jsx`):** once all four chapters are
+  visited, home offers the visit back — the four chapters' chords in the order
+  seen (`songChords`), at 76 bpm, then home to D (`playSong`). Each chord
+  presses its chapter's key on the device (`pressKey` → `pressedKey`, which
+  `DeviceButton` animates without opening anything; the press present at
+  mount is skipped so nothing replays an old one). "Copy link" writes
+  `/?song=` with one letter per chapter; a visitor arriving on one sees
+  "someone's visit" on reaching home, to play but not re-share. A link is only
+  data: `songFromQuery` accepts exactly four different section letters and
+  nothing else.
+- **The polish (Phase 6), each piece small and each skippable:**
+  - **Blinds** (`story/scene/Blinds.jsx`): in the projects chapter, slats that
+    draw nothing but cast shadows hang between the sun and the device, so
+    thin stripes fall across the desk; they close as a cartridge seats. One
+    instanced mesh (a mesh that draws nothing still costs a draw call per
+    pass), and `raycast` off, or slats in front of the keys would swallow their
+    clicks. First drafted at 22 slats tilted 1.3 rad across 36 cm, the stripes
+    read as heavy bars over the whole window; 16 slats at 1.45 rad across 24 cm
+    are hairlines around the device. **The projector's dark veil stays** — on a
+    bright 12:40 sky the preview needs it; the blinds close over it.
+  - **Shutter and grain:** opening a print plays `playShutter` (peaks about
+    −10 dBFS, just under a key click); the photography chapter's film grain is
+    the `.sky__grain` layer, still on a phone but without its flicker.
+  - **The current milestone breathes** in the about view: it alone wears a
+    thin amber ring, whose opacity eases 0.5 ↔ 1 over 2.5 s once out
+    (`CURRENT_ID`, the last in the timeline).
+  - **The L train** (`TrainPass.jsx`): every 30–50 s from 06:00 to midnight,
+    at rest only (home and contact), a warm light sweeps the desk with a
+    distant rumble (about −27 dBFS) and, by night, a dashed ink line slides
+    along the foot of the sky at 15% of the star chart's strength — lit
+    windows would not show on white. In dev `window.__train()` sends the next one now.
+  - **Idle sway** is the rest camera, not the device — the device never
+    moves: on home it swings ±0.4° around the device over nine seconds,
+    measured at 44.61°–45.39° about rest. Off with reduced motion.
+  - **Cursor glint** (`CursorGlint.jsx`): a faint light following the pointer
+    a little above the keys, about 5% of the sun, at rest on desktop only.
+  - **Phones:** the rest pose stands at half its distance on a portrait
+    window (`restDistanceScale` in `cameraFov.js`, with the intro scaled to
+    match), so the device fills 71% of a 390 px phone's width instead of 37% —
+    the rest pose only, since narrowing the field of view would also crop the
+    carousel and the projector. The shadow map halves to 1024, and the blinds,
+    the train and the glint are **not mounted** at all (`environment.js`): a
+    light at zero intensity is still one every lit material loops over, and at
+    1024 the blinds' stripes alias into a sparkle.
+- **The ink never changes.** `--ink`, `--ink-muted`, `--rule`, `--accent` and
+  `--accent-deep` are fixed tokens in `story.css`, and `story/palette.js`
+  holds the canvas's copies — change one, change both. Amber (`--accent`) is
+  for marks only — the Prologue's horizon, the current milestone's ring —
+  and `--accent-deep` is the one accent dark enough for words (link hover).
+  The about view's glass frosts to white at every hour, and the
+  constellation is an astronomer's chart: solid ink dots with no glow, and
+  hairline ink lines at 30%. The about view keeps its own faint ambient
+  stars, despite the plan's §9: the frost blurs the page's sky away behind
+  the pane, so its stars would not show through. §9's coordinate fix does not
+  apply either — the about view rides with the camera.
+- **The sun's shadow falls on `ShadowCatcher.jsx`**, a ground that draws only
+  shadow, and on a white page it carries the hour: its tint and strength are
+  keyed (`shadow`, `shadowA`) — warm brown at sunrise and golden hour,
+  neutral at noon, faint blue-grey under the moon, never above 0.25. The sun
+  is never lower than `MIN_SUN_HEIGHT`, because a light
+  from under the floor lit the device's underside. The shadow camera spans
+  ±0.6 m: at ±0.3 the long morning and evening shadows ended in straight edges
+  where the map ran out.
+- **The sky's CSS:** `SkyDriver` writes `--sky-top`, `--sky-bottom` and
+  `--sky-stars`; `.stage` maps the `--stage-*` variables onto the fixed ink,
+  and only the projector's dark veil turns the text light.
+  `sampleSky.test.js` holds both ends of the gradient above 93% lightness and
+  the ink and muted ink to WCAG AA against them every ten minutes of the day,
+  the shadow under 0.25, and the stars to the hours round midnight. A tint
+  should be noticeable only *as it changes*: if one reads on its own, pull
+  that key back toward white.
+- **Anything that used to assume the cream page now reads the sky:** the key
+  labels (`var(--stage-ink)`, as a style — SVG presentation attributes take no
+  CSS variables), both glass shaders' "nothing behind me" colour, and the
+  gallery's backdrop, which draws nothing at all now.
+
 ### The state machine is the spine
 
 Everything — camera framing, which meshes exist, what the overlay says, whether the
@@ -68,7 +224,7 @@ Two rules matter when adding behaviour:
 `insert()` while already `PROJECTING` sets `pendingIndex` and ejects first; `ejected()`
 then picks the pending one up. That is how switching projects mid-projection works.
 
-`goHome()` — the title in the corner — is the way back to rest from anywhere, and it
+`goHome()` — the name in the story's corner — is the way back to rest from anywhere, and it
 follows the same shape. It routes through the exits that already exist rather than
 slamming the mode to `IDLE`: from `PROJECTING` it ejects, from a gallery mode it
 closes, and from a cartridge in flight it sets `pendingHome` so the running
@@ -246,15 +402,13 @@ while the wall is mounted and disables it on the way out. Anything else put on a
 layer needs the same, and the failure will look like a dead mesh rather than a
 layer problem.
 
-Two values then have to agree so the cut itself is invisible: the device fade
-(`DEVICE_FADE_SECONDS` in `Device.jsx`), which has to finish before the camera
-changes hands, and the backdrop colour (`BACKDROP` in `Gallery.jsx`, which must
-equal `--stage-bg` of `.stage` — the home page's colour, which the gallery keeps;
-it was a dark room once, with the stage dimming to `.stage--dark` over 700 ms in
-step with the fade). The backdrop is **unlit and `toneMapped={false}`**
-for the last of those — a lit material comes out of the tone mapper some way off its
-authored value, and any gap between it and the page behind the canvas shows as a
-flash at the moment the cameras swap.
+What keeps the cut itself invisible is that **the wall's backdrop draws
+nothing** (`colorWrite` off): the desk and the wall both show the very same sky
+behind the transparent canvas, so there is no colour to keep equal. It once
+painted a colour of its own that had to match the page by hand, and any gap
+showed as a flash at the moment the cameras swapped. The plane stays for the
+click that steps out of a focused print. The device fade (`DEVICE_FADE_SECONDS`
+in `Device.jsx`) still has to finish before the camera changes hands.
 
 `Device.jsx` owns that fade and publishes it through `scene/deviceFade.js`, which
 `LightingSetup.jsx` reads so the contact shadow leaves the desk with the device
@@ -284,8 +438,8 @@ flags hand it over to the scene:
   run before each frame is drawn, so the second is the first to come after a
   drawn frame: by then the models are in and their shaders linked, and that
   first-frame stall happened behind the greeting rather than in the intro.
-- `curtainUp` is set by the greeting as it starts to lift, and **it is what
-  starts the intro.** Until then the animation mixer's `timeScale` is 0 and
+- `curtainUp` is set by the Prologue's Begin (or a deep link), and **it is
+  what starts the intro.** Until then the animation mixer's `timeScale` is 0 and
   the camera's fly-in clock does not advance, so the intro holds on its first
   frame; without that it began the moment the device mounted and was half over
   before anyone could see it.
@@ -296,6 +450,37 @@ once `sceneReady` is true, going round again if loading is slower. **The
 decision to leave is made only inside the word's own timer, at the boundary.**
 Watching `sceneReady` from an effect, as it first did, lifted the instant the
 scene arrived and cut the showing word off mid-fade.
+
+**Beneath the greeting is the Prologue** (`story/dom/Prologue.jsx`): Chicago at
+05:40, the name, a caption and **Begin**. The day starts there — `sky.hours`
+defaults to `PROLOGUE_HOUR` — and the canvas is held at opacity 0 until Begin,
+so the device assembles in the first light instead of sitting half-built behind
+the Prologue's text; it still renders underneath, which is what `sceneReady`
+needs. One Begin button, not the plan's "with sound / quietly" pair, until
+sound exists.
+
+Begin (`beginDay` in `navigate.js`) starts the story and **raises the curtain —
+the greeting no longer does.** The first sunrise lasts `SUNRISE_MS`, which is
+the intro's own length (`INTRO_SECONDS` in `scene/intro.js`, where the camera's
+fly-in ends), so the sun and the device land on 08:10 together; the plan's 3.2 s
+would have had the sun up long before the device finished assembling. A
+returning visitor (`hichord:seen` in local storage) or one asking for reduced
+motion gets the quick sunrise and the device already assembled.
+
+Until the device is at rest, **any click or key skips** (`skipSunrise`): the
+spin lands (`skipTravel`) and `skipIntro` puts every clip on its last frame and
+the fly-in clock at its end. The camera then eases home from wherever it had
+reached — the same ease a drag lets go into — so a skip mid-flight still reads
+as motion. The listeners are on capture, so the click that skips does not also
+land on whatever was under it.
+
+**Deep links** (`startFromAddress`): a chapter's address loaded cold skips the
+Prologue, the sunrise and the intro and goes straight into the chapter at its
+hour (`startAt`). It runs before the routing hook, and that hook ignores a
+chapter already out of date when its effect fires — otherwise the cold load,
+read as the Prologue in the same flush, put the address back to `/`. An
+address with no section yet (`/contact`) falls to the Prologue, which
+*replaces* it rather than leaving a step for the back button.
 
 ### Who owns what
 
@@ -310,7 +495,29 @@ scene arrived and cut the showing word off mid-fade.
 | Beam, preview plane, boot beat, spill light | `src/scene/Projector.jsx` |
 | Beam and preview GLSL | `src/scene/projectorShaders.js` |
 | All sound, synthesised at runtime | `src/scene/audio.js` |
-| Lights and environment | `src/components/LightingSetup.jsx` |
+| Studio environment map, contact shadow | `src/components/LightingSetup.jsx` |
+| The hour and its sky, as mutable state (no React) | `src/story/sky.js` |
+| The day's keyframes — tune the look here | `src/story/skyKeys.js` |
+| Easing between keys; sun direction | `src/story/sampleSky.js` |
+| Sun, sky fill, exposure, mode dimming, sky CSS vars | `src/story/scene/SkyDriver.jsx` |
+| The ground the sun's shadow falls on | `src/story/scene/ShadowCatcher.jsx` |
+| The sky behind the canvas: gradient, stars, grain, veil | `src/story/dom/SkyBackground.jsx`, `src/story/story.css` |
+| Chapters: hours, titles, captions, modes and paths as chapters | `src/story/chapters.js` |
+| The story: chapter, the clock's spin, chapters seen | `src/story/useStoryStore.js` |
+| Device modes → story chapters | `src/story/bridge.js` |
+| Opening a chapter from anywhere | `src/story/navigate.js` |
+| Chapters as pages: address, title, back/forward, keys 1–4 | `src/story/useStoryRouting.js` |
+| The story's corner: name, clock, chapter caption | `src/story/dom/StoryHUD.jsx` |
+| The `?` list of keyboard shortcuts | `src/story/dom/KeyHelp.jsx` |
+| The fixed ink and accent, for the canvas | `src/story/palette.js` |
+| The Prologue: 05:40, Begin, click-to-skip the sunrise | `src/story/dom/Prologue.jsx` |
+| Contact: the panel, reaching out | `src/components/ContactPanel.jsx` |
+| Social links and the published email | `src/data/contact.js` |
+| The epilogue: a visit played back, share links | `src/story/dom/SongPrompt.jsx` |
+| Chords and the small keys' notes | `src/story/chords.js` |
+| Reduced motion and phone detection, for the polish | `src/story/environment.js` |
+| Blinds, the L train, the cursor glint | `src/story/scene/Blinds.jsx`, `TrainPass.jsx`, `CursorGlint.jsx` |
+| How long the device's intro lasts | `src/scene/intro.js` |
 | DOM overlay: arrows, description, keyboard | `src/components/Overlay.jsx` |
 | Loading screen: "hello" in four languages, curtain hand-off | `src/components/LoadingScreen.jsx` |
 | Project catalogue | `src/data/projects.js` |
@@ -503,12 +710,34 @@ audio files ship. One `AudioContext` serves the whole app — browsers cap how m
 page may hold, so do not create another. Levels there are set against what survives
 the filter, not the raw noise, and were chosen by metering.
 
+**Sound is opt-in, and off is fully silent.** `setSoundOn` is the switch:
+`audio()` returns null while it is off, so with sound off no context is ever
+created — every sound, old and new, already returned early on a null context.
+Off suspends a live context, which silences even a running projector reel. It
+is turned on only inside a click (the Prologue's "begin with sound", the toggle
+in the story's corner, or M), because browsers start audio only from a gesture.
+The story store's `soundOn` mirrors it for the UI.
+
+**The music is synthesised here too**, not with Tone.js as the story plan
+suggested: one more dependency and download for a handful of notes, and its own
+context to keep in step with this one. Each chapter's chord (`story/chords.js`,
+all in D major, sharing common tones so any order voice-leads) is strummed by
+`playChord` on entering the chapter, and the sunrise's on Begin; the small keys
+(LinkedIn, GitHub, Medium, explode) ring a pentatonic `playNote` under their
+click. A pad voice is two sines — a body and a fast-dying tine an octave and a
+fifth up, which reads as an electric piano — through a low-pass and a reverb
+built from decaying noise. Metered on the master bus: chords peak at −19 to
+−22 dBFS (RMS around −35), bells around −27, against −7 for a key click and a
+−27 RMS reel — under the experience, as the plan asks, and within 3 dB of one
+another so no chapter jumps out.
+
 ### Touch the overlay
 
 `src/components/Overlay.jsx` for markup and keyboard, `src/index.css` for styling.
 The overlay re-themes with the scene through `--stage-*` custom properties on the
-wrapper in `App.jsx`: light at rest and on the photography wall and the about
-view, dim while browsing, darker while projecting.
+wrapper in `App.jsx`: the fixed dark ink at rest, on the photography wall, in
+the about view and the carousel, then light text on a dim veil as a cartridge
+seats, and darker while it projects.
 Read those variables rather than hard-coding colours, or the element will not follow
 the room lights down.
 
@@ -594,11 +823,12 @@ text on a still-light background.
   and `Device.jsx` guards every line that writes to `state.camera` on `inGallery`
   for the same reason.
 - **drei's `<Environment>` re-applies `scene.environmentIntensity` on every
-  render, and its default is 1.** Left unset it fought the ease in
-  `LightingSetup.jsx`: any re-render knocked the room's ambient light from 1.6
-  down to 1 and the ease spent the next ten frames climbing back, which read as
-  the scene flickering. It is now handed `envIntensityFor(mode)` — the value that
-  mode is heading for — so a re-render lands where the ease already wants to be.
+  render, and its default is 1.** Left unset it fought the lighting ease: any
+  re-render knocked the room's ambient light from 1.6 down to 1 and the ease
+  spent the next ten frames climbing back, which read as the scene flickering.
+  It is now handed `envIntensityFor(mode)` (`SkyDriver.jsx`) — the value for
+  that mode at the sky's current hour — so a re-render lands where the ease
+  already wants to be.
   The same trap applies to any drei prop that writes to the scene and also has a
   default.
 - **Nothing in the frame loop should be React state.** `isDragging` in
@@ -609,7 +839,7 @@ text on a still-light background.
 - **Every exponential ease must clamp its frame delta.** `MathUtils.damp(a, b, k, dt)`
   resolves `1 - e^(-k·dt)` of the remaining distance, so one long frame resolves
   almost all of it and the move reads as a jump. `Device.jsx` caps the camera with
-  `MAX_EASE_STEP`; `LightingSetup.jsx` caps all five of its light eases with
+  `MAX_EASE_STEP`; `SkyDriver.jsx` caps the mode's light eases with
   `MAX_LIGHT_STEP`. The lighting went uncapped for a while and it was visible: the
   frame in which the carousel opens also links every cartridge shader, and it was
   measured taking the exposure its **entire** travel — 1.15 → 0.75 — in that single
@@ -686,7 +916,8 @@ the specific thing.
 
 The dev build exposes hooks for this: `window.deviceStore` drives the state machine
 without synthesising clicks, plus `__scene`, `__camera`, `__gl` (texture counts) and
-`__audioBus` (metering). The gallery adds `__gallery` (layout, pan target, visible
+`__audioBus` (metering). `__sky` scrubs the hour (`__sky.hours = 18.92`), as does
+`?t=` on the URL, and `__train()` sends the next L train now. The gallery adds `__gallery` (layout, pan target, visible
 set, bounds) and `__photoTextures` (`thumbStore.stats()` / `fullStore.stats()`), which
 are how you check that off-screen prints are not resident and that switching focus
 quickly does not strand a texture.
@@ -697,8 +928,14 @@ wall-clock, which reads as a broken theme. CPU profiles remain trustworthy for
 attribution, and audio must be metered on the audio thread via an `AudioWorklet` —
 sampling on the main thread misses short sounds entirely.
 
-Three traps in that harness, each of which has already produced a confident wrong
+Four traps in that harness, each of which has already produced a confident wrong
 answer:
+
+- **`import('/src/scene/audio.js')` from the console is a second, separate
+  module**, not the app's: Vite serves the app's copy at a versioned URL
+  (`audio.js?t=…`). The fresh copy has sound off, so everything it plays is
+  silent and reads as a broken mix. Import the URL the page actually loaded —
+  `performance.getEntriesByType('resource')` lists it.
 
 - **A headless page renders only when something forces it to.** Left alone it stops
   producing frames entirely, and every frame-driven value freezes with it — a fade
@@ -721,8 +958,11 @@ answer:
 
 `agent.md` holds the user's standing preferences. The parts that still apply:
 Tailwind utilities over custom CSS, Remix Icon for iconography **if icons are ever
-added** (the dependency was removed as unused), viewport background `#faf9f6`,
-mobile-first and responsive, no dead code, and comments that explain *why*.
+added** (the dependency was removed as unused), mobile-first and responsive, no dead code, and comments that explain *why*.
+
+Its viewport background, `#faf9f6`, is superseded by the sky: the page is the
+sky of the hour now, by the user's decision when the story plan was adopted.
+`#faf9f6` survives only as the loading greeting's ground.
 
 Its "File Structure" section describes an older layout (`src/styles/`, `src/utils/`)
 that does not exist; the table above is current.

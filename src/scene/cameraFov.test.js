@@ -39,3 +39,16 @@ describe('the device camera field of view', () => {
     expect(Number.isFinite(verticalFov(0))).toBe(true)
   })
 })
+
+describe('the rest pose on a phone', () => {
+  it('stands nearer on a portrait window, not at all on a desktop, and blends between', async () => {
+    const { restDistanceScale } = await import('./cameraFov')
+    expect(restDistanceScale(390 / 844)).toBe(0.5)
+    expect(restDistanceScale(16 / 9)).toBe(1)
+    expect(restDistanceScale(1)).toBe(1)
+    const mid = restDistanceScale(0.9)
+    expect(mid).toBeGreaterThan(0.5)
+    expect(mid).toBeLessThan(1)
+    expect(restDistanceScale(0)).toBe(0.5)
+  })
+})

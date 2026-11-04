@@ -1,0 +1,336 @@
+/*
+ * The fixed tokens: they never change with the hour. The page stays near white
+ * all day, so dark ink reads at every hour and nothing flips. The canvas's
+ * copies are in palette.js.
+ *
+ *   --accent        amber, for marks only — the horizon, the current milestone
+ *   --accent-deep   the one accent dark enough for words on white
+ *
+ * Then the sky's variables, before the first frame writes them: 05:40, where
+ * the day starts, so the Prologue's first paint already matches its sky.
+ */
+:root {
+  --ink: #17181c;
+  --ink-muted: #646670;
+  --rule: #e4e2dc;
+  --accent: #c8873a;
+  --accent-deep: #8e5a1c;
+
+  --sky-top: #edeff6;
+  --sky-bottom: #f7f3f1;
+  --sky-stars: 0;
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+}
+
+.sky__stars {
+  position: absolute;
+  inset: 0;
+  opacity: var(--sky-stars);
+  background-size: 1024px;
+  background-repeat: repeat;
+}
+
+/*
+ * The night L train, as a pen line of ink dashes sliding along the foot of the
+ * sky — on a white page, lit windows would not show. Only as visible as the
+ * star chart is, and faint even then; a day train shows only as light on the
+ * desk. TrainPass.jsx restarts the slide for each train.
+ */
+.sky__train {
+  position: absolute;
+  left: 0;
+  bottom: 9vh;
+  width: 34vw;
+  height: 2px;
+  opacity: 0;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 7px, transparent 7px 12px);
+  transform: translateX(-40vw);
+}
+
+.sky__train--passing {
+  animation: sky-train 1.4s linear both;
+}
+
+@keyframes sky-train {
+  0% { transform: translateX(-40vw); opacity: 0; }
+  12% { opacity: calc(var(--sky-stars) * 0.15); }
+  88% { opacity: calc(var(--sky-stars) * 0.15); }
+  100% { transform: translateX(106vw); opacity: 0; }
+}
+
+/*
+ * Film grain, for the photography chapter's golden hour. Multiplied, so on
+ * white it reads as the tooth of paper rather than dirt on the screen.
+ */
+.sky__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transition: opacity 1.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-chapter='photography'] .sky__grain {
+  opacity: 0.05;
+  animation: sky-grain 0.4s steps(3) infinite;
+}
+
+@keyframes sky-grain {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-6px, 4px); }
+  66% { transform: translate(5px, -3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-chapter='photography'] .sky__grain { animation: none; }
+}
+
+/* A phone keeps the grain but not its flicker: one more thing to repaint every frame. */
+@media (pointer: coarse), (max-width: 639px) {
+  [data-chapter='photography'] .sky__grain { animation: none; }
+}
+
+/* The room going dark over the sky, for the projector. */
+.sky__veil {
+  position: absolute;
+  inset: 0;
+  background-color: var(--stage-bg);
+  transition: background-color 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── The story's corner: name, clock, chapter ─── */
+
+.story-hud__clock {
+  color: var(--stage-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.story-hud__day {
+  margin-left: 8px;
+}
+
+.story-hud__sound {
+  pointer-events: auto;
+  cursor: pointer;
+  color: var(--stage-muted);
+  letter-spacing: 0.06em;
+  transition: color 300ms ease, opacity 200ms ease;
+}
+
+.story-hud__sound:hover {
+  opacity: 0.6;
+}
+
+.story-hud__sound[aria-pressed='true'] {
+  color: var(--stage-ink);
+}
+
+.story-hud__day:empty {
+  display: none;
+}
+
+.story-hud__chapter {
+  color: var(--stage-muted);
+  line-height: 1.4;
+  /* After the light has mostly arrived, so the words and the light land together. */
+  animation: story-hud-in 700ms 600ms both cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.story-hud__title {
+  color: var(--stage-ink);
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+@keyframes story-hud-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-hud__chapter { animation-duration: 1ms; animation-delay: 0s; }
+}
+
+/* The keyboard, listed under the corner on demand. */
+.key-help {
+  position: relative;
+}
+
+.key-help__list {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sky-bottom) 92%, transparent);
+  color: var(--stage-muted);
+  white-space: nowrap;
+  pointer-events: auto;
+  animation: story-hud-in 300ms both cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.key-help__row {
+  display: flex;
+  gap: 12px;
+}
+
+.key-help__row dt {
+  min-width: 28px;
+  color: var(--stage-ink);
+}
+
+.key-help__row dd {
+  margin: 0;
+}
+
+.key-help kbd {
+  font-family: inherit;
+}
+
+/* ─── The Prologue: 05:40, before the city wakes ─── */
+
+.prologue {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.prologue__time {
+  margin: 0 0 18px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+}
+
+.prologue__name {
+  margin: 0 0 10px;
+  font-size: clamp(36px, 7vw, 56px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.prologue__caption {
+  margin: 0 0 40px;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+
+.prologue__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.prologue__begin {
+  padding: 12px 26px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+}
+
+.prologue__begin:hover,
+.prologue__begin:focus-visible {
+  border-color: var(--ink);
+  outline: none;
+}
+
+.prologue__begin--primary {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+/* A thin amber line across the bottom of the sky, where the sun will come up. */
+.prologue__horizon {
+  position: fixed;
+  left: 10vw;
+  right: 10vw;
+  bottom: 22vh;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 35%, var(--accent) 65%, transparent);
+  transform-origin: center;
+  animation: prologue-horizon 2.4s 0.4s both cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes prologue-horizon {
+  from { transform: scaleX(0.04); opacity: 0; }
+  to { transform: scaleX(1); opacity: 0.7; }
+}
+
+.prologue__skip {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 60;
+  transform: translateX(-50%);
+  pointer-events: none;
+  color: var(--ink-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  transition: opacity 600ms ease;
+}
+
+.prologue__skip--gone {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prologue__horizon { animation-duration: 1ms; animation-delay: 0s; }
+}
+
+/* ─── The epilogue: one quiet line on home ─── */
+
+.song {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 45;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--stage-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  animation: story-hud-in 700ms 600ms both cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.song button {
+  color: var(--stage-ink);
+  cursor: pointer;
+  transition: opacity 200ms ease;
+}
+
+.song button:hover {
+  opacity: 0.6;
+}

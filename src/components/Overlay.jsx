@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceStore'
 import { PHOTOS } from '../data/photos'
 import { formatSettings } from '../data/exif'
+import ContactPanel from './ContactPanel'
 import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
 
 /**
@@ -21,6 +22,7 @@ export default function Overlay() {
   const focusPhoto = useDeviceStore((s) => s.focusPhoto)
   const closeGallery = useDeviceStore((s) => s.closeGallery)
   const closeAbout = useDeviceStore((s) => s.closeAbout)
+  const closeContact = useDeviceStore((s) => s.closeContact)
 
   const inGallery = GALLERY_MODES.has(mode)
   const inAbout = ABOUT_MODES.has(mode)
@@ -60,6 +62,9 @@ export default function Overlay() {
         e.preventDefault()
         // A no-op once already closing, by the store's own guard.
         closeAbout()
+      } else if (mode === 'CONTACT' && e.key === 'Escape') {
+        e.preventDefault()
+        closeContact()
       }
       // Arrow keys in the gallery pan the wall, and are handled by the camera
       // that owns the pan target rather than here.
@@ -67,7 +72,7 @@ export default function Overlay() {
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [mode, inGallery, inAbout, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery, closeAbout])
+  }, [mode, inGallery, inAbout, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery, closeAbout, closeContact])
 
   if (mode === 'IDLE') return null
 
@@ -136,6 +141,8 @@ export default function Overlay() {
    * out: a close button, which a phone needs, having no Escape key, and the
    * hint for those who do.
    */
+  if (mode === 'CONTACT') return <ContactPanel />
+
   if (inAbout) {
     return (
       <div className="overlay">

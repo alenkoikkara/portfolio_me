@@ -23,10 +23,11 @@ const COLUMN_GAP = 64
 const MAX_CONTENT = 1180
 
 /*
- * The title and close button sit at the top of the window and the key hint at
- * the bottom; the composition stays clear of both rows.
+ * The story's corner (the name, the clock and the chapter's caption beneath)
+ * and the close button sit at the top of the window, and the key hint at the
+ * bottom; the composition stays clear of both.
  */
-const CHROME_TOP = 64
+const CHROME_TOP = 88
 const CHROME_BOTTOM = 56
 
 /*
