@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HFOV, tanHalfVertical, verticalFov } from './cameraFov'
+import { HFOV, tanHalfVertical, verticalFov, restDistanceScale, restPose } from './cameraFov'
 
 const TAN_HALF_H = Math.tan((HFOV * Math.PI) / 360)
 
@@ -50,5 +50,18 @@ describe('the rest pose on a phone', () => {
     expect(mid).toBeGreaterThan(0.5)
     expect(mid).toBeLessThan(1)
     expect(restDistanceScale(0)).toBe(0.5)
+  })
+})
+
+describe('the rest pose by window', () => {
+  it('stands nearly overhead and close on a phone, for thumbs', () => {
+    expect(restPose(390, 844)).toEqual({ scale: expect.any(Number), tilt: 22 })
+    expect(restPose(767, 1024).tilt).toBe(22)
+    expect(restPose(390, 844).scale).toBeLessThan(restDistanceScale(390 / 844))
+  })
+
+  it('keeps the desktop angle from 768 px up, nearer only on a portrait window', () => {
+    expect(restPose(1440, 900)).toEqual({ scale: 1, tilt: null })
+    expect(restPose(820, 1180)).toEqual({ scale: restDistanceScale(820 / 1180), tilt: null })
   })
 })

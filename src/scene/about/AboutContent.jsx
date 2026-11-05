@@ -32,8 +32,8 @@ export default function AboutContent() {
         <h2 className="about__h2">Currently</h2>
         <ul>
           <li>Building this site in Three.js + R3F</li>
-          <li>Currently working at Mckinsey & Company</li>
-          <li>Shooting on a Sony A7 iv when the light cooperates</li>
+          <li>Currently working at McKinsey & Company</li>
+          <li>Shooting on whatever&apos;s in my pocket — mostly an iPhone</li>
         </ul>
       </section>
     </article>

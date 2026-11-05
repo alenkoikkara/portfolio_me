@@ -8,6 +8,7 @@ const OPEN = {
   photography: () => useDeviceStore.getState().openGallery(),
   about: () => useDeviceStore.getState().openAbout(),
   contact: () => useDeviceStore.getState().openContact(),
+  writing: () => useDeviceStore.getState().openWriting(),
 }
 
 // The wait for rest before an open, if one is outstanding.

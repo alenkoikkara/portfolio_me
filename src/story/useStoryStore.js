@@ -3,7 +3,7 @@ import { sky, HOME_HOUR } from './sky'
 import { CHAPTERS, songFromQuery } from './chapters'
 import { INTRO_SECONDS } from '../scene/intro'
 import { setSoundOn, soundAllowed, playChord, holdChord, releaseHeld } from '../scene/audio'
-import { CHORDS } from './chords'
+import { CHORDS, music } from './chords'
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
@@ -23,6 +23,41 @@ const MAX_TRAVEL_MS = 2600
 export const SUNRISE_MS = INTRO_SECONDS * 1000
 export const QUICK_SUNRISE_MS = 1400
 const SEEN_KEY = 'hichord:seen'
+/** The visitor's sound choice, kept between visits: '1' on, '0' off, absent for never chosen. */
+export const SOUND_KEY = 'hichord:sound'
+
+function rememberedSound() {
+  try {
+    return window.localStorage.getItem(SOUND_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function rememberSound(on) {
+  try {
+    window.localStorage.setItem(SOUND_KEY, on ? '1' : '0')
+  } catch {
+    // Private mode: the choice lasts the visit, which is all it can.
+  }
+}
+
+/*
+ * Run `start` once the browser will let sound start: now, if the visitor has
+ * already clicked or typed on the page, or else on their first click, tap or
+ * key — the events browsers count as a gesture. On capture, so it runs before
+ * whatever that click does: pressing the Sound key first thing still turns
+ * the remembered sound off, as it should.
+ */
+const GESTURES = ['pointerup', 'touchend', 'keydown']
+function onFirstGesture(start) {
+  if (soundAllowed()) return start()
+  const go = () => {
+    for (const type of GESTURES) window.removeEventListener(type, go, true)
+    start()
+  }
+  for (const type of GESTURES) window.addEventListener(type, go, true)
+}
 
 /** Whether this browser has begun before. Private modes throw; they count as new. */
 function seenBefore() {
@@ -83,7 +118,7 @@ const useStoryStore = create((set, get) => {
     travelMs: 0,
     /** Chapters seen, in the order first seen. */
     visited: [],
-    /** Off until the visitor asks for it: Begin with sound, or the toggle. */
+    /** Off until the visitor asks for it — the Sound key or M — and then remembered. */
     soundOn: false,
     /** Whether the visitor reached out from Contact, resolving its held chord. */
     contactResolved: false,
@@ -91,12 +126,22 @@ const useStoryStore = create((set, get) => {
     sharedSong: typeof window !== 'undefined' ? songFromQuery(window.location.search) : null,
 
     /**
-     * The day begins, as the greeting lifts: the sun comes up, 05:40 to 08:10,
-     * on a chord. Browsers start sound only after a click or a key, so the
-     * chord sounds — and sound comes on for the visit — only if the visitor
-     * has already given one while the greeting played; otherwise it begins
-     * quietly and sound waits for the toggle or M. Returns whether
-     * it is the quick sunrise — a returning visitor, or reduced motion — in
+     * A visitor who left sound on last time finds it on: the key lit at once,
+     * the audio itself started on their first gesture, which is the earliest a
+     * browser allows (see onFirstGesture). Turning it off meanwhile wins.
+     */
+    restoreSound() {
+      if (!rememberedSound()) return
+      set({ soundOn: true })
+      onFirstGesture(() => {
+        if (get().soundOn) setSoundOn(true)
+      })
+    },
+
+    /**
+     * The day begins, as the greeting lifts: the sun comes up, 05:40 to 08:10.
+     * Sound stays off unless the visitor chose it on a visit before. Returns
+     * whether it is the quick sunrise — a returning visitor, or reduced motion — in
      * which case the device should start assembled rather than play its intro.
      */
     begin() {
@@ -109,8 +154,8 @@ const useStoryStore = create((set, get) => {
         chapter: 'home',
         ...travel(to, prefersReducedMotion() ? REDUCED_TRAVEL_MS : quick ? QUICK_SUNRISE_MS : SUNRISE_MS),
       })
-      if (soundAllowed()) get().setSound(true)
-      playChord(CHORDS.sunrise, { duration: 4.5, velocity: 0.5 })
+      get().restoreSound()
+      if (music.on) playChord(CHORDS.sunrise, { duration: 4.5, velocity: 0.5 })
       return quick
     },
 
@@ -128,6 +173,7 @@ const useStoryStore = create((set, get) => {
         travelStart: typeof performance !== 'undefined' ? performance.now() : 0,
         travelMs: 0,
       })
+      get().restoreSound()
     },
 
     /** Land the current spin now — a click during the sunrise. */
@@ -149,7 +195,8 @@ const useStoryStore = create((set, get) => {
         ...travel(nextOccurrence(sky.hours, cfg.hour)),
       })
       // Each chapter's chord, as the clock starts to spin — Contact's held, the
-      // rest played. Silent with sound off.
+      // rest played. Silent with sound off, and with the music switched off.
+      if (!music.on) return
       if (cfg.hold) holdChord(cfg.chord)
       else playChord(cfg.chord)
     },
@@ -158,13 +205,14 @@ const useStoryStore = create((set, get) => {
     resolveContact() {
       const s = get()
       if (s.chapter !== 'contact' || s.contactResolved) return
-      releaseHeld(CHORDS.resolve)
+      if (music.on) releaseHeld(CHORDS.resolve)
       set({ contactResolved: true })
     },
 
     /** Sound on or off. On must be called inside a click: browsers start audio only there. */
     setSound(on) {
       setSoundOn(on)
+      rememberSound(on)
       set({ soundOn: on })
     },
 

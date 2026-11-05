@@ -15,6 +15,7 @@ export const CHAPTERS = {
   photography: { path: '/photography', hour: 18 + 55 / 60, title: 'Photography', caption: 'Golden hour. I stop working and start looking.', chord: CHORDS.photography },
   about: { path: '/about', hour: 23 + 30 / 60, title: 'About', caption: 'Late. A good time to think about how I got here.', chord: CHORDS.about },
   contact: { path: '/contact', hour: 6 + 5 / 60, title: 'Contact', caption: 'A new day. Say hello.', chord: CHORDS.contactSus, hold: true },
+  writing: { path: '/writing', hour: 21 + 40 / 60, title: 'Writing', caption: 'Evening. Writing it down.', chord: CHORDS.about },
 }
 
 export const SECTION_CHAPTERS = Object.keys(CHAPTERS)
@@ -51,6 +52,7 @@ const MODE_TO_CHAPTER = {
   OPENING_ABOUT: 'about',
   ABOUT: 'about',
   CONTACT: 'contact',
+  WRITING: 'writing',
 }
 
 /** The device key each section is opened by: the song presses them as it plays. */
@@ -59,6 +61,7 @@ export const SECTION_KEYS = {
   about: 'Key_Top_1',
   photography: 'Key_Top_2',
   contact: 'Key_Bot_3',
+  writing: 'Key_Bot_1',
 }
 
 /** A visit's chords, in order: each chapter's own — Contact's the held one, as it sounded. */
@@ -67,18 +70,18 @@ export function songChords(chapters) {
 }
 
 /** Each section's letter in a shared song link (`?song=pfac`). */
-export const SONG_CODE = { projects: 'p', photography: 'f', about: 'a', contact: 'c' }
+export const SONG_CODE = { projects: 'p', photography: 'f', about: 'a', contact: 'c', writing: 'w' }
 
 /**
- * A song from a shared link: four different sections, in the order someone
+ * A song from a shared link: every section once, in the order someone
  * visited them, or null for anything else — a link is only ever data.
  */
 export function songFromQuery(search) {
   const code = new URLSearchParams(search).get('song')
-  if (!code || code.length !== 4) return null
+  if (!code || code.length !== SECTION_CHAPTERS.length) return null
   const byLetter = Object.fromEntries(Object.entries(SONG_CODE).map(([chapter, letter]) => [letter, chapter]))
   const chapters = [...code].map((letter) => byLetter[letter])
-  if (chapters.some((c) => !c) || new Set(chapters).size !== 4) return null
+  if (chapters.some((c) => !c) || new Set(chapters).size !== SECTION_CHAPTERS.length) return null
   return chapters
 }
 

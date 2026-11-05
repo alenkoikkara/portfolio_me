@@ -7,13 +7,14 @@ import LightingSetup from '../components/LightingSetup'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from './useDeviceStore'
 import * as THREE from 'three'
 import { playMechanicalClick, playNote } from './audio'
-import { GRACE_NOTES } from '../story/chords'
+import { GRACE_NOTES, music } from '../story/chords'
 import { SOCIAL_LINKS } from '../data/contact'
-import { prefersReducedMotion } from '../story/environment'
+import { prefersReducedMotion, isTouch } from '../story/environment'
 import useStoryStore from '../story/useStoryStore'
 import deviceFade from './deviceFade'
-import { INTRO_SECONDS } from './intro'
-import { verticalFov, restDistanceScale } from './cameraFov'
+import { INTRO_SECONDS, landingTime } from './intro'
+import { skipSunrise } from '../story/navigate'
+import { verticalFov, restPose, PHONE_WIDTH } from './cameraFov'
 
 /* ─── Camera constants ─── */
 const CAM_TARGET = [0, 0.008, 0]
@@ -78,6 +79,18 @@ const MAX_EASE_STEP = 0.1
  */
 const HOVER_LIFT = 0.0016
 /*
+ * A key's annotation: shown 150 ms after the pointer arrives — long enough
+ * that sweeping across the device does not flash every label — and drawn in
+ * well under half a second. It was 800 ms and 1.5 s, which read as the site
+ * being slow to answer.
+ */
+const LABEL_DELAY_MS = 150
+const LABEL_DRAW_MS = 350
+const LABEL_FADE_MS = 250
+/** The Sound key's glow while sound is on: the one accent, amber. */
+const SOUND_GLOW = '#e8b04a'
+const SOUND_GLOW_STRENGTH = 0.35
+/*
  * How long the device takes to fade out for the gallery, and to come back, in
  * seconds.
  *
@@ -114,11 +127,16 @@ const SWAY_RADIANS = THREE.MathUtils.degToRad(0.4)
 const SWAY_PERIOD = 9
 const SWAY_AXIS = new THREE.Vector3(0, 1, 0)
 const UP_OPEN = new THREE.Vector3(0, 0, -1)
+/*
+ * The fly-in, its beats as shares of the intro: authored over nine seconds and
+ * squeezed to INTRO_SECONDS with the same shape, so changing the length is one
+ * number in intro.js.
+ */
 const CAM_PATH = [
-  { t: 0.00, pos: pulledBack([0.38, 0.10, 0.42]) },
-  { t: 2.60, pos: pulledBack([0.34, 0.18, 0.37]) },
-  { t: 4.33, pos: pulledBack([0.30, 0.26, 0.32]) },
-  { t: 6.83, pos: pulledBack([0.26, 0.34, 0.27]) },
+  { t: 0, pos: pulledBack([0.38, 0.10, 0.42]) },
+  { t: 0.284 * INTRO_SECONDS, pos: pulledBack([0.34, 0.18, 0.37]) },
+  { t: 0.472 * INTRO_SECONDS, pos: pulledBack([0.30, 0.26, 0.32]) },
+  { t: 0.745 * INTRO_SECONDS, pos: pulledBack([0.26, 0.34, 0.27]) },
   { t: INTRO_SECONDS, pos: CAM_REST_POS },
 ]
 
@@ -145,9 +163,39 @@ function sampleCamPath(time, out) {
   return out.fromArray(p[p.length - 1].pos)
 }
 
+/*
+ * A finger's hit area. On a touch screen or a phone each key carries an
+ * invisible box a little larger than its cap — drawn, so the pointer's ray
+ * finds it, but writing neither colour nor depth — which brings even the
+ * small round keys past 44 CSS px with the device at 90% of a phone's width.
+ */
+const HIT_MARGIN = 0.0025
+const HIT_BOX = new THREE.BoxGeometry(1, 1, 1)
+const HIT_MATERIAL = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+const wantsBigHits = () => isTouch() || (typeof window !== 'undefined' && window.innerWidth < PHONE_WIDTH)
+
 /* ─── Button component ─── */
-function DeviceButton({ position, description, labelDirection = 'down', children, onClick, name, introDone, isExploded = false }) {
+function DeviceButton({ position, description, labelDirection = 'down', children, onClick, onCollapse, name, introDone, landed, isExploded = false }) {
   const buttonRef = useRef()
+  // A key takes the pointer the moment it has landed, not when the whole
+  // device has: the opening is three seconds, and there is no reason to make a
+  // visitor wait out the last key to press the first.
+  const ready = introDone || landed.has(name)
+
+  // The cap's own bounds, from its meshes' geometry, grown by the margin.
+  const hitBox = useMemo(() => {
+    if (!wantsBigHits()) return null
+    const box = new THREE.Box3()
+    React.Children.forEach(children, (child) => {
+      const geometry = child?.props?.geometry
+      if (!geometry) return
+      if (!geometry.boundingBox) geometry.computeBoundingBox()
+      box.union(geometry.boundingBox)
+    })
+    if (box.isEmpty()) return null
+    box.expandByVector(new THREE.Vector3(HIT_MARGIN, 0.001, HIT_MARGIN))
+    return { center: box.getCenter(new THREE.Vector3()).toArray(), size: box.getSize(new THREE.Vector3()).toArray() }
+  }, [])
   const [clicked, setClicked] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -169,10 +217,9 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   /*
    * Whether the annotation was dismissed by a click rather than by the pointer
    * leaving. It is taken away without animating in that case: retracting it
-   * draws the leader line back over a second and a half, which sends a hairline
-   * sweeping four hundred pixels across the screen just as the visitor clicks
-   * something — read as a glitch, and the largest thing moving in the frame at
-   * that moment. Leaving normally still retracts, which is where that animation
+   * draws the leader line back, which sends a hairline sweeping four hundred
+   * pixels across the screen just as the visitor clicks something — read as a
+   * glitch, and the largest thing moving in the frame at that moment. Leaving normally still retracts, which is where that animation
    * belongs, since the pointer is on its way out anyway.
    */
   const [dismissed, setDismissed] = useState(false)
@@ -189,12 +236,17 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   const explodeTargetY = baseY + randomExplodeOffset
 
   const handleClick = (e) => {
-    if (!introDone) return
+    // Still coming up: the intro jumps to its end and the key acts at once — a
+    // click during the opening is never ignored.
+    if (!ready) skipSunrise()
+    // Pressed while the device is exploded: it comes back together, and the
+    // key does what it does — rather than acting on a device in pieces.
+    if (isExploded) onCollapse?.()
     e.stopPropagation()
     setClicked(true)
     playMechanicalClick()
     // The small keys each ring a note of D major pentatonic, under the click.
-    if (GRACE_NOTES[name]) playNote(GRACE_NOTES[name])
+    if (music.on && GRACE_NOTES[name]) playNote(GRACE_NOTES[name])
     setTimeout(() => setClicked(false), 150)
     // Retract the leader line and its label: the button has been read and
     // acted on, so the annotation has done its job. The pointer is still over
@@ -206,7 +258,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   }
 
   const handlePointerOver = (e) => {
-    if (!introDone) return
+    if (!ready) return
     e.stopPropagation()
     setHovered(true)
     setDismissed(false)
@@ -221,7 +273,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
   }
 
   useFrame(() => {
-    if (buttonRef.current && introDone) {
+    if (buttonRef.current && ready) {
       // Exploded overrides everything; a press beats a hover, so the key
       // still dips even though the pointer is by definition on it.
       let targetY = baseY
@@ -266,7 +318,8 @@ function DeviceButton({ position, description, labelDirection = 'down', children
       onPointerOut={handlePointerOut}
     >
       {children}
-      {description && introDone && (
+      {hitBox && <mesh position={hitBox.center} scale={hitBox.size} geometry={HIT_BOX} material={HIT_MATERIAL} />}
+      {description && ready && (
         <Html position={[0, 0, 0]} center zIndexRange={[100, 0]}>
           <div className="w-0 h-0 relative pointer-events-none">
             <svg className="absolute overflow-visible top-0 left-0">
@@ -281,7 +334,7 @@ function DeviceButton({ position, description, labelDirection = 'down', children
                   stroke: labelColor,
                   transition: dismissed
                     ? 'stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)'
-                    : 'stroke-dashoffset 1.5s cubic-bezier(0.83, 0, 0.17, 1), stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    : `stroke-dashoffset ${LABEL_DRAW_MS}ms cubic-bezier(0.65, 0, 0.35, 1) ${hovered ? LABEL_DELAY_MS : 0}ms, stroke 700ms cubic-bezier(0.4, 0, 0.2, 1)`,
                 }}
               />
             </svg>
@@ -291,9 +344,11 @@ function DeviceButton({ position, description, labelDirection = 'down', children
                 ...textPosition,
                 color: labelColor,
                 opacity: hovered ? 1 : 0,
-                transition: dismissed ? 'none' : 'opacity 700ms',
-                transitionDelay: hovered ? '800ms' : '0ms',
-                transitionTimingFunction: 'cubic-bezier(0.83, 0, 0.17, 1)'
+                // The words come up with the line, read in under half a second.
+                // One shorthand: mixing it with transitionDelay confuses React's restyle.
+                transition: dismissed
+                  ? 'none'
+                  : `opacity ${LABEL_FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1) ${hovered ? LABEL_DELAY_MS : 0}ms`
               }}
             >
               {description}
@@ -334,6 +389,7 @@ export default function Device({ slotAnchorRef }) {
   const fadeMaterials = useRef(null)
 
   const [isExploded, setIsExploded] = useState(false)
+  const collapse = useCallback(() => setIsExploded(false), [])
   /*
    * A ref, not state: it is only ever read inside the frame loop, and drei's
    * OrbitControls fires start and end on every click — even one that never
@@ -344,6 +400,12 @@ export default function Device({ slotAnchorRef }) {
    */
   const isDraggingRef = useRef(false)
   const [introDone, setIntroDone] = useState(false)
+  // The keys whose clips have landed, while the intro plays (see DeviceButton).
+  const [landed, setLanded] = useState(() => new Set())
+  // Dev only: which keys take clicks yet, for timing the opening from a harness.
+  useEffect(() => {
+    if (import.meta.env.DEV) window.__landed = { keys: [...landed], at: performance.now() }
+  }, [landed])
   const markIntroDone = useDeviceStore((s) => s.markIntroDone)
   const markSceneReady = useDeviceStore((s) => s.markSceneReady)
   const curtainUp = useDeviceStore((s) => s.curtainUp)
@@ -359,10 +421,11 @@ export default function Device({ slotAnchorRef }) {
   const galleryOpened = useDeviceStore((s) => s.galleryOpened)
   const openAbout = useDeviceStore((s) => s.openAbout)
   const openContact = useDeviceStore((s) => s.openContact)
+  const openWriting = useDeviceStore((s) => s.openWriting)
   const inAbout = ABOUT_MODES.has(mode)
-  // The modes that keep the device at rest: home itself, and the two sections
-  // laid over it — the about view's glass and the contact panel.
-  const atRest = mode === 'IDLE' || inAbout || mode === 'CONTACT'
+  // The modes that keep the device at rest: home itself, and the sections laid
+  // over it — the about view's glass and the contact and writing panels.
+  const atRest = mode === 'IDLE' || inAbout || mode === 'CONTACT' || mode === 'WRITING'
   const reducedMotion = useMemo(() => prefersReducedMotion(), [])
   /*
    * While the wall is up it owns the default camera, and every camera line
@@ -383,43 +446,55 @@ export default function Device({ slotAnchorRef }) {
     camera.updateProjectionMatrix()
   }, [size.width, size.height, camera, inGallery])
 
-  // Nearer at rest on a phone (cameraFov.js); the intro's fly-in is drawn in by
-  // the same factor so it still lands exactly on rest.
-  const restScale = restDistanceScale(size.width / Math.max(size.height, 1))
+  /*
+   * The rest pose for this window (cameraFov.js): nearer on a phone, and
+   * steeper. Held as one turn and one scale about the look target, applied to
+   * the rest pose and to every point of the intro's fly-in alike, so the
+   * intro still lands exactly on rest.
+   */
+  const { scale: restScale, tilt: restTilt } = restPose(size.width, size.height)
+  const restTurn = useMemo(() => {
+    const from = new THREE.Vector3(...CAM_REST_POS).sub(camScratch.restTarget).normalize()
+    if (restTilt === null) return new THREE.Quaternion()
+    const elevation = THREE.MathUtils.degToRad(90 - restTilt)
+    const to = new THREE.Vector3(from.x, 0, from.z).normalize().multiplyScalar(Math.cos(elevation)).setY(Math.sin(elevation))
+    return new THREE.Quaternion().setFromUnitVectors(from, to)
+  }, [restTilt, camScratch])
   useEffect(() => {
-    camScratch.restPos.set(...CAM_REST_POS).sub(camScratch.restTarget).multiplyScalar(restScale).add(camScratch.restTarget)
-  }, [restScale, camScratch])
+    camScratch.restPos.set(...CAM_REST_POS).sub(camScratch.restTarget).applyQuaternion(restTurn).multiplyScalar(restScale).add(camScratch.restTarget)
+  }, [restScale, restTurn, camScratch])
 
   const { nodes, materials, animations } = useGLTF(deviceGlb)
   const { actions, names, mixer } = useAnimations(animations, group)
 
-  // Play all intro clips
+  /*
+   * When each part's clip lands, in clip seconds, and when the last does. The
+   * clips are authored long — ten seconds, the last key down at about eight —
+   * and are played faster so that the last key lands exactly as the camera's
+   * fly-in ends, INTRO_SECONDS after the curtain.
+   */
+  // From the clips themselves: drei creates the actions lazily, once the
+  // group they animate has mounted, so they are not there on the first render.
+  const landings = useMemo(
+    () => Object.fromEntries(animations.map((clip) => [clip.name, landingTime(clip)])),
+    [animations],
+  )
+  const lastLanding = useMemo(() => Math.max(0, ...Object.values(landings)), [landings])
+
+  // Every clip plays once and holds its last frame.
   useEffect(() => {
     if (names && names.length > 0) {
-      let finishedCount = 0
-
-      names.forEach((name) => {
+      for (const name of names) {
         const action = actions[name]
         action.setLoop(LoopOnce)
         action.clampWhenFinished = true
         action.play()
-      })
-
-      const onFinished = () => {
-        finishedCount++
-        if (finishedCount === names.length) {
-          setIntroDone(true)
-          markIntroDone()
-        }
       }
-
-      mixer.addEventListener('finished', onFinished)
-      return () => mixer.removeEventListener('finished', onFinished)
     } else {
       setIntroDone(true)
       markIntroDone()
     }
-  }, [actions, names, mixer])
+  }, [actions, names])
 
   /*
    * The clips start with the model, but stand still on their first frame
@@ -428,8 +503,8 @@ export default function Device({ slotAnchorRef }) {
    * already half over when the greeting lifts.
    */
   useEffect(() => {
-    mixer.timeScale = curtainUp ? 1 : 0
-  }, [mixer, curtainUp])
+    mixer.timeScale = curtainUp && lastLanding > 0 ? lastLanding / INTRO_SECONDS : 0
+  }, [mixer, curtainUp, lastLanding])
 
   /*
    * Jump the intro to its end state: every clip to its last frame and the
@@ -448,6 +523,12 @@ export default function Device({ slotAnchorRef }) {
     setIntroDone(true)
     markIntroDone()
   }, [introSkipped, introDone, actions, names, mixer, markIntroDone])
+
+  // A section opened by any route — a key, the number keys, the back button —
+  // brings the device back together first.
+  useEffect(() => {
+    if (mode !== 'IDLE') setIsExploded(false)
+  }, [mode])
 
   // Projects key toggle handler
   const handleProjectsKey = useCallback(() => {
@@ -487,9 +568,35 @@ export default function Device({ slotAnchorRef }) {
     if (mode === 'IDLE') openAbout()
   }, [mode, openAbout])
 
+  /*
+   * The Sound key — once the lab key, which did nothing. It switches every
+   * sound on the site, and glows amber while on: its own copy of the keycap
+   * material, since the keys share one. Turning sound on clicks once more after
+   * the press, because the press's own click was made while it was still off.
+   */
+  const soundOn = useStoryStore((s) => s.soundOn)
+  const soundKeyMaterial = useMemo(() => {
+    const m = materials.Key.clone()
+    m.emissive = new THREE.Color(SOUND_GLOW)
+    return m
+  }, [materials])
+  useEffect(() => () => soundKeyMaterial.dispose(), [soundKeyMaterial])
+  useEffect(() => {
+    soundKeyMaterial.emissiveIntensity = soundOn ? SOUND_GLOW_STRENGTH : 0
+  }, [soundOn, soundKeyMaterial])
+  const handleSoundKey = useCallback(() => {
+    const on = !useStoryStore.getState().soundOn
+    useStoryStore.getState().setSound(on)
+    if (on) playMechanicalClick()
+  }, [])
+
   const handleContactKey = useCallback(() => {
     if (mode === 'IDLE') openContact()
   }, [mode, openContact])
+
+  const handleWritingKey = useCallback(() => {
+    if (mode === 'IDLE') openWriting()
+  }, [mode, openWriting])
 
   // Photography key handler
   const handlePhotographyKey = useCallback(() => {
@@ -574,11 +681,29 @@ export default function Device({ slotAnchorRef }) {
     // the loading screen may lift.
     if (framesRun.current < 2 && ++framesRun.current === 2) markSceneReady()
 
+    // 0b. Which keys have landed, and the end of the opening once the last has:
+    // every clip put on its final frame then, rather than left to play out the
+    // still seconds the clips were authored with.
+    if (!introDone && curtainUp && names && names.length > 0) {
+      let changed = false
+      for (const name of names) {
+        if (!landed.has(name) && actions[name].time >= landings[name]) changed = true
+      }
+      if (changed) setLanded(new Set(names.filter((n) => actions[n].time >= landings[n])))
+      if (names.every((n) => actions[n].time >= landings[n])) {
+        for (const name of names) actions[name].time = actions[name].getClip().duration
+        mixer.update(0)
+        introElapsedRef.current = INTRO_SECONDS
+        setIntroDone(true)
+        markIntroDone()
+      }
+    }
+
     // 1. Camera cinematic intro
     if (!introDone && !inGallery) {
       if (curtainUp) introElapsedRef.current += delta
       sampleCamPath(introElapsedRef.current, state.camera.position)
-      state.camera.position.sub(camScratch.restTarget).multiplyScalar(restScale).add(camScratch.restTarget)
+      state.camera.position.sub(camScratch.restTarget).applyQuaternion(restTurn).multiplyScalar(restScale).add(camScratch.restTarget)
       state.camera.lookAt(...CAM_TARGET)
     }
 
@@ -745,47 +870,47 @@ export default function Device({ slotAnchorRef }) {
             </group>
 
             {/* Top Logo Buttons */}
-            <DeviceButton name="Btn_GH" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.github)} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
+            <DeviceButton name="Btn_GH" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={() => openLink(SOCIAL_LINKS.github)} position={[0.011, 0.007, -0.036]} description="GitHub Profile" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_1.geometry} material={materials.GitHubDark} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_GH_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_LI" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.linkedin)} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
+            <DeviceButton name="Btn_LI" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={() => openLink(SOCIAL_LINKS.linkedin)} position={[-0.011, 0.007, -0.036]} description="LinkedIn" labelDirection="left">
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_1.geometry} material={materials.LinkedInBlue} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_LI_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
-            <DeviceButton name="Btn_MD" introDone={introDone} isExploded={isExploded} onClick={() => openLink(SOCIAL_LINKS.medium)} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
+            <DeviceButton name="Btn_MD" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={() => openLink(SOCIAL_LINKS.medium)} position={[0.033, 0.007, -0.036]} description="Medium Articles" labelDirection="right">
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_1.geometry} material={materials.MediumBlack} />
               <mesh castShadow receiveShadow geometry={nodes.Btn_MD_2.geometry} material={materials.LegendWhite} />
             </DeviceButton>
 
             {/* Bottom Keys */}
-            <DeviceButton name="Key_Bot_0" introDone={introDone} isExploded={isExploded} onClick={() => setIsExploded(!isExploded)} position={[-0.033, 0.007, 0.022]} description="Explode" labelDirection="down">
+            <DeviceButton name="Key_Bot_0" introDone={introDone} landed={landed} isExploded={isExploded} onClick={() => setIsExploded(!isExploded)} position={[-0.033, 0.007, 0.022]} description="Explode" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_1" introDone={introDone} isExploded={isExploded} position={[-0.011, 0.007, 0.022]} description="Writing" labelDirection="down">
+            <DeviceButton name="Key_Bot_1" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handleWritingKey} position={[-0.011, 0.007, 0.022]} description="Writing" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_2" introDone={introDone} isExploded={isExploded} position={[0.011, 0.007, 0.022]} description="Lab" labelDirection="down">
-              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_1.geometry} material={materials.Key} />
+            <DeviceButton name="Key_Bot_2" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handleSoundKey} position={[0.011, 0.007, 0.022]} description={soundOn ? 'Sound on' : 'Sound off'} labelDirection="down">
+              <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_1.geometry} material={soundKeyMaterial} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_2_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Bot_3" introDone={introDone} isExploded={isExploded} onClick={handleContactKey} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
+            <DeviceButton name="Key_Bot_3" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handleContactKey} position={[0.033, 0.007, 0.022]} description="Contact Me" labelDirection="down">
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_1.geometry} material={materials.ContactAmber} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Bot_3_2.geometry} material={materials.Dark} />
             </DeviceButton>
 
             {/* Top Keys — Key_Top_0 is the "Projects" trigger */}
-            <DeviceButton name="Key_Top_0" introDone={introDone} isExploded={isExploded} onClick={handleProjectsKey} position={[-0.03, 0.007, -0.015]} description="Projects" labelDirection="up">
+            <DeviceButton name="Key_Top_0" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handleProjectsKey} position={[-0.03, 0.007, -0.015]} description="Projects" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_0_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_1" introDone={introDone} isExploded={isExploded} onClick={handleAboutKey} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
+            <DeviceButton name="Key_Top_1" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handleAboutKey} position={[0, 0.007, -0.015]} description="About me" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_1_2.geometry} material={materials.Dark} />
             </DeviceButton>
-            <DeviceButton name="Key_Top_2" introDone={introDone} isExploded={isExploded} onClick={handlePhotographyKey} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
+            <DeviceButton name="Key_Top_2" introDone={introDone} landed={landed} isExploded={isExploded} onCollapse={collapse} onClick={handlePhotographyKey} position={[0.03, 0.007, -0.015]} description="Photography" labelDirection="up">
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_1.geometry} material={materials.Key} />
               <mesh castShadow receiveShadow geometry={nodes.Key_Top_2_2.geometry} material={materials.Dark} />
             </DeviceButton>

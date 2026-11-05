@@ -25,27 +25,29 @@ async function panel(email) {
 }
 
 describe('the contact panel', () => {
-  it('offers the links, and no email row while none is published', async () => {
+  it('is a labelled dialog, with LinkedIn and what Alen is open to', async () => {
     await panel(null)
-    expect(screen.getByText('say hello')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'linkedin' }).getAttribute('rel')).toContain('noopener')
-    expect(screen.queryByRole('link', { name: 'write' })).toBeNull()
+    const dialog = screen.getByRole('dialog', { name: 'say hello' })
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(screen.getByRole('link', { name: 'LinkedIn' }).getAttribute('rel')).toContain('noopener')
+    expect(screen.getByText(/Open to backend/)).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Email' })).toBeNull()
   })
 
-  it('resolves the held chord when a link is followed', async () => {
+  it('resolves the chapter when a link is followed', async () => {
     await panel(null)
-    fireEvent.click(screen.getByRole('link', { name: 'github' }))
+    fireEvent.click(screen.getByRole('link', { name: 'LinkedIn' }))
     expect(useStoryStore.getState().contactResolved).toBe(true)
   })
 
-  it('offers to write or copy a published address, and either reaches out', async () => {
+  it('copies the address in one click, saying so, and offers to email it', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     await panel('hello@example.com')
-    expect(screen.getByRole('link', { name: 'write' }).getAttribute('href')).toBe('mailto:hello@example.com')
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'copy' })) })
+    expect(screen.getByRole('link', { name: 'Email' }).getAttribute('href')).toBe('mailto:hello@example.com')
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Copy' })) })
     expect(writeText).toHaveBeenCalledWith('hello@example.com')
-    expect(screen.getByRole('button', { name: 'copied' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
     expect(useStoryStore.getState().contactResolved).toBe(true)
     vi.unstubAllGlobals()
   })
@@ -53,15 +55,21 @@ describe('the contact panel', () => {
   it('stays quiet when the clipboard is refused', async () => {
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } })
     await panel('hello@example.com')
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'copy' })) })
-    expect(screen.getByRole('button', { name: 'copy' })).toBeTruthy()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Copy' })) })
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy()
     expect(useStoryStore.getState().contactResolved).toBe(false)
     vi.unstubAllGlobals()
   })
 
-  it('closes back to rest', async () => {
-    await panel(null)
+  it('closes back to rest from its ×, from Escape, and from a tap outside', async () => {
+    const { container } = await panel(null)
     fireEvent.click(screen.getByLabelText('Close contact'))
+    expect(useDeviceStore.getState().mode).toBe('IDLE')
+    useDeviceStore.setState({ mode: 'CONTACT' })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(useDeviceStore.getState().mode).toBe('IDLE')
+    useDeviceStore.setState({ mode: 'CONTACT' })
+    fireEvent.click(container.querySelector('.dialog-backdrop'))
     expect(useDeviceStore.getState().mode).toBe('IDLE')
   })
 })

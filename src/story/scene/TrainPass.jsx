@@ -16,8 +16,8 @@ const PEAK = 0.012
 const COLOR = '#ffd29a'
 /** The trains run from 06:00 to midnight. */
 const FIRST_TRAIN = 6
-/** Only over the device at rest — home, and the contact panel beside it. */
-const QUIET_MODES = new Set(['IDLE', 'CONTACT'])
+/** Only over the device at rest — home, and the contact and writing panels beside it. */
+const QUIET_MODES = new Set(['IDLE', 'CONTACT', 'WRITING'])
 
 /*
  * The pass runs from screen-left to screen-right as the rest camera sees it —

@@ -53,7 +53,10 @@ function App() {
         */}
       <Canvas
         className={`transition-opacity duration-[1600ms] ease-out ${started ? 'opacity-100' : 'opacity-0'}`}
-        shadows
+        /* Plain PCF, softened by the sun's shadow.radius (SkyDriver.jsx). R3F's
+           default, `true`, asks for PCFSoftShadowMap, which three has deprecated
+           and was quietly replacing with this anyway — with a console warning. */
+        shadows="percentage"
         dpr={[1, 2]}
         /* The rest pose from Device.jsx, so the very first frame — before the
            intro takes the camera over — is already framed where it will land. */

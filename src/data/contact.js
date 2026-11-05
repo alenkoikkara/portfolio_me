@@ -9,7 +9,10 @@ export const SOCIAL_LINKS = {
 }
 
 /**
- * The address the Contact chapter offers, with "write" and "copy". Null shows
- * no email row at all — set it to publish one.
+ * The address the Contact panel offers, with "copy" and "email". Null shows
+ * no email row at all.
  */
-export const CONTACT_EMAIL = null
+export const CONTACT_EMAIL = 'alendennis77@gmail.com'
+
+/** One line on what Alen is open to, under the address. */
+export const AVAILABILITY = 'Open to backend & GenAI roles, Chicago or remote'

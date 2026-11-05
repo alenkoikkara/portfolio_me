@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { isTouch } from '../environment'
 
 /** What the keyboard does, in the order the sections sit on the device. */
 export const SHORTCUTS = [
@@ -6,6 +7,7 @@ export const SHORTCUTS = [
   ['2', 'photography'],
   ['3', 'about'],
   ['4', 'contact'],
+  ['5', 'writing'],
   ['esc', 'back'],
   ['m', 'sound'],
   ['?', 'this list'],
@@ -13,7 +15,7 @@ export const SHORTCUTS = [
 
 /**
  * A small "?" in the story's corner that lists the keyboard, opened by it or
- * by the ? key. Escape closes it first — on capture, and swallowed, so the
+ * by the ? key — not shown on a touch screen. Escape closes it first — on capture, and swallowed, so the
  * same press does not also step out of the section underneath.
  */
 export default function KeyHelp() {
@@ -34,11 +36,14 @@ export default function KeyHelp() {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [open])
 
+  // A finger has no keyboard to list.
+  if (isTouch()) return null
+
   return (
     <span className="key-help">
       <button
         type="button"
-        className="story-hud__sound text-xs"
+        className="story-hud__button text-xs"
         aria-expanded={open}
         aria-controls="key-help-list"
         aria-label="Keyboard shortcuts"

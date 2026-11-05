@@ -58,20 +58,20 @@ describe('the bridge from the device to the story', () => {
 })
 
 describe('songs', () => {
-  it('reads a shared song only when it is four different sections', () => {
-    expect(songFromQuery('?song=fpac')).toEqual(['photography', 'projects', 'about', 'contact'])
-    expect(songFromQuery('?song=ffac')).toBeNull()
-    expect(songFromQuery('?song=fpa')).toBeNull()
-    expect(songFromQuery('?song=fpax')).toBeNull()
+  it('reads a shared song only when it is every section, once each', () => {
+    expect(songFromQuery('?song=fpacw')).toEqual(['photography', 'projects', 'about', 'contact', 'writing'])
+    expect(songFromQuery('?song=ffacw')).toBeNull()
+    expect(songFromQuery('?song=fpac')).toBeNull()
+    expect(songFromQuery('?song=fpacx')).toBeNull()
     expect(songFromQuery('?song=<script>')).toBeNull()
     expect(songFromQuery('')).toBeNull()
   })
 
   it('writes the link that replays a visit, and the chords it plays', () => {
-    const visit = ['about', 'projects', 'contact', 'photography']
-    expect(songLink('https://example.com', visit)).toBe('https://example.com/?song=apcf')
-    expect(songFromQuery('?song=apcf')).toEqual(visit)
-    expect(songChords(visit)).toEqual([CHAPTERS.about.chord, CHAPTERS.projects.chord, CHAPTERS.contact.chord, CHAPTERS.photography.chord])
+    const visit = ['about', 'projects', 'contact', 'writing', 'photography']
+    expect(songLink('https://example.com', visit)).toBe('https://example.com/?song=apcwf')
+    expect(songFromQuery('?song=apcwf')).toEqual(visit)
+    expect(songChords(visit)).toEqual(visit.map((c) => CHAPTERS[c].chord))
   })
 })
 

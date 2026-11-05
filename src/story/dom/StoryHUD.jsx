@@ -38,8 +38,6 @@ export default function StoryHUD() {
   const chapter = useStoryStore((s) => s.chapter)
   const started = useStoryStore((s) => s.started)
   const contactResolved = useStoryStore((s) => s.contactResolved)
-  const soundOn = useStoryStore((s) => s.soundOn)
-  const toggleSound = useStoryStore((s) => s.toggleSound)
 
   useEffect(() => {
     let frame = 0
@@ -66,7 +64,8 @@ export default function StoryHUD() {
 
   return (
     // Click-through, so it cannot swallow drags on the canvas behind it; only
-    // the name, the sound toggle and the shortcuts' ? take the pointer.
+    // the name and the shortcuts' ? take the pointer. Sound is the device's
+    // own Sound key (and M), not a button here.
     //
     // It sits on a pane of Liquid Glass drawn in the canvas (HudGlass.jsx),
     // which takes its size from this element: the padding is the glass around
@@ -91,15 +90,6 @@ export default function StoryHUD() {
           <span ref={timeRef} />
           <span ref={dayRef} className="story-hud__day" />
         </span>
-        <button
-          type="button"
-          className="story-hud__sound text-xs"
-          aria-pressed={soundOn}
-          onClick={toggleSound}
-          title="Sound (M)"
-        >
-          {soundOn ? 'sound on' : 'sound off'}
-        </button>
         <KeyHelp />
       </div>
       <p key={`${chapter}-${contactResolved}`} className="story-hud__chapter mt-1.5 max-w-[min(70vw,360px)] text-xs">

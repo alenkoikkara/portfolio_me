@@ -1,5 +1,5 @@
 import React from 'react'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 
 const playSong = vi.fn(() => () => {})
@@ -9,9 +9,20 @@ const { default: SongPrompt } = await import('./SongPrompt')
 const { default: useStoryStore } = await import('../useStoryStore')
 const { default: useDeviceStore } = await import('../../scene/useDeviceStore')
 const { CHAPTERS } = await import('../chapters')
-const { CHORDS } = await import('../chords')
+const { CHORDS, music } = await import('../chords')
 
-const ALL = ['about', 'projects', 'contact', 'photography']
+const ALL = ['about', 'projects', 'contact', 'writing', 'photography']
+
+// Switched off for the submission; on here, so the song keeps working for later.
+beforeEach(() => { music.on = true })
+afterEach(() => { music.on = false })
+
+it('is not offered while the music is switched off', () => {
+  music.on = false
+  useStoryStore.setState({ chapter: 'home', started: true, visited: ['about', 'projects', 'contact', 'photography'], sharedSong: null })
+  const { container } = render(<SongPrompt />)
+  expect(container.innerHTML).toBe('')
+})
 
 beforeEach(() => {
   playSong.mockClear()
@@ -20,15 +31,15 @@ beforeEach(() => {
 })
 
 describe('the song', () => {
-  it('waits until all four chapters have been visited, and for home', () => {
-    useStoryStore.setState({ visited: ALL.slice(0, 3) })
+  it('waits until every chapter has been visited, and for home', () => {
+    useStoryStore.setState({ visited: ALL.slice(0, 4) })
     const { container, rerender } = render(<SongPrompt />)
     expect(container.innerHTML).toBe('')
     act(() => useStoryStore.setState({ visited: ALL, chapter: 'about' }))
     rerender(<SongPrompt />)
     expect(container.innerHTML).toBe('')
     act(() => useStoryStore.setState({ chapter: 'home' }))
-    expect(screen.getByText('your visit, in four chords')).toBeTruthy()
+    expect(screen.getByText('your visit, in five chords')).toBeTruthy()
   })
 
   it('plays the visit in order, turning sound on, pressing each chapter’s key, and resolving home', () => {
@@ -49,7 +60,7 @@ describe('the song', () => {
     useStoryStore.setState({ visited: ALL })
     render(<SongPrompt />)
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'copy link' })) })
-    expect(writeText.mock.calls[0][0]).toMatch(/\/\?song=apcf$/)
+    expect(writeText.mock.calls[0][0]).toMatch(/\/\?song=apcwf$/)
     expect(screen.getByRole('button', { name: 'copied' })).toBeTruthy()
     vi.unstubAllGlobals()
   })
@@ -57,7 +68,7 @@ describe('the song', () => {
   it('shows someone else’s song from a shared link, to play but not to pass on again', () => {
     useStoryStore.setState({ sharedSong: ['photography', 'projects', 'about', 'contact'] })
     render(<SongPrompt />)
-    expect(screen.getByText('someone’s visit, in four chords')).toBeTruthy()
+    expect(screen.getByText('someone’s visit, in five chords')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'copy link' })).toBeNull()
   })
 

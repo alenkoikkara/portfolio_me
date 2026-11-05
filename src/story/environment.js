@@ -17,3 +17,12 @@ export function isMobile() {
   if (typeof window === 'undefined') return false
   return window.matchMedia?.('(pointer: coarse)')?.matches === true || window.innerWidth < 640
 }
+
+/**
+ * A pointer that cannot hover — a finger. The wording follows it ("tap to
+ * close", no arrow-key hints), read from the input itself rather than from
+ * the user agent, so a touch laptop with a mouse attached still reads "esc".
+ */
+export function isTouch() {
+  return typeof window !== 'undefined' && window.matchMedia?.('(hover: none)')?.matches === true
+}

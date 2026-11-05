@@ -119,7 +119,7 @@
   margin-left: 8px;
 }
 
-.story-hud__sound {
+.story-hud__button {
   pointer-events: auto;
   cursor: pointer;
   color: var(--stage-muted);
@@ -127,12 +127,8 @@
   transition: color 300ms ease, opacity 200ms ease;
 }
 
-.story-hud__sound:hover {
+.story-hud__button:hover {
   opacity: 0.6;
-}
-
-.story-hud__sound[aria-pressed='true'] {
-  color: var(--stage-ink);
 }
 
 .story-hud__day:empty {

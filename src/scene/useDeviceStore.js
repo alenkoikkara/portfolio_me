@@ -58,10 +58,10 @@ export const GALLERY_MODES = new Set(['OPENING_GALLERY', 'GALLERY', 'CLOSING_GAL
  * across the dark. The camera keeps the rest view's orientation throughout.
  */
 /*
- * And the contact key a fourth, the simplest:
+ * And the contact and writing keys a fourth and fifth, the simplest:
  *
- *   IDLE    → CONTACT (openContact)
- *   CONTACT → IDLE    (closeContact)
+ *   IDLE    → CONTACT (openContact)    IDLE    → WRITING (openWriting)
+ *   CONTACT → IDLE    (closeContact)   WRITING → IDLE    (closeWriting)
  */
 
 /** Modes in which the about view is up, or on its way in or out. */
@@ -183,7 +183,7 @@ const useDeviceStore = create((set, get) => ({
       return
     }
 
-    if (mode === 'CONTACT') {
+    if (mode === 'CONTACT' || mode === 'WRITING') {
       set({ mode: 'IDLE' })
       return
     }
@@ -212,6 +212,18 @@ const useDeviceStore = create((set, get) => ({
 
   closeContact: () => {
     if (get().mode !== 'CONTACT') return
+    set({ mode: 'IDLE' })
+  },
+
+  /* ─── Writing: the same shape as contact, a panel over the device at rest ─── */
+
+  openWriting: () => {
+    if (get().mode !== 'IDLE') return
+    set({ mode: 'WRITING' })
+  },
+
+  closeWriting: () => {
+    if (get().mode !== 'WRITING') return
     set({ mode: 'IDLE' })
   },
 

@@ -26,13 +26,9 @@ describe('the story corner', () => {
     expect(screen.getByLabelText('Back to the start')).toBeTruthy()
   })
 
-  it('has a sound toggle that says what it is', () => {
-    useStoryStore.setState({ soundOn: false })
+  it('leaves sound to the device’s Sound key: no button for it here', () => {
     render(<StoryHUD />)
-    const toggle = screen.getByRole('button', { name: 'sound off' })
-    act(() => toggle.click())
-    expect(useStoryStore.getState().soundOn).toBe(true)
-    expect(screen.getByRole('button', { name: 'sound on' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.queryByRole('button', { name: /sound/ })).toBeNull()
   })
 
   it('shows a section’s title and caption while in it', () => {

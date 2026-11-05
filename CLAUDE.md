@@ -45,13 +45,34 @@ use, is already a devDependency.)
 
 ## Architecture
 
+### The Awwwards checklist
+
+The site is being readied for an Awwwards submission against
+`hichord-awwwards-checklist.md` (the user's, Nov 2026), which merges an
+external readiness review with the story plan below. It overrides the story
+plan where they disagree. **Stage 1 (usability blockers) is in**; Stages 2–5
+are not yet. Its decisions that shaped what is here:
+
+- **The story's music is switched off, not deleted** — chords per chapter,
+  Contact's held chord and its resolution, the sunrise chord, the small keys'
+  notes and the song recap: `music.on` in `story/chords.js`, false. The
+  checklist cuts them for judging; the user chose to keep the code. The tests
+  switch it on, so it keeps working for an update after judging. Key clicks,
+  the projector, the shutter and the train are not music.
+- **The Lab key is the Sound key** (code side; its engraved legend still
+  reads "lab" until the model is re-exported — the legends are geometry).
+- **The day's sky stays** (the checklist allows Day in Chicago Phases 1–2);
+  `#faf9f6` is the paper token under it and the loader's ground.
+- **Model-track items wait for a Blender session:** legends 2.5× larger, "lab"
+  → "sound", social keys graphite. Do not fake them in code without asking.
+
 ### The sky: one day in Chicago
 
 The site is being rebuilt as one day told through light — `hichord-story-plan.md`
 is the master plan, worked phase by phase. **All six phases are in**: the page
 behind the transparent canvas is the sky of the hour, the device is lit by its
 sun, each section is a chapter at its own hour, the day opens before dawn on
-the greeting's lift (see **Loading and the intro**), and each chapter plays its chord
+the greeting's lift (see **Loading and the intro**), and each chapter has a chord, switched off for now (see the Awwwards checklist)
 (see **Add a sound**); Contact holds its chord until the visitor reaches out,
 and a full visit can be played back as a song; and the ambient polish below
 keeps the room alive without anything shouting.
@@ -98,7 +119,7 @@ keeps the room alive without anything shouting.
   running and leaves a settled clock alone, which is what keeps `?t=` and
   `__sky` scrubbing working.
 - **Each chapter is a page** (`useStoryRouting.js`): its own address and title,
-  the back and forward buttons, and the keys 1–4 (listed by the corner's `?`). `navigate.js` opens a chapter
+  the back and forward buttons, and the keys 1–5 (listed by the corner's `?`). `navigate.js` opens a chapter
   from anywhere — the device only opens a section from rest, so from elsewhere
   it goes home through `goHome` and opens on arrival; a later request replaces
   a waiting one. While a back or forward is replayed, the chapters passed
@@ -113,27 +134,34 @@ keeps the room alive without anything shouting.
   DOM from `sky.hours` each animation frame, never through React. It counts
   whole minutes with a hair of tolerance: hours are stored as fractions, and
   08:10 is a rounding error under itself — it read 08:09.
-- **Contact is the fourth section, and the simplest**: one device mode,
-  `CONTACT`, opened by its key from rest, with no transitional modes — the
-  panel (`components/ContactPanel.jsx`) is DOM beside the device at rest and
-  fades in CSS, so nothing has to report that it arrived. `Device.jsx` treats
-  it as rest (`atRest`), like the about view. Entering it **holds** its chord
-  (`holdChord`), a suspended V; **reaching out** — writing, copying the
-  address, following any link, the device's own link keys included — calls
-  `resolveContact`, which resolves the chord home and swaps the caption to "See
-  you tomorrow." Leaving without reaching out just lets the chord fade. The
-  links and the address live in `data/contact.js`, shared with the device's
-  keys; **`CONTACT_EMAIL` is null until Alen sets it**, and with it null there
-  is no email row at all.
-- **The epilogue (`story/dom/SongPrompt.jsx`):** once all four chapters are
-  visited, home offers the visit back — the four chapters' chords in the order
+- **Contact and Writing are the simplest sections**: one device mode each,
+  `CONTACT` and `WRITING`, opened by their keys from rest, with no
+  transitional modes — the panels (`components/ContactPanel.jsx`,
+  `WritingPanel.jsx`) are DOM beside the device at rest and fade in CSS, so
+  nothing has to report that it arrived. `Device.jsx` treats both as rest
+  (`atRest`), like the about view. **Both are real dialogs**
+  (`components/Dialog.jsx`): labelled, `aria-modal`, the panel itself focused
+  on open (not its first link, which drew a focus ring on a tapped-open
+  dialog), Tab trapped, focus returned on close, and closed by Escape, its ×
+  or a tap on the clear backdrop — which takes the pointer, so a tap beside
+  the panel cannot press a device key behind it. A bottom sheet under 768 px.
+  Contact offers the address with Copy ("Copied"), Email (mailto), LinkedIn and
+  an availability line, all in `data/contact.js`; the published address is
+  alendennis77@gmail.com, by the user's decision. **Reaching out** — copying,
+  writing, following any link, the device's link keys included — calls
+  `resolveContact`, which swaps the caption to "See you tomorrow." (and, with
+  the music on, would resolve Contact's held chord). Writing lists the posts
+  in `data/writing.js`; their URLs fall back to the Medium profile and their
+  dates stay hidden until the user supplies them.
+- **The epilogue (`story/dom/SongPrompt.jsx`, hidden while the music is
+  off):** once every chapter is visited, home offers the visit back — the chapters' chords in the order
   seen (`songChords`), at 76 bpm, then home to D (`playSong`). Each chord
   presses its chapter's key on the device (`pressKey` → `pressedKey`, which
   `DeviceButton` animates without opening anything; the press present at
   mount is skipped so nothing replays an old one). "Copy link" writes
   `/?song=` with one letter per chapter; a visitor arriving on one sees
   "someone's visit" on reaching home, to play but not re-share. A link is only
-  data: `songFromQuery` accepts exactly four different section letters and
+  data: `songFromQuery` accepts every section letter exactly once and
   nothing else.
 - **The polish (Phase 6), each piece small and each skippable:**
   - **Blinds** (`story/scene/Blinds.jsx`): in the projects chapter, slats that
@@ -161,11 +189,19 @@ keeps the room alive without anything shouting.
     measured at 44.61°–45.39° about rest. Off with reduced motion.
   - **Cursor glint** (`CursorGlint.jsx`): a faint light following the pointer
     a little above the keys, about 5% of the sun, at rest on desktop only.
-  - **Phones:** the rest pose stands at half its distance on a portrait
-    window (`restDistanceScale` in `cameraFov.js`, with the intro scaled to
-    match), so the device fills 71% of a 390 px phone's width instead of 37% —
-    the rest pose only, since narrowing the field of view would also crop the
-    carousel and the projector. The shadow map halves to 1024, and the blinds,
+  - **Phones (under 768 px):** the rest camera stands 22° off vertical and
+    close (`restPose` in `cameraFov.js`), so the device spans about 90% of the
+    width and every key is a broad target; one turn and one scale about the
+    look target apply to the rest pose and every point of the intro's fly-in
+    alike, so it still lands on rest. The rest pose only, since narrowing the
+    field of view would also crop the carousel and the projector. A portrait
+    window from 768 px up keeps the desktop angle at half the distance
+    (`restDistanceScale`). On touch or a phone each key also carries an
+    invisible hit box (`HIT_MARGIN` past its cap, drawn with `colorWrite` off
+    so the ray finds it): measured on a 375 × 812 window, the smallest is
+    92 × 91 px, and ten taps on ten keys did ten things. The hints are
+    worded for the input in hand (`isTouch`, `(hover: none)`): "tap × to
+    close", no arrow-key hints, no `?` list. The shadow map halves to 1024, and the blinds,
     the train and the glint are **not mounted** at all (`environment.js`): a
     light at zero intensity is still one every lit material loops over, and at
     1024 the blinds' stripes alias into a sparkle.
@@ -434,14 +470,22 @@ the camera came back to the desk.
 
 ### Loading and the intro
 
-The page opens on a greeting — hello, नमस्ते, こんにちは, hej — over the page
-colour (`LoadingScreen.jsx`), each word's letters painted with a gradient of its
-own light hue (`background-clip: text`, padded so Devanagari matras and
-descenders are not clipped) and nothing behind them. All four words are on the page at once,
-stacked, with only the active one shown: that is what lets each word come into
-focus as the last dissolves (the fade, 700 ms, outlasts half of each 900 ms
-turn), rather than one replacing the other with a gap of empty page. Two store
-flags hand it over to the scene:
+**The loader is static HTML** (`#boot` in `index.html`, styled inline there):
+the name and a thin progress line on the paper, painted before any script —
+measured at about 30 ms on a cached load. `LoadingScreen.jsx` adopts that
+element rather than rendering its own, portalling the greeting — hello,
+नमस्ते, こんにちは, hej, in ink — into its words slot and lifting it, so the
+line keeps moving through the hand-off. `LoadingScreen.test.jsx` reads
+`#boot` from `index.html` itself, so the two cannot drift. A `<noscript>`
+block there gives the name, a bio and the links.
+
+It leaves as soon as it can. At the end of whichever word is showing once the
+scene is ready — **the decision is made only inside the word's own timer**,
+since watching `sceneReady` from an effect cut a word off mid-fade. A click,
+tap or key drops the words at once (the visible answer to a click while
+loading) and it leaves the moment the scene is ready; a second load in the
+same session (`hichord:greeted`, session storage) and reduced motion never
+show the words. Two store flags hand it over to the scene:
 
 - `sceneReady` is set by `Device.jsx` on its *second* frame callback. Callbacks
   run before each frame is drawn, so the second is the first to come after a
@@ -450,42 +494,35 @@ flags hand it over to the scene:
 - `curtainUp` is set as the greeting lifts (or by a deep link), and **it is
   what starts the intro.** Until then the animation mixer's `timeScale` is 0 and
   the camera's fly-in clock does not advance, so the intro holds on its first
-  frame; without that it began the moment the device mounted and was half over
-  before anyone could see it.
+  frame.
 
-The greeting says all four words once whatever happens — on a warm cache the
-scene is ready before "hello" has faded — then leaves at the next word boundary
-once `sceneReady` is true, going round again if loading is slower. **The
-decision to leave is made only inside the word's own timer, at the boundary.**
-Watching `sceneReady` from an effect, as it first did, lifted the instant the
-scene arrived and cut the showing word off mid-fade.
+**There is no Begin screen.** The greeting lifting calls `beginDay`
+(`navigate.js`), which starts the story and raises the curtain. The day starts
+at 05:40 — `sky.hours` defaults to `PROLOGUE_HOUR` — and the canvas is held at
+opacity 0 until then, so the device assembles in the first light instead of
+sitting half-built under the greeting.
 
-**There is no Begin screen.** The greeting lifting is what begins the day:
-`LoadingScreen` calls `beginDay` (`navigate.js`) as it starts to fade, which
-starts the story and raises the curtain. A Prologue with "begin with sound /
-begin quietly" stood between the two until the user had it removed. The day
-starts at 05:40 — `sky.hours` defaults to `PROLOGUE_HOUR` — and the canvas is
-held at opacity 0 until then, so the device assembles in the first light
-instead of sitting half-built under the greeting; it still renders
-underneath, which is what `sceneReady` needs. **The sun comes up on its
-chord — when the browser allows it.** Browsers start sound only after a click
-or key, and nothing asks for one any more, so `begin` checks
-`soundAllowed()` (`navigator.userActivation.hasBeenActive`, in `audio.js`):
-if the visitor has already clicked or typed during the greeting, sound comes
-on for the visit and the chord plays as the greeting fades; otherwise it
-begins quietly and sound waits for the corner's toggle or M. It asks rather
-than tries: a context started without a gesture stays suspended, logs a
-warning and plays nothing — and sound off must still mean no context at all.
-Verified by wrapping `AudioContext` before load and counting oscillators —
-the five notes of Dadd9 on a running context — since metering missed it: at
-software-rendering speed the chord was over before a meter could attach.
+**The intro is three seconds** (`INTRO_SECONDS`), not nine. The Blender clips
+run ten, the last key landing near eight and then holding; they are played at
+`lastLanding / INTRO_SECONDS` speed and the intro ends when the last has
+landed. **Each key takes clicks from the moment its own clip lands**
+(`landingTime` in `intro.js`, read from the clips — drei creates the actions
+lazily, after the first render): the first at about 1.8 s. A click on a key
+still coming up jumps the intro to its end and then acts. Measured on the
+GPU, cached, first visit of a session: static paint 28 ms, scene ready
+216 ms, greeting lifts 967 ms, **first clickable key 2.32 s**, intro done
+3.99 s. `window.__landed` (dev) says which keys are live.
 
-The first sunrise lasts `SUNRISE_MS`, which is
-the intro's own length (`INTRO_SECONDS` in `scene/intro.js`, where the camera's
-fly-in ends), so the sun and the device land on 08:10 together; the plan's 3.2 s
-would have had the sun up long before the device finished assembling. A
-returning visitor (`hichord:seen` in local storage) or one asking for reduced
-motion gets the quick sunrise and the device already assembled.
+`landingTime` measures each track against its own range of motion, and the
+optimiser's `resample` runs at a 1e-6 tolerance: at the default the settling
+frame of every key's drop was thrown away and the shipped keys drifted their
+last millimetre over the clip's final three seconds — "still moving" until
+the end, so no key went live early.
+
+The first sunrise lasts `SUNRISE_MS`, the intro's own length, so the sun and
+the device land on 08:10 together. A returning visitor (`hichord:seen` in
+local storage) or one asking for reduced motion gets the quick sunrise and the
+device already assembled.
 
 Until the device is at rest, **any click or key skips** (`skipSunrise`, in
 `story/dom/SunriseSkip.jsx`, which also shows the hint): the
@@ -527,20 +564,22 @@ address back to `/`. An address with no section yet falls to home, which
 | The story: chapter, the clock's spin, chapters seen | `src/story/useStoryStore.js` |
 | Device modes → story chapters | `src/story/bridge.js` |
 | Opening a chapter from anywhere | `src/story/navigate.js` |
-| Chapters as pages: address, title, back/forward, keys 1–4 | `src/story/useStoryRouting.js` |
+| Chapters as pages: address, title, back/forward, keys 1–5 | `src/story/useStoryRouting.js` |
 | The story's corner: name, clock, chapter caption | `src/story/dom/StoryHUD.jsx` |
 | The `?` list of keyboard shortcuts | `src/story/dom/KeyHelp.jsx` |
 | The fixed ink and accent, for the canvas | `src/story/palette.js` |
 | Click-to-skip the first sunrise, and its hint | `src/story/dom/SunriseSkip.jsx` |
 | Contact: the panel, reaching out | `src/components/ContactPanel.jsx` |
+| Writing: the posts panel | `src/components/WritingPanel.jsx`, `src/data/writing.js` |
+| A section panel as an accessible dialog | `src/components/Dialog.jsx` |
 | Social links and the published email | `src/data/contact.js` |
 | The epilogue: a visit played back, share links | `src/story/dom/SongPrompt.jsx` |
 | Chords and the small keys' notes | `src/story/chords.js` |
 | Reduced motion and phone detection, for the polish | `src/story/environment.js` |
 | Blinds, the L train, the cursor glint | `src/story/scene/Blinds.jsx`, `TrainPass.jsx`, `CursorGlint.jsx` |
-| How long the device's intro lasts | `src/scene/intro.js` |
+| How long the device's intro lasts; when each part lands | `src/scene/intro.js` |
 | DOM overlay: arrows, description, keyboard | `src/components/Overlay.jsx` |
-| Loading screen: "hello" in four languages, curtain hand-off | `src/components/LoadingScreen.jsx` |
+| Loading screen: adopts the static `#boot`, the hellos, the hand-off | `src/components/LoadingScreen.jsx`, `index.html` |
 | Project catalogue | `src/data/projects.js` |
 | Photography wall, culling, focus | `src/scene/Gallery.jsx` |
 | One print (mesh, textures, springs) | `src/scene/Print.jsx` |
@@ -621,6 +660,12 @@ Append to `PROJECTS` in `src/data/projects.js` (`id`, `title`, `subtitle`, `colo
 `inkColor`, `preview`, `url`), drop a tall screenshot at `public/previews/<id>.webp`
 or run `npm run previews`, and stop. Carousel spacing, fan, focus wrapping and the
 overlay all read the array length; nothing else needs editing.
+
+### Add a post
+
+Append to `POSTS` in `src/data/writing.js` (`title`, `date`, `url`). A null
+`url` links the Medium profile and a null `date` shows none; nothing else
+needs editing.
 
 ### Add a photo
 
@@ -709,15 +754,24 @@ Two `prune` options are load-bearing and must stay:
   pruned as unused and **the cartridge labels render blank**.
 - `keepLeaves: true` — keeps the `SlotAnchor` and `LensAnchor` empties.
 
+And `resample({ tolerance: 1e-6 })` must stay that tight: the default drops
+the frame each key settles on, and the keys then never count as landed until
+the intro's very end (see **Loading and the intro**).
+
 ### Touch a device key or its annotation
 
 Keys are `DeviceButton` in `src/scene/Device.jsx`, not part of the DOM overlay. Each
 one hovers up, presses down, and — where it has a `description` — draws a leader line
 and label through a drei `<Html>`.
 
+The annotation shows 150 ms after the pointer arrives and is drawn in 350 ms
+(`LABEL_*` in `Device.jsx`); it was 800 ms and 1.5 s. A key pressed while the
+device is exploded collapses it first and then acts (`onCollapse`), and any
+section opening collapses it too.
+
 Two things about that annotation are load-bearing. It is dismissed **without
 animating** when the key is clicked (`dismissed` state), because retracting it plays
-the leader line backwards over 1.5 s, which sends a hairline sweeping some four
+the leader line backwards, which sends a hairline sweeping some four
 hundred pixels across the screen at the exact moment of a click and reads as a
 glitch. Leaving with the pointer still retracts normally, which is where that
 animation belongs — the pointer is on its way out anyway. And the label's colour is
@@ -736,13 +790,19 @@ the filter, not the raw noise, and were chosen by metering.
 `audio()` returns null while it is off, so with sound off no context is ever
 created — every sound, old and new, already returned early on a null context.
 Off suspends a live context, which silences even a running projector reel. It
-is turned on only inside a click (the toggle in the story's corner, or M), or
-as the day begins if the visitor has already clicked (`soundAllowed`), because browsers start audio only from a gesture.
-The story store's `soundOn` mirrors it for the UI.
+is switched by **the Sound key** (the old lab key, which glows amber while on
+— its own clone of the keycap material) or M, and **remembered**
+(`hichord:sound`, local storage). A visitor who left it on finds the key lit
+at once and the audio itself started on their first click, tap or key
+(`onFirstGesture`, on capture — or at once if `soundAllowed()` says the page
+already has a gesture), because browsers start audio only from one. The
+story store's `soundOn` mirrors it for the UI; there is no button for it in
+the corner any more.
 
 **The music is synthesised here too**, not with Tone.js as the story plan
 suggested: one more dependency and download for a handful of notes, and its own
-context to keep in step with this one. Each chapter's chord (`story/chords.js`,
+context to keep in step with this one. **All of it is switched off by
+`music.on`** for the Awwwards submission. Each chapter's chord (`story/chords.js`,
 all in D major, sharing common tones so any order voice-leads) is strummed by
 `playChord` on entering the chapter, and the sunrise's as the day begins; the small keys
 (LinkedIn, GitHub, Medium, explode) ring a pentatonic `playNote` under their

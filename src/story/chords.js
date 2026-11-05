@@ -1,4 +1,16 @@
 /**
+ * Whether the story's music plays: each chapter's chord, Contact's held one
+ * and its resolution, the sunrise's, the small keys' notes and the epilogue's
+ * song. Off for the Awwwards submission, whose checklist cuts them — judged
+ * work must be live and nothing unjudged should ship switched on — but kept,
+ * to come back as an update after judging. An object rather than a constant
+ * so the tests can switch it on and keep all of it working meanwhile. Key
+ * clicks, the projector, the shutter and the train are not music and play
+ * whenever sound is on.
+ */
+export const music = { on: false }
+
+/**
  * The chords of the day, in D major. Each chapter's chord shares common tones
  * (F#, A, D) with the others, so any order a visitor walks the site in voice-
  * leads smoothly: there is no wrong song.

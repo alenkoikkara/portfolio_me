@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import useStoryStore, { nextOccurrence, travelMsFor, SUNRISE_MS, QUICK_SUNRISE_MS } from './useStoryStore'
+import useStoryStore, { nextOccurrence, travelMsFor, SUNRISE_MS, QUICK_SUNRISE_MS, SOUND_KEY } from './useStoryStore'
 import { sky, HOME_HOUR, PROLOGUE_HOUR } from './sky'
 import { CHAPTERS } from './chapters'
 
@@ -160,24 +160,56 @@ describe('the beginning', () => {
     expect(get().toTime).toBeCloseTo(HOME_HOUR, 6)
   })
 
-  it('begins quietly when the browser would not allow sound yet', () => {
+  it('begins quietly when sound was never chosen', () => {
     useStoryStore.setState({ soundOn: false })
     get().begin()
     expect(get().soundOn).toBe(false)
   })
 
-  it('begins with sound, on the sunrise chord, once the visitor has clicked', () => {
-    useStoryStore.setState({ soundOn: false })
-    const activation = Object.getOwnPropertyDescriptor(navigator, 'userActivation')
+  it('remembers the sound choice, and finds it on next time — the audio itself waiting for a gesture', () => {
+    get().setSound(true)
+    expect(window.localStorage.getItem(SOUND_KEY)).toBe('1')
+    // A new visit: nothing on yet.
+    get().setSound(false)
+    window.localStorage.setItem(SOUND_KEY, '1')
+    useStoryStore.setState({ soundOn: false, started: false })
+    get().begin()
+    expect(get().soundOn).toBe(true)
+    // The first click starts the audio, on capture, before the click lands.
+    window.dispatchEvent(new Event('pointerup'))
+    expect(get().soundOn).toBe(true)
+    get().setSound(false)
+    expect(window.localStorage.getItem(SOUND_KEY)).toBe('0')
+  })
+
+  it('lets a visitor who turns the remembered sound off before any gesture keep it off', () => {
+    window.localStorage.setItem(SOUND_KEY, '1')
+    useStoryStore.setState({ soundOn: false, started: false })
+    get().begin()
+    get().setSound(false)
+    window.dispatchEvent(new Event('keydown'))
+    expect(get().soundOn).toBe(false)
+  })
+
+  it('starts the remembered sound at once if the visitor has already clicked', () => {
+    window.localStorage.setItem(SOUND_KEY, '1')
     Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: true } })
     try {
+      useStoryStore.setState({ soundOn: false, started: false })
       get().begin()
       expect(get().soundOn).toBe(true)
     } finally {
-      if (activation) Object.defineProperty(navigator, 'userActivation', activation)
-      else delete navigator.userActivation
+      delete navigator.userActivation
       get().setSound(false)
     }
+  })
+
+  it('restores the sound choice on a deep link too', () => {
+    window.localStorage.setItem(SOUND_KEY, '1')
+    useStoryStore.setState({ soundOn: false, started: false })
+    get().startAt('about')
+    expect(get().soundOn).toBe(true)
+    get().setSound(false)
   })
 
   it('gives a returning visitor the quick sunrise', () => {

@@ -1,22 +1,17 @@
 import React, { useState } from 'react'
 import useDeviceStore from '../scene/useDeviceStore'
 import useStoryStore from '../story/useStoryStore'
-import { CONTACT_EMAIL, SOCIAL_LINKS } from '../data/contact'
-
-const LINKS = [
-  ['linkedin', SOCIAL_LINKS.linkedin],
-  ['github', SOCIAL_LINKS.github],
-  ['medium', SOCIAL_LINKS.medium],
-]
+import { AVAILABILITY, CONTACT_EMAIL, SOCIAL_LINKS } from '../data/contact'
+import Dialog from './Dialog'
 
 /**
- * The contact chapter: 06:05, a new day, and the ways to say hello. It sits
- * beside the device at rest (below it on a phone), on the sky like the rest
- * of the chrome, and reads the stage's ink so it follows the light.
+ * Contact: the address with a Copy that answers "Copied", a mailto, LinkedIn,
+ * and what Alen is open to — so a first-time visitor has the address on their
+ * clipboard two clicks after the page comes alive (the key, then Copy).
  *
- * Every way of reaching out — writing, copying the address, following a link
- * — resolves the chord the chapter is holding (`resolveContact`). Leaving
- * without doing any of it just lets the chord fade: no guilt trip.
+ * Every way of reaching out — copying, writing, following a link — resolves
+ * the chapter (`resolveContact`), which swaps its caption for "See you
+ * tomorrow."
  */
 export default function ContactPanel() {
   const closeContact = useDeviceStore((s) => s.closeContact)
@@ -30,44 +25,33 @@ export default function ContactPanel() {
       resolveContact()
     } catch {
       // No clipboard (an insecure origin, or permission refused): the address
-      // is on the page to copy by hand, so there is nothing to report.
+      // is on the panel to select by hand, so there is nothing to report.
     }
   }
 
   return (
-    <div className="overlay">
-      <button className="overlay-close" onClick={closeContact} aria-label="Close contact">
-        ×
-      </button>
+    <Dialog eyebrow="contact" title="say hello" onClose={closeContact} className="contact">
+      {CONTACT_EMAIL && (
+        <div className="contact__email">
+          <span className="contact__address">{CONTACT_EMAIL}</span>
+          <span className="contact__actions">
+            <button type="button" onClick={copy} aria-live="polite">{copied ? 'Copied' : 'Copy'}</button>
+            <a href={`mailto:${CONTACT_EMAIL}`} onClick={resolveContact}>Email</a>
+          </span>
+        </div>
+      )}
 
-      <section className="contact" aria-label="Contact">
-        <p className="contact__eyebrow">contact</p>
-        <h2 className="contact__title">say hello</h2>
+      <ul className="contact__links">
+        <li>
+          <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" onClick={resolveContact}>
+            LinkedIn
+          </a>
+        </li>
+      </ul>
 
-        {CONTACT_EMAIL && (
-          <div className="contact__email">
-            <span className="contact__address">{CONTACT_EMAIL}</span>
-            <span className="contact__actions">
-              <a href={`mailto:${CONTACT_EMAIL}`} onClick={resolveContact}>write</a>
-              <button type="button" onClick={copy}>{copied ? 'copied' : 'copy'}</button>
-            </span>
-          </div>
-        )}
-
-        <ul className="contact__links">
-          {LINKS.map(([label, url]) => (
-            <li key={label}>
-              <a href={url} target="_blank" rel="noopener noreferrer" onClick={resolveContact}>
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <div className="overlay-hint">
-        <span>esc close</span>
-      </div>
-    </div>
+      <p className="contact__availability">
+        <span className="contact__dot" aria-hidden="true">●</span> {AVAILABILITY}
+      </p>
+    </Dialog>
   )
 }

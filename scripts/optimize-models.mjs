@@ -57,7 +57,14 @@ async function optimize(name, { texture }) {
     // Identical textures and accessors are stored once.
     dedup(),
     // Animation keyframes that only restate the previous value are dropped.
-    resample(),
+    //
+    // At a tolerance far tighter than the default. Positions here are in
+    // metres, and the default's 1e-4 reads a key's last millimetre of bounce
+    // as noise: it dropped the frame where each key settles, so the shipped
+    // keys drifted that millimetre down over the clip's last three seconds —
+    // still moving, by the numbers, until the very end, which is what decides
+    // when each key may take a click (landingTime in scene/intro.js).
+    resample({ tolerance: 1e-6 }),
     // Anything the scene no longer references goes, with two exceptions.
     //
     // Empty nodes are kept: the slot and lens anchors carry no geometry, and

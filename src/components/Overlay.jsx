@@ -3,6 +3,8 @@ import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceSt
 import { PHOTOS } from '../data/photos'
 import { formatSettings } from '../data/exif'
 import ContactPanel from './ContactPanel'
+import WritingPanel from './WritingPanel'
+import { isTouch } from '../story/environment'
 import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
 
 /**
@@ -12,6 +14,8 @@ import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
  * wall's caption and its way back out.
  */
 export default function Overlay() {
+  // Read once: whether the visitor's pointer is a finger, for the hints' wording.
+  const [touch] = React.useState(isTouch)
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const focus = useDeviceStore((s) => s.focus)
@@ -22,7 +26,6 @@ export default function Overlay() {
   const focusPhoto = useDeviceStore((s) => s.focusPhoto)
   const closeGallery = useDeviceStore((s) => s.closeGallery)
   const closeAbout = useDeviceStore((s) => s.closeAbout)
-  const closeContact = useDeviceStore((s) => s.closeContact)
 
   const inGallery = GALLERY_MODES.has(mode)
   const inAbout = ABOUT_MODES.has(mode)
@@ -62,17 +65,15 @@ export default function Overlay() {
         e.preventDefault()
         // A no-op once already closing, by the store's own guard.
         closeAbout()
-      } else if (mode === 'CONTACT' && e.key === 'Escape') {
-        e.preventDefault()
-        closeContact()
       }
+      // Contact and Writing are dialogs, which take their own Escape.
       // Arrow keys in the gallery pan the wall, and are handled by the camera
       // that owns the pan target rather than here.
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [mode, inGallery, inAbout, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery, closeAbout, closeContact])
+  }, [mode, inGallery, inAbout, focusedIndex, focus, closeCarousel, insert, eject, focusedPhotoId, focusPhoto, closeGallery, closeAbout])
 
   if (mode === 'IDLE') return null
 
@@ -128,9 +129,9 @@ export default function Overlay() {
           * which finds it by the data attribute and follows its size.
           */}
         <div className="overlay-hint overlay-hint--glass" data-glass-pill>
-          {focusedPhotoId ? <span>esc back</span> : <span>drag to pan</span>}
-          {!focusedPhotoId && <span>click a print</span>}
-          {!focusedPhotoId && <span>esc close</span>}
+          {focusedPhotoId ? <span>{touch ? 'tap to go back' : 'esc back'}</span> : <span>drag to pan</span>}
+          {!focusedPhotoId && <span>{touch ? 'tap a print' : 'click a print'}</span>}
+          {!focusedPhotoId && <span>{touch ? 'tap × to close' : 'esc close'}</span>}
         </div>
       </div>
     )
@@ -142,6 +143,7 @@ export default function Overlay() {
    * hint for those who do.
    */
   if (mode === 'CONTACT') return <ContactPanel />
+  if (mode === 'WRITING') return <WritingPanel />
 
   if (inAbout) {
     return (
@@ -150,7 +152,7 @@ export default function Overlay() {
           ×
         </button>
         <div className="overlay-hint">
-          <span>esc close</span>
+          <span>{touch ? 'tap × to close' : 'esc close'}</span>
         </div>
       </div>
     )
@@ -196,12 +198,13 @@ export default function Overlay() {
         </button>
       )}
 
-      {/* Navigation hint */}
+      {/* Navigation hint — in the words of the input in hand: a finger has no arrow keys. */}
       <div className="overlay-hint">
-        {isBrowsing && <span>← → navigate</span>}
-        {isBrowsing && <span>↵ select</span>}
-        {isProjecting && <span>esc eject</span>}
-        {isBrowsing && <span>esc close</span>}
+        {isBrowsing && !touch && <span>← → navigate</span>}
+        {isBrowsing && !touch && <span>↵ select</span>}
+        {isBrowsing && touch && <span>tap a cartridge</span>}
+        {isProjecting && <span>{touch ? 'tap × to eject' : 'esc eject'}</span>}
+        {isBrowsing && <span>{touch ? 'tap × to close' : 'esc close'}</span>}
       </div>
     </div>
   )

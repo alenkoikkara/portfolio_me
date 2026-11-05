@@ -5,7 +5,7 @@ import { openChapter, goHomeChapter } from './navigate'
 
 const SITE_TITLE = 'alen koikkara'
 /** The number keys, in the order the sections sit on the device. */
-const KEY_ORDER = ['projects', 'photography', 'about', 'contact']
+const KEY_ORDER = ['projects', 'photography', 'about', 'contact', 'writing']
 
 // Home and the day not yet begun ('prologue') are both the site's own address.
 const pathFor = (chapter) => CHAPTERS[chapter]?.path ?? '/'
@@ -20,7 +20,7 @@ let replaying = false
 
 /**
  * Makes each chapter behave like a page: its own address and title, the back
- * and forward buttons, and the number keys 1–4 — and M for sound.
+ * and forward buttons, and the number keys 1–5 — and M for sound.
  */
 export default function useStoryRouting() {
   const chapter = useStoryStore((s) => s.chapter)
@@ -65,7 +65,7 @@ export default function useStoryRouting() {
         useStoryStore.getState().toggleSound()
         return
       }
-      const index = '1234'.indexOf(e.key)
+      const index = '12345'.indexOf(e.key)
       if (index >= 0 && e.key.length === 1) openChapter(KEY_ORDER[index])
     }
     window.addEventListener('keydown', onKey)
