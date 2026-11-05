@@ -107,3 +107,15 @@ describe('the held chord and the song', () => {
     vi.useRealTimers()
   })
 })
+
+describe('whether sound may start without a click', () => {
+  afterEach(() => { delete navigator.userActivation })
+
+  it('only once the visitor has clicked or pressed a key on the page', () => {
+    expect(audio.soundAllowed()).toBe(false)
+    Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: false } })
+    expect(audio.soundAllowed()).toBe(false)
+    Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: true } })
+    expect(audio.soundAllowed()).toBe(true)
+  })
+})

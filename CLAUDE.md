@@ -467,10 +467,18 @@ begin quietly" stood between the two until the user had it removed. The day
 starts at 05:40 — `sky.hours` defaults to `PROLOGUE_HOUR` — and the canvas is
 held at opacity 0 until then, so the device assembles in the first light
 instead of sitting half-built under the greeting; it still renders
-underneath, which is what `sceneReady` needs. **It always begins quietly**:
-no click has happened yet, and browsers start sound only from one, so sound
-waits for the corner's toggle or M — which is also why there is no sunrise
-chord.
+underneath, which is what `sceneReady` needs. **The sun comes up on its
+chord — when the browser allows it.** Browsers start sound only after a click
+or key, and nothing asks for one any more, so `begin` checks
+`soundAllowed()` (`navigator.userActivation.hasBeenActive`, in `audio.js`):
+if the visitor has already clicked or typed during the greeting, sound comes
+on for the visit and the chord plays as the greeting fades; otherwise it
+begins quietly and sound waits for the corner's toggle or M. It asks rather
+than tries: a context started without a gesture stays suspended, logs a
+warning and plays nothing — and sound off must still mean no context at all.
+Verified by wrapping `AudioContext` before load and counting oscillators —
+the five notes of Dadd9 on a running context — since metering missed it: at
+software-rendering speed the chord was over before a meter could attach.
 
 The first sunrise lasts `SUNRISE_MS`, which is
 the intro's own length (`INTRO_SECONDS` in `scene/intro.js`, where the camera's
@@ -728,14 +736,15 @@ the filter, not the raw noise, and were chosen by metering.
 `audio()` returns null while it is off, so with sound off no context is ever
 created — every sound, old and new, already returned early on a null context.
 Off suspends a live context, which silences even a running projector reel. It
-is turned on only inside a click (the toggle in the story's corner, or M), because browsers start audio only from a gesture.
+is turned on only inside a click (the toggle in the story's corner, or M), or
+as the day begins if the visitor has already clicked (`soundAllowed`), because browsers start audio only from a gesture.
 The story store's `soundOn` mirrors it for the UI.
 
 **The music is synthesised here too**, not with Tone.js as the story plan
 suggested: one more dependency and download for a handful of notes, and its own
 context to keep in step with this one. Each chapter's chord (`story/chords.js`,
 all in D major, sharing common tones so any order voice-leads) is strummed by
-`playChord` on entering the chapter; the small keys
+`playChord` on entering the chapter, and the sunrise's as the day begins; the small keys
 (LinkedIn, GitHub, Medium, explode) ring a pentatonic `playNote` under their
 click. A pad voice is two sines — a body and a fast-dying tine an octave and a
 fifth up, which reads as an electric piano — through a low-pass and a reverb

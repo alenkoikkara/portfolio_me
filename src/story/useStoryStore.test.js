@@ -160,10 +160,24 @@ describe('the beginning', () => {
     expect(get().toTime).toBeCloseTo(HOME_HOUR, 6)
   })
 
-  it('begins quietly: sound waits for a click', () => {
+  it('begins quietly when the browser would not allow sound yet', () => {
     useStoryStore.setState({ soundOn: false })
     get().begin()
     expect(get().soundOn).toBe(false)
+  })
+
+  it('begins with sound, on the sunrise chord, once the visitor has clicked', () => {
+    useStoryStore.setState({ soundOn: false })
+    const activation = Object.getOwnPropertyDescriptor(navigator, 'userActivation')
+    Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: true } })
+    try {
+      get().begin()
+      expect(get().soundOn).toBe(true)
+    } finally {
+      if (activation) Object.defineProperty(navigator, 'userActivation', activation)
+      else delete navigator.userActivation
+      get().setSound(false)
+    }
   })
 
   it('gives a returning visitor the quick sunrise', () => {

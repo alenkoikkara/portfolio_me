@@ -267,6 +267,16 @@ export function stopProjector() {
  * it must be called inside a click — Begin, or the sound toggle. Off suspends
  * it: instantly silent, a projector reel included, and resumed where it was.
  */
+/**
+ * Whether the browser would let sound start now, without a click to start it
+ * from: only once the visitor has clicked or pressed a key on the page (its
+ * sticky user activation). Asked rather than tried, because starting a context
+ * without one leaves it suspended and logs a warning, and plays nothing.
+ */
+export function soundAllowed() {
+  return typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive === true
+}
+
 export function setSoundOn(on) {
   enabled = on
   if (on) audio()

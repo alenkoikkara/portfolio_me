@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { sky, HOME_HOUR } from './sky'
 import { CHAPTERS, songFromQuery } from './chapters'
 import { INTRO_SECONDS } from '../scene/intro'
-import { setSoundOn, playChord, holdChord, releaseHeld } from '../scene/audio'
+import { setSoundOn, soundAllowed, playChord, holdChord, releaseHeld } from '../scene/audio'
 import { CHORDS } from './chords'
 
 const prefersReducedMotion = () =>
@@ -91,9 +91,11 @@ const useStoryStore = create((set, get) => {
     sharedSong: typeof window !== 'undefined' ? songFromQuery(window.location.search) : null,
 
     /**
-     * The day begins, as the greeting lifts: the sun comes up, 05:40 to 08:10.
-     * Always quietly — no click has happened yet, and browsers start sound only
-     * from one. Returns whether
+     * The day begins, as the greeting lifts: the sun comes up, 05:40 to 08:10,
+     * on a chord. Browsers start sound only after a click or a key, so the
+     * chord sounds — and sound comes on for the visit — only if the visitor
+     * has already given one while the greeting played; otherwise it begins
+     * quietly and sound waits for the toggle or M. Returns whether
      * it is the quick sunrise — a returning visitor, or reduced motion — in
      * which case the device should start assembled rather than play its intro.
      */
@@ -107,6 +109,8 @@ const useStoryStore = create((set, get) => {
         chapter: 'home',
         ...travel(to, prefersReducedMotion() ? REDUCED_TRAVEL_MS : quick ? QUICK_SUNRISE_MS : SUNRISE_MS),
       })
+      if (soundAllowed()) get().setSound(true)
+      playChord(CHORDS.sunrise, { duration: 4.5, velocity: 0.5 })
       return quick
     },
 
