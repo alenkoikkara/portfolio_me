@@ -195,6 +195,11 @@ keeps the room alive without anything shouting.
     measured at 44.61°–45.39° about rest. Off with reduced motion.
   - **Cursor glint** (`CursorGlint.jsx`): a faint light following the pointer
     a little above the keys, about 5% of the sun, at rest on desktop only.
+  - **Phones (under 768 px) are switched off for now:** `phoneLayout.on`
+    in `story/environment.js` is false, so `main.jsx` renders
+    `PhoneNotice.jsx` — the name, a line asking for a bigger screen, and
+    email, LinkedIn and GitHub — instead of the app, and swaps back if the
+    window widens. Everything below is kept and returns with the flag.
   - **Phones (under 768 px):** the rest camera stands 22° off vertical and
     close (`restPose` in `cameraFov.js`), so the device spans about 90% of the
     width and every key is a broad target; one turn and one scale about the

@@ -26,3 +26,10 @@ export function isMobile() {
 export function isTouch() {
   return typeof window !== 'undefined' && window.matchMedia?.('(hover: none)')?.matches === true
 }
+
+/**
+ * The phone layout (under `PHONE_WIDTH`) is switched off for now: a phone is
+ * shown a short note instead (PhoneNotice.jsx). The phone code all stays in
+ * place — turn this on to bring it back.
+ */
+export const phoneLayout = { on: false }
