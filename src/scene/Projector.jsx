@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import useDeviceStore from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
 import usePreviewTexture from './usePreviewTexture'
+import { previewUrl } from './projectCard'
 import { makeBeamMaterial, makeNoiseTexture, makePreviewMaterial } from './projectorShaders'
 import { startProjector, stopProjector } from './audio'
 
@@ -42,7 +43,7 @@ export default function Projector() {
 
   const isProjecting = mode === 'PROJECTING'
   const live = LIVE_MODES.has(mode)
-  const texture = usePreviewTexture(project?.preview, live)
+  const texture = usePreviewTexture(project ? previewUrl(project) : null, live)
 
   const noise = useMemo(() => makeNoiseTexture(), [])
   const previewMaterial = useMemo(() => makePreviewMaterial(noise), [noise])

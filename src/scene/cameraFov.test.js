@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HFOV, tanHalfVertical, verticalFov } from './cameraFov'
+import { HFOV, tanHalfVertical, verticalFov, restDistanceScale, restPose } from './cameraFov'
 
 const TAN_HALF_H = Math.tan((HFOV * Math.PI) / 360)
 
@@ -37,5 +37,31 @@ describe('the device camera field of view', () => {
   it('gives three a vertical FOV in degrees, and survives a zero-sized canvas', () => {
     expect(verticalFov(16 / 9)).toBeCloseTo((2 * Math.atan(TAN_HALF_H / (16 / 9)) * 180) / Math.PI, 10)
     expect(Number.isFinite(verticalFov(0))).toBe(true)
+  })
+})
+
+describe('the rest pose on a phone', () => {
+  it('stands nearer on a portrait window, not at all on a desktop, and blends between', async () => {
+    const { restDistanceScale } = await import('./cameraFov')
+    expect(restDistanceScale(390 / 844)).toBe(0.5)
+    expect(restDistanceScale(16 / 9)).toBe(1)
+    expect(restDistanceScale(1)).toBe(1)
+    const mid = restDistanceScale(0.9)
+    expect(mid).toBeGreaterThan(0.5)
+    expect(mid).toBeLessThan(1)
+    expect(restDistanceScale(0)).toBe(0.5)
+  })
+})
+
+describe('the rest pose by window', () => {
+  it('stands nearly overhead and close on a phone, for thumbs', () => {
+    expect(restPose(390, 844)).toEqual({ scale: expect.any(Number), tilt: 22 })
+    expect(restPose(767, 1024).tilt).toBe(22)
+    expect(restPose(390, 844).scale).toBeLessThan(restDistanceScale(390 / 844))
+  })
+
+  it('keeps the desktop angle from 768 px up, nearer only on a portrait window', () => {
+    expect(restPose(1440, 900)).toEqual({ scale: 1, tilt: null })
+    expect(restPose(820, 1180)).toEqual({ scale: restDistanceScale(820 / 1180), tilt: null })
   })
 })

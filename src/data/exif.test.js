@@ -65,3 +65,18 @@ describe('writing them out', () => {
     expect(formatExposure(null)).toBe('')
   })
 })
+
+describe('the year a photo was taken', () => {
+  it('reads the capture time, as a Date or as EXIF text', async () => {
+    const { readYear } = await import('./exif')
+    expect(readYear({ Photo: { DateTimeOriginal: new Date('2023-08-28T10:00:00Z') } })).toBe(2023)
+    expect(readYear({ Image: { DateTime: '2024:01:30 18:02:11' } })).toBe(2024)
+  })
+
+  it('gives none when there is none to read', async () => {
+    const { readYear } = await import('./exif')
+    expect(readYear(null)).toBeNull()
+    expect(readYear({ Photo: {} })).toBeNull()
+    expect(readYear({ Image: { DateTime: 'garbage' } })).toBeNull()
+  })
+})

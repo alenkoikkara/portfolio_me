@@ -53,3 +53,15 @@ describe('the photo catalogue', () => {
     }
   })
 })
+
+describe('caption placeholders', () => {
+  it('show nothing while blank, and never hide the year read from the photo', () => {
+    const dated = GENERATED_PHOTOS.filter((p) => p.year)
+    expect(dated.length).toBeGreaterThan(0)
+    for (const g of dated) expect(PHOTOS.find((p) => p.id === g.id).year).toBe(g.year)
+    for (const photo of PHOTOS) {
+      expect(photo.location ?? null).not.toBe('')
+      expect(photo.caption ?? null).not.toBe('')
+    }
+  })
+})

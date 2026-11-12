@@ -6,6 +6,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { MathUtils } from 'three'
 import * as THREE from 'three'
 import cartridgeGlb from '../assets/glb/cartridge.glb'
+import { previewUrl } from './projectCard'
 
 /* ─── Idle rotation (focused cartridge only) ─── */
 // A slight counter-tilt about X, so the roll below reads as a turn in space
@@ -98,11 +99,12 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
    */
   const gl = useThree((s) => s.gl)
   useEffect(() => {
-    if (!labelMat || !project.preview) return
+    const preview = previewUrl(project)
+    if (!labelMat || !preview) return
     let disposed = false
     const loader = new THREE.TextureLoader()
     loader.load(
-      project.preview,
+      preview,
       (tex) => {
         if (disposed) { tex.dispose(); return }
         tex.colorSpace = THREE.SRGBColorSpace
@@ -145,7 +147,7 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
         labelMat.needsUpdate = true
       }
     }
-  }, [labelMat, project.preview, gl])
+  }, [labelMat, project, gl])
 
   // Spring-animate pose changes; on mount the cartridge fades in and settles
   // down from slightly above its slot.
@@ -228,4 +230,3 @@ export default function Cartridge({ project, pose, opacity, focused = false, del
   )
 }
 
-useGLTF.preload(cartridgeGlb)

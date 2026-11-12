@@ -7,17 +7,24 @@
  *
  * One AudioContext serves the whole app. Browsers cap how many a page may
  * hold, and a second one here would also mean a second volume to reason about.
+ *
+ * **Sound is opt-in** (`setSoundOn`): off by default, and off means fully
+ * silent — every sound below asks `audio()` first, and with sound off that
+ * returns null without ever creating a context.
  */
 
 let ctx = null
 let master = null
+let enabled = false
 
 /**
  * The context, created on first use. Browsers refuse to start audio before a
  * gesture, so every sound here is triggered by a click somewhere up the stack.
- * @returns {AudioContext|null} null where the browser has no Web Audio at all
+ * @returns {AudioContext|null} null while sound is off, or where the browser
+ *   has no Web Audio at all
  */
 function audio() {
+  if (!enabled) return null
   if (ctx) {
     if (ctx.state === 'suspended') ctx.resume()
     return ctx
@@ -253,4 +260,237 @@ export function stopProjector() {
   gain.gain.linearRampToValueAtTime(0.0001, end)
   source.stop(end)
   wow.stop(end)
+}
+
+/**
+ * Sound on or off, for the whole app. On creates (or wakes) the context, so
+ * it must be called inside a click — Begin, or the sound toggle. Off suspends
+ * it: instantly silent, a projector reel included, and resumed where it was.
+ */
+/**
+ * Whether the browser would let sound start now, without a click to start it
+ * from: only once the visitor has clicked or pressed a key on the page (its
+ * sticky user activation). Asked rather than tried, because starting a context
+ * without one leaves it suspended and logs a warning, and plays nothing.
+ */
+export function soundAllowed() {
+  return typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive === true
+}
+
+export function setSoundOn(on) {
+  enabled = on
+  if (on) audio()
+  else {
+    // A chord held across a mute would come back mid-sustain on unmute.
+    releaseHeld()
+    if (ctx && ctx.state === 'running') ctx.suspend()
+  }
+}
+
+/* ─── The city ─── */
+
+/**
+ * A distant L train: brown-ish rumble, low-passed hard, swelling in and out
+ * over the second and a half its light takes to cross the desk.
+ */
+export function playRumble() {
+  const c = audio()
+  if (!c) return
+  noiseBurst(c, { duration: 1.6, type: 'lowpass', frequency: 160, q: 0.7, peak: 0.35, attack: 0.6 })
+}
+
+/** A camera shutter, click-clack: two short high bursts, 70 ms apart. */
+export function playShutter() {
+  const c = audio()
+  if (!c) return
+  noiseBurst(c, { duration: 0.035, type: 'highpass', frequency: 2500, peak: 0.3 })
+  setTimeout(() => {
+    const again = audio()
+    if (again) noiseBurst(again, { duration: 0.03, type: 'highpass', frequency: 3200, peak: 0.22 })
+  }, 70)
+}
+
+/* ─── Music ─── */
+
+const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
+
+/** A note's frequency in Hz, from scientific pitch: 'A4' is 440, 'F#3' and 'Bb2' work too. */
+export function noteFrequency(name) {
+  const match = /^([A-G])([#b]?)(-?\d)$/.exec(name)
+  if (!match) throw new Error(`Not a note: ${name}`)
+  const [, letter, accidental, octave] = match
+  const semitone = NOTE_INDEX[letter] + (accidental === '#' ? 1 : accidental === 'b' ? -1 : 0)
+  const midi = (Number(octave) + 1) * 12 + semitone
+  return 440 * Math.pow(2, (midi - 69) / 12)
+}
+
+/*
+ * The room the music plays in: a soft low-pass, then a short synthetic hall —
+ * an impulse response of decaying noise, built once, so no reverb file ships.
+ * Wet level and decay were set by ear to sit under the experience, like a
+ * café's background music, not over it.
+ */
+let musicBus = null
+let bellBus = null
+const REVERB_SECONDS = 3.2
+const REVERB_WET = 0.32
+
+function buildReverb(c) {
+  const frames = Math.floor(c.sampleRate * REVERB_SECONDS)
+  const impulse = c.createBuffer(2, frames, c.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const data = impulse.getChannelData(ch)
+    for (let i = 0; i < frames; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frames, 3)
+  }
+  const convolver = c.createConvolver()
+  convolver.buffer = impulse
+  return convolver
+}
+
+function buses(c) {
+  if (musicBus) return
+  const reverb = buildReverb(c)
+  const wet = c.createGain()
+  wet.gain.value = REVERB_WET
+  reverb.connect(wet)
+  wet.connect(master)
+
+  const tone = c.createBiquadFilter()
+  tone.type = 'lowpass'
+  tone.frequency.value = 1800
+  tone.Q.value = 0.3
+  tone.connect(master)
+  tone.connect(reverb)
+  musicBus = tone
+
+  // The bells go to the reverb and the dry bus alike, unfiltered: they are
+  // meant to sparkle a little above the pad.
+  const bells = c.createGain()
+  bells.connect(master)
+  bells.connect(reverb)
+  bellBus = bells
+}
+
+/*
+ * One voice of the pad: a sine for the body and a sine an octave and a fifth
+ * up that dies away fast, which is what reads as an electric piano's tine
+ * rather than an organ. Levels per voice are small: a chord stacks five.
+ */
+const PAD_PEAK = 0.05
+const PAD_SUSTAIN = 0.35
+const PAD_RELEASE = 2.8
+
+/**
+ * One pad voice. With a `duration` it releases itself; with `null` it holds
+ * at its sustain until `release` is called on what this returns.
+ */
+function padVoice(c, frequency, start, duration, velocity) {
+  const peak = PAD_PEAK * velocity
+  const body = c.createOscillator()
+  body.type = 'sine'
+  body.frequency.value = frequency
+  const tine = c.createOscillator()
+  tine.type = 'sine'
+  tine.frequency.value = frequency * 3
+  const tineGain = c.createGain()
+  tineGain.gain.setValueAtTime(0.0001, start)
+  tineGain.gain.exponentialRampToValueAtTime(0.35, start + 0.01)
+  tineGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5)
+
+  const env = c.createGain()
+  env.gain.setValueAtTime(0.0001, start)
+  env.gain.exponentialRampToValueAtTime(peak, start + 0.02)
+  env.gain.exponentialRampToValueAtTime(peak * PAD_SUSTAIN, start + 0.6)
+
+  body.connect(env)
+  tine.connect(tineGain)
+  tineGain.connect(env)
+  env.connect(musicBus)
+  body.start(start)
+  tine.start(start)
+
+  const release = (at) => {
+    env.gain.cancelScheduledValues(at)
+    env.gain.setValueAtTime(peak * PAD_SUSTAIN, at)
+    env.gain.exponentialRampToValueAtTime(0.0001, at + PAD_RELEASE)
+    body.stop(at + PAD_RELEASE + 0.1)
+    tine.stop(at + PAD_RELEASE + 0.1)
+  }
+  if (duration !== null) release(Math.max(start + 0.6, start + duration))
+  return { release }
+}
+
+/**
+ * A chord, strummed: each note 14 ms after the last, upper voices a touch
+ * softer, held for `duration` seconds and then let ring out.
+ */
+export function playChord(notes, { duration = 2.4, velocity = 0.55 } = {}) {
+  const c = audio()
+  if (!c) return
+  buses(c)
+  const now = c.currentTime
+  notes.forEach((note, i) => {
+    padVoice(c, noteFrequency(note), now + i * 0.014, duration, Math.max(0.2, velocity - i * 0.03))
+  })
+}
+
+/*
+ * A chord left hanging: the contact chapter's suspended V, held until the
+ * visitor reaches out (resolved home) or leaves (it simply fades).
+ */
+let held = null
+
+export function holdChord(notes, { velocity = 0.45 } = {}) {
+  const c = audio()
+  if (!c) return
+  buses(c)
+  releaseHeld()
+  const now = c.currentTime
+  held = notes.map((note, i) => padVoice(c, noteFrequency(note), now + i * 0.014, null, velocity))
+}
+
+/** Let the held chord go — and, if given one, resolve it to another. */
+export function releaseHeld(resolveTo) {
+  if (held && ctx) {
+    const now = ctx.currentTime
+    for (const voice of held) voice.release(now)
+  }
+  held = null
+  if (resolveTo) playChord(resolveTo, { duration: 3.6, velocity: 0.6 })
+}
+
+/*
+ * A list of chords at 76 bpm, two beats each, then `home`: the visitor's own
+ * walk through the site, played back and resolved. `onStep` is called as each
+ * chord sounds, so the device can press the key that chord belongs to.
+ * Returns a function that cancels whatever has not played yet.
+ */
+export const SONG_STEP_MS = (60 / 76) * 2 * 1000
+
+export function playSong(chords, { home, onStep } = {}) {
+  const timers = chords.map((chord, i) => setTimeout(() => {
+    playChord(chord, { duration: 1.9 })
+    onStep?.(i)
+  }, i * SONG_STEP_MS))
+  if (home) timers.push(setTimeout(() => playChord(home, { duration: 4, velocity: 0.6 }), chords.length * SONG_STEP_MS))
+  return () => timers.forEach(clearTimeout)
+}
+
+/** A little bell, for the device's small keys. */
+export function playNote(note) {
+  const c = audio()
+  if (!c) return
+  buses(c)
+  const now = c.currentTime
+  const osc = c.createOscillator()
+  osc.type = 'triangle'
+  osc.frequency.value = noteFrequency(note)
+  const env = c.createGain()
+  env.gain.setValueAtTime(0.0001, now)
+  env.gain.exponentialRampToValueAtTime(0.045, now + 0.004)
+  env.gain.exponentialRampToValueAtTime(0.0001, now + 1.2)
+  osc.connect(env)
+  env.connect(bellBus)
+  osc.start(now)
+  osc.stop(now + 1.3)
 }

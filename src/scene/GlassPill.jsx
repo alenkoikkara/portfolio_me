@@ -1,14 +1,23 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { sky } from '../story/sky'
 
 /*
- * The page colour, in sRGB as the canvas stores it. The canvas is transparent
- * over the page, so wherever it is not fully covered the glass has to see the
- * page through it, the same as the eye does.
+ * The page behind the canvas is the sky's gradient (story/sky.js), and the
+ * canvas is transparent over it, so wherever it is not fully covered the glass
+ * has to see the sky through it, the same as the eye does — at the height of
+ * the pixel, since the sky is a gradient. Both ends are kept here as raw sRGB
+ * channels, as the canvas stores them: the sample's colours are linear.
  */
-// Kept as the raw sRGB channels: a THREE.Color would hold them in linear.
-const PAGE = { r: 0xfa / 255, g: 0xf9 / 255, b: 0xf6 / 255 }
+const SKY_TOP = { r: 0, g: 0, b: 0 }
+const SKY_BOTTOM = { r: 0, g: 0, b: 0 }
+function readSky() {
+  sky.sample.bgTop.getRGB(SKY_TOP, THREE.SRGBColorSpace)
+  sky.sample.bgBottom.getRGB(SKY_BOTTOM, THREE.SRGBColorSpace)
+}
+/** The sky's sRGB channel `c` at height `t`, 0 at the bottom of the canvas and 1 at the top. */
+const skyAt = (c, t) => SKY_BOTTOM[c] + (SKY_TOP[c] - SKY_BOTTOM[c]) * t
 
 /** Room outside the pill for its shadow, in CSS px. */
 const SHADOW_SPREAD = 18
@@ -72,8 +81,11 @@ const fragmentShader = /* glsl */ `
   uniform vec2 uCenter;
   uniform vec2 uHalf;
   uniform float uDpr;
+  uniform float uRadius;
   uniform float uOpacity;
-  uniform vec3 uPage;
+  uniform vec3 uSkyTop;
+  uniform vec3 uSkyBottom;
+  uniform float uHeight;
   uniform float uTone;
 
   float roundRect(vec2 p, vec2 halfSize, float r) {
@@ -81,11 +93,12 @@ const fragmentShader = /* glsl */ `
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
   }
 
-  // What is behind, as the eye sees it: over the page wherever the canvas is
+  // What is behind, as the eye sees it: over the sky wherever the canvas is
   // not opaque, then out of sRGB so the light can be mixed in linear.
   vec3 behind(vec2 frag) {
     vec4 c = texture2D(tBack, (frag - uOrigin) / uTexSize);
-    vec3 encoded = c.rgb + uPage * (1.0 - c.a);
+    vec3 page = mix(uSkyBottom, uSkyTop, clamp(frag.y / uHeight, 0.0, 1.0));
+    vec3 encoded = c.rgb + page * (1.0 - c.a);
     return sRGBTransferEOTF(vec4(encoded, 1.0)).rgb;
   }
 
@@ -103,7 +116,8 @@ const fragmentShader = /* glsl */ `
 
   void main() {
     vec2 p = gl_FragCoord.xy;
-    float radius = uHalf.y;
+    // A capsule unless a corner radius was asked for; never rounder than one.
+    float radius = uRadius > 0.0 ? min(uRadius, uHalf.y) : uHalf.y;
     float d = roundRect(p - uCenter, uHalf, radius);
     float aa = 0.75 * uDpr;
     float coverage = 1.0 - smoothstep(-aa, aa, d);
@@ -170,9 +184,13 @@ const fragmentShader = /* glsl */ `
  * the eye does — after tone mapping and colour conversion — rather than a
  * second render of the scene that would have to be graded to match.
  *
- * `show` fades it in and out; it costs nothing at zero.
+ * `show` fades it in and out; it costs nothing at zero. `radius` (CSS px)
+ * rounds its corners by that much instead, for an element taller than a line:
+ * a capsule around a block of text reads as a stadium, not glass. Each of
+ * the element's children is tagged `data-tone` for what is behind it, or
+ * each match of `parts` instead, for words nested deeper than one level.
  */
-export default function GlassPill({ selector, show }) {
+export default function GlassPill({ selector, show, radius = 0, parts = null }) {
   const gl = useThree((s) => s.gl)
 
   const texture = useRef(null)
@@ -184,7 +202,8 @@ export default function GlassPill({ selector, show }) {
   // glass's lean follows the pill as a whole, the words each follow their own.
   const tone = useRef(0)
   const toneTarget = useRef(0)
-  // Each word's span across the row, in device px, refreshed every frame.
+  // Each word's span across its row, and that row, in device px (y up from the
+  // bottom), refreshed every frame.
   const words = useRef([])
   const frame = useRef(0)
   const row = useRef(new Uint8Array(0))
@@ -201,9 +220,12 @@ export default function GlassPill({ selector, show }) {
       uQuadCenter: { value: new THREE.Vector2() },
       uQuadHalf: { value: new THREE.Vector2() },
       uDpr: { value: 1 },
+      uRadius: { value: 0 },
       uOpacity: { value: 0 },
       // The canvas stores sRGB; the page is mixed in before decoding.
-      uPage: { value: new THREE.Vector3(PAGE.r, PAGE.g, PAGE.b) },
+      uSkyTop: { value: new THREE.Vector3() },
+      uSkyBottom: { value: new THREE.Vector3() },
+      uHeight: { value: 1 },
       uTone: { value: 0 },
     },
     transparent: true,
@@ -248,15 +270,25 @@ export default function GlassPill({ selector, show }) {
     const s = shape.current
 
     tone.current += (toneTarget.current - tone.current) * (1 - Math.exp(-TONE_RATE * step))
-    words.current = Array.from(el.children, (child) => {
+    words.current = Array.from(parts ? el.querySelectorAll(parts) : el.children, (child) => {
       const r = child.getBoundingClientRect()
-      return { el: child, x0: (r.left - bounds.left) * dpr, x1: (r.right - bounds.left) * dpr }
+      return {
+        el: child,
+        x0: (r.left - bounds.left) * dpr,
+        x1: (r.right - bounds.left) * dpr,
+        y: canvas.height - (r.top - bounds.top + r.height / 2) * dpr,
+      }
     })
 
     const u = material.uniforms
+    readSky()
+    u.uSkyTop.value.set(SKY_TOP.r, SKY_TOP.g, SKY_TOP.b)
+    u.uSkyBottom.value.set(SKY_BOTTOM.r, SKY_BOTTOM.g, SKY_BOTTOM.b)
+    u.uHeight.value = canvas.height
     u.uOpacity.value = opacity.current
     u.uTone.value = tone.current
     u.uDpr.value = dpr
+    u.uRadius.value = radius * dpr
     u.uCenter.value.set(s.x, s.y)
     u.uHalf.value.set(s.w, s.h)
     const spread = SHADOW_SPREAD * dpr
@@ -295,10 +327,11 @@ export default function GlassPill({ selector, show }) {
   }
 
   /*
-   * How light is what the words sit on: one row of pixels across the middle of
-   * the pill, read back before the glass draws over it. A single row, a few
-   * times a second, keeps the stall of reading back from the GPU negligible;
-   * the words only need to know which side of the middle the content is.
+   * How light is what the words sit on: one row of pixels across the pill at
+   * each line's middle — one row for a pill, one per line for a pane — read
+   * back before the glass draws over it. A row or two, a few times a second,
+   * keeps the stall of reading back from the GPU negligible; the words only
+   * need to know which side of the middle the content is.
    */
   const measure = (renderer) => {
     const s = shape.current
@@ -307,38 +340,54 @@ export default function GlassPill({ selector, show }) {
     const canvas = renderer.domElement
     const x0 = Math.max(0, Math.floor(s.x - s.w))
     const x1 = Math.min(canvas.width, Math.ceil(s.x + s.w))
-    const y = Math.min(canvas.height - 1, Math.max(0, Math.round(s.y)))
     const width = x1 - x0
     if (width <= 0) return
     if (row.current.length !== width * 4) row.current = new Uint8Array(width * 4)
     const px = row.current
-    ctx.readPixels(x0, y, width, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px)
-    const lumAt = (i) => {
-      // Over the page wherever the canvas is not opaque, as the eye sees it.
-      const rest = 1 - px[i + 3] / 255
-      const r = px[i] / 255 + PAGE.r * rest
-      const g = px[i + 1] / 255 + PAGE.g * rest
-      const b = px[i + 2] / 255 + PAGE.b * rest
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const clampY = (y) => Math.min(canvas.height - 1, Math.max(0, Math.round(y)))
+
+    /** The average luminance of each span along the row at `y`, as the eye sees it. */
+    const readRow = (y) => {
+      ctx.readPixels(x0, y, width, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px)
+      const t = y / canvas.height
+      // Taken now: the next row read reuses the same buffer.
+      const lum = new Float32Array(width)
+      for (let x = 0; x < width; x++) {
+        const i = x * 4
+        // Over the sky wherever the canvas is not opaque, as the eye sees it.
+        const rest = 1 - px[i + 3] / 255
+        const r = px[i] / 255 + skyAt('r', t) * rest
+        const g = px[i + 1] / 255 + skyAt('g', t) * rest
+        const b = px[i + 2] / 255 + skyAt('b', t) * rest
+        lum[x] = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      }
+      return (from, to) => {
+        const a = Math.max(0, Math.floor(from - x0))
+        const b = Math.min(width, Math.ceil(to - x0))
+        if (b <= a) return null
+        let sum = 0
+        for (let x = a; x < b; x++) sum += lum[x]
+        return sum / (b - a)
+      }
     }
-    const average = (from, to) => {
-      const a = Math.max(0, Math.floor(from - x0))
-      const b = Math.min(width, Math.ceil(to - x0))
-      if (b <= a) return null
-      let sum = 0
-      for (let x = a; x < b; x++) sum += lumAt(x * 4)
-      return sum / (b - a)
-    }
+
     // Each word against what is behind it, not the pill's average: a pill
     // half over a dark print and half over the page needs both.
     const flip = (current, luminance) =>
       luminance === null ? current
         : luminance < LIGHT_TEXT_BELOW ? 'light'
           : luminance > DARK_TEXT_ABOVE ? 'dark' : current
+    const middle = clampY(s.y)
+    const rows = new Map()
+    const rowAt = (y) => {
+      if (!rows.has(y)) rows.set(y, readRow(y))
+      return rows.get(y)
+    }
     for (const word of words.current) {
+      const average = rowAt(clampY(word.y))
       word.el.dataset.tone = flip(word.el.dataset.tone ?? 'dark', average(word.x0, word.x1))
     }
-    toneTarget.current = flip(toneTarget.current === 1 ? 'light' : 'dark', average(x0, x1)) === 'light' ? 1 : 0
+    toneTarget.current = flip(toneTarget.current === 1 ? 'light' : 'dark', rowAt(middle)(x0, x1)) === 'light' ? 1 : 0
   }
 
   return (

@@ -41,6 +41,17 @@ export function readExposure(exif) {
 }
 
 /**
+ * The year a photo was taken, from its EXIF capture time, or null. Only the
+ * year: a print's caption is a place and a year, and the GPS some photos carry
+ * is deliberately not read — it would publish where each one was taken.
+ */
+export function readYear(exif) {
+  const taken = exif?.Photo?.DateTimeOriginal ?? exif?.Image?.DateTime
+  const year = taken instanceof Date ? taken.getFullYear() : Number.parseInt(String(taken ?? '').slice(0, 4), 10)
+  return Number.isFinite(year) && year > 1900 ? year : null
+}
+
+/**
  * Shutter speed as a photographer writes it: a fraction of a second below one
  * second ("1/250s"), seconds above it ("2s", "1.5s").
  */

@@ -14,25 +14,25 @@
 /* ─── Stage theming ─── */
 
 /*
- * The whole experience re-themes when the projects key is pressed: the room
- * lights go down so the projected preview has something to read against. The
- * canvas is transparent, so this background is what shows behind the scene.
  * Overlay chrome reads these variables rather than hard-coded colours, so one
- * class on the wrapper re-themes all of it in step with the background.
+ * class on the wrapper re-themes all of it at once.
+ *
+ * At rest the page is the sky (story/dom/SkyBackground) — near white at every
+ * hour — and the text is the fixed ink, `--ink` and `--ink-muted` (story.css).
+ * `--stage-bg` is the veil over the sky: clear at rest, the room's lights going
+ * down for the projector, so the projected preview has something to read
+ * against — and only then does the text turn light.
  */
 .stage {
-  --stage-bg: #faf9f6;
-  --stage-ink: #111827;
-  --stage-muted: #6b7280;
-  --stage-faint: rgba(17, 24, 39, 0.35);
-  --stage-panel: rgba(255, 255, 255, 0.7);
-  --stage-panel-strong: rgba(255, 255, 255, 0.9);
-  --stage-line: rgba(17, 24, 39, 0.15);
-  --stage-line-soft: rgba(17, 24, 39, 0.1);
+  --stage-bg: transparent;
+  --stage-ink: var(--ink);
+  --stage-muted: var(--ink-muted);
+  --stage-faint: color-mix(in srgb, var(--ink) 38%, transparent);
+  --stage-panel: color-mix(in srgb, var(--sky-bottom) 70%, transparent);
+  --stage-panel-strong: color-mix(in srgb, var(--sky-bottom) 90%, transparent);
+  --stage-line: color-mix(in srgb, var(--ink) 15%, transparent);
+  --stage-line-soft: color-mix(in srgb, var(--ink) 10%, transparent);
   --stage-shadow: rgba(0, 0, 0, 0.06);
-
-  background-color: var(--stage-bg);
-  transition: background-color 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Browsing the carousel: lights down. */
@@ -115,13 +115,18 @@
  * the room lights to go down before fading in. Appearing immediately would put
  * light text on the still-light background for the length of that transition.
  */
+/* Centred on its anchor vertically; on a wrapper, since the chip's own rise animates transform. */
+.overlay-chip-anchor {
+  transform: translateY(-50%);
+}
+
 .overlay-chip {
   pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: baseline;
   gap: 2px;
-  white-space: nowrap;
+  width: 240px;
   animation: overlay-rise 420ms cubic-bezier(0.4, 0, 0.2, 1) 460ms both;
 }
 
@@ -153,25 +158,94 @@
   transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.overlay-chip-link {
-  margin-top: 5px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-  text-decoration: none;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.overlay-chip-link--visible {
-  opacity: 1;
+/*
+ * The case for the projecting project (ProjectCase in Overlay.jsx): in the
+ * margin beside the projected page, on the dark stage, so it reads the
+ * stage's light ink; across the foot of a phone.
+ */
+.project-case {
   pointer-events: auto;
+  position: absolute;
+  color: var(--stage-ink);
+  animation: overlay-rise 420ms cubic-bezier(0.4, 0, 0.2, 1) 300ms both;
 }
 
-.overlay-chip-link--visible:hover {
+.project-case--open {
+  /* Inside the margin beside the projected page on a 1440 px window: that page spans 63% of the width. */
+  right: 24px;
+  bottom: 64px;
+  width: 228px;
+  /* No card: the words sit straight on the projector's dark veil. */
+}
+
+.project-case--name {
+  top: 112px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+}
+
+.project-case__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.project-case__outcome {
+  margin-top: 2px;
+  color: var(--stage-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.project-case__facts {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.project-case__facts > div {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+}
+
+.project-case__facts dt {
+  color: var(--stage-muted);
+  letter-spacing: 0.04em;
+}
+
+.project-case__facts dd {
+  margin: 0;
+}
+
+.project-case__link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: opacity 200ms ease;
+}
+
+.project-case__link:hover {
   opacity: 0.65;
+}
+
+.project-case a:focus-visible {
+  outline: 2px solid var(--stage-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .project-case--open {
+    left: 16px;
+    right: 16px;
+    bottom: 56px;
+    width: auto;
+  }
 }
 
 /* Close button */
@@ -319,4 +393,201 @@
     left: 20px;
     bottom: 56px;
   }
+}
+
+/*
+ * The contact chapter's panel. Beside the device at rest, on the sky, so it
+ * reads the stage's ink like the rest of the chrome; it arrives once the clock
+ * has mostly reached 06:05, as the chapter captions do.
+ */
+/*
+ * A section's panel as a dialog (Dialog.jsx): a small sheet of paper beside
+ * the device at rest, and a bottom sheet on a phone. The backdrop is clear —
+ * the device stays in view — but takes the pointer, so a tap beside the panel
+ * closes it rather than pressing a key behind.
+ */
+.dialog-backdrop {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+}
+
+.dialog {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  /* Clear of the device's right corner at rest, which reaches about 69% across. */
+  left: max(70vw, calc(50% + 280px));
+  width: min(320px, calc(100vw - 32px));
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: color-mix(in srgb, #ffffff 86%, transparent);
+  box-shadow: 0 18px 40px -24px rgba(23, 24, 28, 0.35);
+  color: var(--stage-ink);
+  outline: none;
+  animation: dialog-in 500ms both cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Contact has no card: its words sit straight on the page beside the device. */
+.dialog.contact {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.dialog__eyebrow {
+  color: var(--stage-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.dialog__title {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.dialog__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--stage-muted);
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+.dialog__close:hover {
+  color: var(--stage-ink);
+  background: var(--stage-line-soft);
+}
+
+/* Focus shows as ink, the one ring the site uses. */
+.dialog a:focus-visible,
+.dialog button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.contact__email {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.contact__actions,
+.contact__links {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.contact__actions a,
+.contact__actions button,
+.contact__links a {
+  color: var(--stage-muted);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.contact__actions button {
+  color: var(--stage-ink);
+  font-weight: 500;
+}
+
+/* Amber is for marks; its deep form is the one dark enough for words on white. */
+.contact__actions a:hover,
+.contact__actions button:hover,
+.contact__links a:hover {
+  color: var(--accent-deep);
+}
+
+.contact__availability {
+  margin-top: 4px;
+  color: var(--stage-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.contact__dot {
+  color: var(--accent);
+}
+
+.writing__posts {
+  display: flex;
+  flex-direction: column;
+}
+
+.writing__posts a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+  transition: color 200ms ease;
+}
+
+.writing__posts li:last-child a {
+  border-bottom: 1px solid var(--rule);
+}
+
+.writing__posts a:hover {
+  color: var(--accent-deep);
+}
+
+.writing__date {
+  color: var(--stage-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(calc(-50% + 6px)); }
+  to { opacity: 1; transform: translateY(-50%); }
+}
+
+/* On a phone the device fills the width: the panel is a sheet from the bottom. */
+@media (max-width: 767px) {
+  .dialog {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 20px 20px 0 0;
+    background: color-mix(in srgb, #ffffff 94%, transparent);
+    transform: none;
+    animation-name: dialog-in-below;
+  }
+
+  @keyframes dialog-in-below {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog { animation-duration: 1ms; }
+}
+
+/* Under a bottom sheet the hint would sit hidden; the sheet's × says it instead. */
+@media (max-width: 767px) {
+  .dialog ~ .overlay-hint { display: none; }
 }

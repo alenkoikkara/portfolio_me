@@ -21,7 +21,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.00045004500450045,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img3",
@@ -33,7 +34,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.001941747572815534,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img4",
@@ -51,7 +53,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.0006680026720106881,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img6",
@@ -63,7 +66,8 @@ export const GENERATED_PHOTOS = [
       "iso": 25,
       "exposure": 0.0002339728591483388,
       "aperture": 2.2
-    }
+    },
+    "year": 2022
   },
   {
     "id": "img7",
@@ -75,7 +79,8 @@ export const GENERATED_PHOTOS = [
       "iso": 25,
       "exposure": 0.000273000273000273,
       "aperture": 2.2
-    }
+    },
+    "year": 2022
   },
   {
     "id": "img8",
@@ -99,7 +104,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.000249003984063745,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img11",
@@ -129,7 +135,8 @@ export const GENERATED_PHOTOS = [
       "iso": 640,
       "exposure": 0.005,
       "aperture": 5.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img15",
@@ -147,19 +154,22 @@ export const GENERATED_PHOTOS = [
       "iso": 200,
       "exposure": 0.016666666666666666,
       "aperture": 1.6
-    }
+    },
+    "year": 2025
   },
   {
     "id": "img17",
     "src": "/photos/full/img17.webp",
     "thumb": "/photos/thumb/img17.webp",
-    "aspect": 0.6667
+    "aspect": 0.6667,
+    "year": 2025
   },
   {
     "id": "img18",
     "src": "/photos/full/img18.webp",
     "thumb": "/photos/thumb/img18.webp",
-    "aspect": 0.6664
+    "aspect": 0.6664,
+    "year": 2025
   },
   {
     "id": "img19",
@@ -171,7 +181,8 @@ export const GENERATED_PHOTOS = [
       "iso": 800,
       "exposure": 0.004,
       "aperture": 22
-    }
+    },
+    "year": 2025
   },
   {
     "id": "img20",
@@ -183,7 +194,8 @@ export const GENERATED_PHOTOS = [
       "iso": 6400,
       "exposure": 0.003125,
       "aperture": 5.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img21",
@@ -195,7 +207,8 @@ export const GENERATED_PHOTOS = [
       "iso": 25,
       "exposure": 0.008,
       "aperture": 2.2
-    }
+    },
+    "year": 2022
   },
   {
     "id": "img22",
@@ -207,7 +220,8 @@ export const GENERATED_PHOTOS = [
       "iso": 500,
       "exposure": 0.02,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img23",
@@ -219,7 +233,8 @@ export const GENERATED_PHOTOS = [
       "iso": 64,
       "exposure": 0.008333333333333333,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img24",
@@ -231,7 +246,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.0018115942028985507,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img25",
@@ -243,7 +259,8 @@ export const GENERATED_PHOTOS = [
       "iso": 125,
       "exposure": 0.016666666666666666,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img26",
@@ -255,7 +272,8 @@ export const GENERATED_PHOTOS = [
       "iso": 64,
       "exposure": 0.02,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img27",
@@ -267,7 +285,8 @@ export const GENERATED_PHOTOS = [
       "iso": 40,
       "exposure": 0.00390625,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img28",
@@ -279,7 +298,8 @@ export const GENERATED_PHOTOS = [
       "iso": 500,
       "exposure": 0.04,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img29",
@@ -291,7 +311,8 @@ export const GENERATED_PHOTOS = [
       "iso": 32,
       "exposure": 0.007462686567164179,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img30",
@@ -303,7 +324,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.00013599891200870393,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img31",
@@ -315,7 +337,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.003003003003003003,
       "aperture": 1.6
-    }
+    },
+    "year": 2024
   },
   {
     "id": "img32",
@@ -327,7 +350,8 @@ export const GENERATED_PHOTOS = [
       "iso": 500,
       "exposure": 0.04,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img33",
@@ -339,7 +363,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.0006510416666666666,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img34",
@@ -351,7 +376,8 @@ export const GENERATED_PHOTOS = [
       "iso": 50,
       "exposure": 0.0017331022530329288,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img35",
@@ -363,7 +389,8 @@ export const GENERATED_PHOTOS = [
       "iso": 100,
       "exposure": 0.008333333333333333,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img36",
@@ -375,7 +402,8 @@ export const GENERATED_PHOTOS = [
       "iso": 320,
       "exposure": 0.016666666666666666,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img37",
@@ -387,7 +415,8 @@ export const GENERATED_PHOTOS = [
       "iso": 40,
       "exposure": 0.008333333333333333,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img38",
@@ -399,7 +428,8 @@ export const GENERATED_PHOTOS = [
       "iso": 40,
       "exposure": 0.005,
       "aperture": 1.6
-    }
+    },
+    "year": 2023
   },
   {
     "id": "img39",

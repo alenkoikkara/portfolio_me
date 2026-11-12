@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Suspense } from 'react'
 import { useThree } from '@react-three/fiber'
 import { PROJECTS } from '../data/projects'
@@ -6,46 +6,43 @@ import { PHOTOS } from '../data/photos'
 import Cartridge from './Cartridge'
 import { Html } from '@react-three/drei'
 import useDeviceStore from './useDeviceStore'
+import { PHONE_WIDTH } from './cameraFov'
 import Device from './Device'
 import Carousel from './Carousel'
 import ActiveCartridge from './ActiveCartridge'
 import Projector from './Projector'
 import Gallery from './Gallery'
 import AboutView from './AboutView'
+import HudGlass from '../story/scene/HudGlass'
 
-/** Modes in which a project is being browsed or shown. */
-const CHIP_MODES = new Set(['BROWSING', 'INSERTING', 'PROJECTING', 'EJECTING'])
+/*
+ * Modes in which the chip names the focused cartridge beside the device. Not
+ * while projecting: then the case is told by a panel on the screen itself
+ * (ProjectCase in Overlay.jsx), which a world-anchored label ran off the
+ * bottom of. Not on a phone either, where the same panel does it all.
+ */
+const CHIP_MODES = new Set(['BROWSING', 'INSERTING', 'EJECTING'])
 
 function ProjectChip() {
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
+  const width = useThree((s) => s.size.width)
   const project = PROJECTS[focusedIndex]
 
   // A whitelist, like every other mode guard in the scene: the chip belongs to
   // the cartridge arm and nothing else. Asking for "not IDLE and not the
   // gallery" would have printed a project title beside the about panel.
-  if (!CHIP_MODES.has(mode) || !project) return null
+  if (!CHIP_MODES.has(mode) || !project || width < PHONE_WIDTH) return null
 
-  const isProjecting = mode === 'PROJECTING'
-
-  // The device's back top edge is roughly at y=0.007, z=-0.015. 
-  // We place it at x=0.09 to shift it clearly to the right of the device.
+  // Anchored by its left edge just past the device's right side, so however
+  // long a project's outcome is, it grows away from the keys, not over them.
   return (
-    <Html position={[0.075, 0.007, -0.035]} center zIndexRange={[100, 0]}>
-      <div className="overlay-chip">
-        <span className="overlay-chip-title">{project.title}</span>
-        <span className="overlay-chip-subtitle">{project.subtitle}</span>
-        {project.url && (
-          <a
-            className={`overlay-chip-link ${isProjecting ? 'overlay-chip-link--visible' : ''}`}
-            href={project.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: project.color }}
-          >
-            visit ↗
-          </a>
-        )}
+    <Html position={[0.075, 0.007, -0.035]} zIndexRange={[100, 0]}>
+      <div className="overlay-chip-anchor">
+        <div className="overlay-chip">
+          <span className="overlay-chip-title">{project.title}</span>
+          <span className="overlay-chip-subtitle">{project.subtitle}</span>
+        </div>
       </div>
     </Html>
   )
@@ -68,27 +65,40 @@ function ProjectChip() {
  * there is invisible; the same pause during the glide is what looked glitchy.
  * The other cartridges reuse the compiled programs.
  *
- * It waits for the opening animation to finish, since that is the earliest a
- * visitor can reach the projects key, and drops out once it has had time to
- * draw a frame or two.
+ * It waits for the opening animation to finish, and is also what fetches
+ * the cartridge model: nothing preloads it any more, so the page's first
+ * load carries only the device. The cartridges sit in a Suspense of their
+ * own (below), so the fetch can never blank the device while it runs. It
+ * drops out once it has been drawn for a moment — timed from that first
+ * draw, not from the intro's end, or a slow fetch would let it expire before
+ * ever linking anything.
  */
 const WARMUP_POSE = { position: [0, -10, 0], rotation: [0, 0, 0], scale: 1 }
 const WARMUP_MS = 1500
+
+/** Mounts only once the model has arrived — Suspense holds it back till then — and so times the warm-up from there. */
+function Drawn({ onDrawn }) {
+  useEffect(() => {
+    const timer = setTimeout(onDrawn, WARMUP_MS)
+    return () => clearTimeout(timer)
+  }, [onDrawn])
+  return null
+}
 
 function CartridgeWarmup() {
   const introDone = useDeviceStore((s) => s.introDone)
   const mode = useDeviceStore((s) => s.mode)
   const [spent, setSpent] = useState(false)
-
-  useEffect(() => {
-    if (!introDone || spent) return undefined
-    const timer = setTimeout(() => setSpent(true), WARMUP_MS)
-    return () => clearTimeout(timer)
-  }, [introDone, spent])
+  const done = useCallback(() => setSpent(true), [])
 
   // Once the carousel has opened, the real cartridges hold the programs.
   if (!introDone || spent || mode !== 'IDLE') return null
-  return <Cartridge project={PROJECTS[0]} pose={WARMUP_POSE} opacity={1} />
+  return (
+    <Suspense fallback={null}>
+      <Cartridge project={PROJECTS[0]} pose={WARMUP_POSE} opacity={1} />
+      <Drawn onDrawn={done} />
+    </Suspense>
+  )
 }
 
 export default function Stage() {
@@ -128,12 +138,16 @@ export default function Stage() {
     <Suspense fallback={null}>
       <Device slotAnchorRef={slotAnchorRef} />
       <CartridgeWarmup />
-      <Carousel />
-      <ActiveCartridge slotAnchorRef={slotAnchorRef} />
+      {/* Their own boundary: the cartridge model arrives after the device, and must not blank it. */}
+      <Suspense fallback={null}>
+        <Carousel />
+        <ActiveCartridge slotAnchorRef={slotAnchorRef} />
+      </Suspense>
       <Projector />
       <ProjectChip />
       <Gallery />
       <AboutView />
+      <HudGlass />
     </Suspense>
   )
 }

@@ -2,6 +2,11 @@ import React, { useEffect } from 'react'
 import useDeviceStore, { ABOUT_MODES, GALLERY_MODES } from '../scene/useDeviceStore'
 import { PHOTOS } from '../data/photos'
 import { formatSettings } from '../data/exif'
+import ContactPanel from './ContactPanel'
+import WritingPanel from './WritingPanel'
+import { isTouch } from '../story/environment'
+import { PROJECTS } from '../data/projects'
+import { PHONE_WIDTH } from '../scene/cameraFov'
 import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
 
 /**
@@ -11,6 +16,8 @@ import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
  * wall's caption and its way back out.
  */
 export default function Overlay() {
+  // Read once: whether the visitor's pointer is a finger, for the hints' wording.
+  const [touch] = React.useState(isTouch)
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const focus = useDeviceStore((s) => s.focus)
@@ -61,6 +68,7 @@ export default function Overlay() {
         // A no-op once already closing, by the store's own guard.
         closeAbout()
       }
+      // Contact and Writing are dialogs, which take their own Escape.
       // Arrow keys in the gallery pan the wall, and are handled by the camera
       // that owns the pan target rather than here.
     }
@@ -123,9 +131,9 @@ export default function Overlay() {
           * which finds it by the data attribute and follows its size.
           */}
         <div className="overlay-hint overlay-hint--glass" data-glass-pill>
-          {focusedPhotoId ? <span>esc back</span> : <span>drag to pan</span>}
-          {!focusedPhotoId && <span>click a print</span>}
-          {!focusedPhotoId && <span>esc close</span>}
+          {focusedPhotoId ? <span>{touch ? 'tap to go back' : 'esc back'}</span> : <span>drag to pan</span>}
+          {!focusedPhotoId && <span>{touch ? 'tap a print' : 'click a print'}</span>}
+          {!focusedPhotoId && <span>{touch ? 'tap × to close' : 'esc close'}</span>}
         </div>
       </div>
     )
@@ -136,6 +144,9 @@ export default function Overlay() {
    * out: a close button, which a phone needs, having no Escape key, and the
    * hint for those who do.
    */
+  if (mode === 'CONTACT') return <ContactPanel />
+  if (mode === 'WRITING') return <WritingPanel />
+
   if (inAbout) {
     return (
       <div className="overlay">
@@ -143,7 +154,7 @@ export default function Overlay() {
           ×
         </button>
         <div className="overlay-hint">
-          <span>esc close</span>
+          <span>{touch ? 'tap × to close' : 'esc close'}</span>
         </div>
       </div>
     )
@@ -189,13 +200,58 @@ export default function Overlay() {
         </button>
       )}
 
-      {/* Navigation hint */}
+      <ProjectCase />
+
+      {/* Navigation hint — in the words of the input in hand: a finger has no arrow keys. */}
       <div className="overlay-hint">
-        {isBrowsing && <span>← → navigate</span>}
-        {isBrowsing && <span>↵ select</span>}
-        {isProjecting && <span>esc eject</span>}
-        {isBrowsing && <span>esc close</span>}
+        {isBrowsing && !touch && <span>← → navigate</span>}
+        {isBrowsing && !touch && <span>↵ select</span>}
+        {isBrowsing && touch && <span>tap a cartridge</span>}
+        {isProjecting && <span>{touch ? 'tap × to eject' : 'esc eject'}</span>}
+        {isBrowsing && <span>{touch ? 'tap × to close' : 'esc close'}</span>}
       </div>
     </div>
+  )
+}
+
+/**
+ * The case for the project on screen, as a panel on the screen rather than a
+ * label in the world: what it is, and — once it is projecting — what Alen
+ * did, with what, when, what came of it, and where to see it. The questions a
+ * juror asks of every project, answered beside the projection.
+ *
+ * Projecting, it sits in the margin beside the projected page on a desktop
+ * and across the foot of a phone. Browsing on a phone it names the one
+ * cartridge in view above it; a desktop names it with the chip beside the
+ * device instead (Stage.jsx).
+ */
+export function ProjectCase() {
+  const mode = useDeviceStore((s) => s.mode)
+  const focusedIndex = useDeviceStore((s) => s.focusedIndex)
+  const project = PROJECTS[focusedIndex]
+  const phone = typeof window !== 'undefined' && window.innerWidth < PHONE_WIDTH
+  const projecting = mode === 'PROJECTING'
+  if (!project || !(projecting || (phone && mode === 'BROWSING'))) return null
+
+  return (
+    <section className={`project-case ${projecting ? 'project-case--open' : 'project-case--name'}`} aria-label={project.title}>
+      <h2 className="project-case__title">{project.title}</h2>
+      <p className="project-case__outcome">{project.outcome}</p>
+      {projecting && (
+        <>
+          <dl className="project-case__facts">
+            <div><dt>role</dt><dd>{project.role}</dd></div>
+            <div><dt>stack</dt><dd>{project.stack.join(' · ')}</dd></div>
+            <div><dt>when</dt><dd>{project.timeline}</dd></div>
+            <div><dt>result</dt><dd>{project.result}</dd></div>
+          </dl>
+          {project.url && (
+            <a className="project-case__link" href={project.url} target="_blank" rel="noopener noreferrer">
+              {project.url.includes('github.com') ? 'code ↗' : 'visit ↗'}
+            </a>
+          )}
+        </>
+      )}
+    </section>
   )
 }

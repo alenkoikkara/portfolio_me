@@ -3,18 +3,22 @@ import { useFBO } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GLASS_ORDER } from './aboutLayout'
+import { sky } from '../story/sky'
 
 /*
- * What the glass sees where nothing stands behind it: the page's own colour
- * (`--stage-bg` of `.stage` in index.css). The canvas is transparent over the
- * page, so without it the scene behind the glass would be rendered over black.
+ * What the glass sees where nothing stands behind it: the sky behind the
+ * canvas, taken as the middle of its gradient and refreshed each frame from
+ * the hour (story/sky.js). The canvas is transparent over the page, so without
+ * it the scene behind the glass would be rendered over black. The frost blurs
+ * so heavily that a flat colour reads the same as the gradient would.
  */
-const PAGE = new THREE.Color('#faf9f6')
+const PAGE = new THREE.Color()
 
 /*
- * The frost: how far the blurred scene is washed toward white. Enough that the
- * device behind reads only as soft light and shadow — the about view is meant
- * to put it out of mind, not frame it.
+ * The frost: how far the blurred scene is washed toward white. White at every
+ * hour, like the page, so the bio's dark ink reads on it at 23:30 as at noon.
+ * Enough that the device behind reads only as soft light and shadow — the
+ * about view is meant to put it out of mind, not frame it.
  */
 const FROST = new THREE.Color('#ffffff')
 const FROST_AMOUNT = 0.58
@@ -172,7 +176,7 @@ const LiquidGlass = React.forwardRef(function LiquidGlass({ glass, opacity, hide
       uRadius: { value: 0 },
       uBevel: { value: 0 },
       uOpacity: { value: 0 },
-      uFrost: { value: FROST.clone() },
+      uFrost: { value: FROST },
       uFrostAmount: { value: FROST_AMOUNT },
     },
     transparent: true,
@@ -210,7 +214,7 @@ const LiquidGlass = React.forwardRef(function LiquidGlass({ glass, opacity, hide
     const shadows = gl.shadowMap.autoUpdate
     mesh.visible = false
     if (hide.current) hide.current.visible = false
-    scene.background = PAGE
+    scene.background = PAGE.copy(sky.sample.bgTop).lerp(sky.sample.bgBottom, 0.5)
     gl.shadowMap.autoUpdate = false
     gl.setRenderTarget(buffer)
     gl.clear()

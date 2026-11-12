@@ -12,12 +12,57 @@ import { GENERATED_PHOTOS } from './photos.generated'
  * src/assets/photography/img4.webp is `img4`.
  */
 /*
- * Optional, and empty until someone writes one. A photo with no entry here
- * simply shows no caption rather than falling back to its filename, which is
- * what the wall would otherwise put under a photograph.
+ * TO FILL: captions, written by hand: a place and, optionally, a line. One slot per
+ * print, left blank until Alen fills it — a blank field is skipped, so it
+ * shows nothing rather than an empty caption, and never hides the year read
+ * from the photo's EXIF. A `year` here overrides that one.
  *
- *   img4: { caption: 'Low tide', location: 'Donegal', year: 2024 },
+ *   img4: { location: 'Donegal', caption: 'Low tide' },
  */
-const META = {}
+const META = {
+  img1: { location: '', caption: '' },
+  img2: { location: '', caption: '' },
+  img3: { location: '', caption: '' },
+  img4: { location: '', caption: '' },
+  img5: { location: '', caption: '' },
+  img6: { location: '', caption: '' },
+  img7: { location: '', caption: '' },
+  img8: { location: '', caption: '' },
+  img9: { location: '', caption: '' },
+  img10: { location: '', caption: '' },
+  img11: { location: '', caption: '' },
+  img12: { location: '', caption: '' },
+  img13: { location: '', caption: '' },
+  img14: { location: '', caption: '' },
+  img15: { location: '', caption: '' },
+  img16: { location: '', caption: '' },
+  img17: { location: '', caption: '' },
+  img18: { location: '', caption: '' },
+  img19: { location: '', caption: '' },
+  img20: { location: '', caption: '' },
+  img21: { location: '', caption: '' },
+  img22: { location: '', caption: '' },
+  img23: { location: '', caption: '' },
+  img24: { location: '', caption: '' },
+  img25: { location: '', caption: '' },
+  img26: { location: '', caption: '' },
+  img27: { location: '', caption: '' },
+  img28: { location: '', caption: '' },
+  img29: { location: '', caption: '' },
+  img30: { location: '', caption: '' },
+  img31: { location: '', caption: '' },
+  img32: { location: '', caption: '' },
+  img33: { location: '', caption: '' },
+  img34: { location: '', caption: '' },
+  img35: { location: '', caption: '' },
+  img36: { location: '', caption: '' },
+  img37: { location: '', caption: '' },
+  img38: { location: '', caption: '' },
+  img39: { location: '', caption: '' },
+  img40: { location: '', caption: '' },
+}
 
-export const PHOTOS = GENERATED_PHOTOS.map((photo) => ({ ...photo, ...META[photo.id] }))
+/** A slot's fields that have actually been written; blanks leave the generated ones alone. */
+const written = (meta = {}) => Object.fromEntries(Object.entries(meta).filter(([, v]) => v !== '' && v != null))
+
+export const PHOTOS = GENERATED_PHOTOS.map((photo) => ({ ...photo, ...written(META[photo.id]) }))

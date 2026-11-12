@@ -1,23 +1,60 @@
-import React, { useLayoutEffect, useMemo, useRef } from 'react'
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Html, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { constellationLayout } from './constellationLayout'
 import { MILESTONES } from './about/timeline'
 import { CONTENT_ORDER } from './aboutLayout'
+import { INK, ACCENT } from '../story/palette'
 
 /*
- * Ink on the page: the stars are the `--stage-ink` of the light theme, and the
- * faint ones fade toward the page colour rather than toward transparency — see
- * the ambient stars below.
+ * An astronomer's chart in ink on white glass: solid ink dots, no glow, and
+ * hairline lines between them. The ink is the page's `--ink` (palette.js), so
+ * the stars match the labels beside them; the faint ambient stars are ink mixed
+ * toward the white frost rather than made transparent — see below.
  */
-const INK = '#111827'
-const PAGE = '#faf9f6'
+const PAPER = new THREE.Color('#ffffff')
 /** Sizes on screen, in CSS px. */
 const CORE_RADIUS = 3
-const HALO_RADIUS = 7
-const HALO_ALPHA = 0.12
-const LINE_ALPHA = 0.45
+const RING_INNER = 5.5
+const RING_OUTER = 6.5
+/*
+ * The current milestone — the newest, last in the timeline — wears a thin
+ * amber ring, and the ring breathes between these two over a 2.5 s cycle once
+ * it is out: the one thing still moving after the constellation has drawn.
+ */
+const BREATH_LOW = 0.5
+const BREATH_HIGH = 1
+const BREATH_SECONDS = 2.5
+const CURRENT_ID = MILESTONES[MILESTONES.length - 1].id
+const LINE_ALPHA = 0.3
+
+/*
+ * Each label on whichever side of its star constellationLayout.js found clear.
+ * The 12 px offsets (8.4 on the diagonals) must match its `LABEL_OFFSET`, or a
+ * label lands somewhere other than the room it was given.
+ */
+const LABEL_SIDE = {
+  below: '[transform:translate(-50%,12px)] text-center',
+  above: '[transform:translate(-50%,calc(-100%-12px))] text-center',
+  right: '[transform:translate(12px,-50%)] text-left',
+  left: '[transform:translate(calc(-100%-12px),-50%)] text-right',
+  'below-right': '[transform:translate(8.4px,8.4px)] text-left',
+  'below-left': '[transform:translate(calc(-100%-8.4px),8.4px)] text-right',
+  'above-right': '[transform:translate(8.4px,calc(-100%-8.4px))] text-left',
+  'above-left': '[transform:translate(calc(-100%-8.4px),calc(-100%-8.4px))] text-right',
+}
+/* A milestone's note hangs from the label's edge nearest its star. */
+const NOTE_SIDE = {
+  below: 'left-1/2 -translate-x-1/2',
+  above: 'left-1/2 -translate-x-1/2',
+  right: 'left-0',
+  left: 'right-0',
+  'below-right': 'left-0',
+  'below-left': 'right-0',
+  'above-right': 'left-0',
+  'above-left': 'right-0',
+}
 
 /*
  * The reveal, in seconds from the moment the about key is pressed. The glass
@@ -53,6 +90,7 @@ const prefersReducedMotion = () =>
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 
 const circle = new THREE.CircleGeometry(1, 24)
+const ring = new THREE.RingGeometry(RING_INNER, RING_OUTER, 48)
 
 /*
  * Every material here is drawn after the glass with depth testing off, so the
@@ -73,39 +111,38 @@ const onGlass = { transparent: true, opacity: 0, depthTest: false, depthWrite: f
  */
 export default function Constellation({ layout, present }) {
   const plan = useMemo(() => constellationLayout(layout, MILESTONES), [layout])
+  // A narrow band: smaller type and no subtitle — two lines fit, three do not.
+  const stacked = layout.layout === 'stacked'
 
-  const materials = useMemo(() => {
-    const make = () => new THREE.MeshBasicMaterial({ color: INK, ...onGlass })
-    return {
-      ambient: new THREE.MeshBasicMaterial(onGlass),
-      cores: MILESTONES.map(make),
-      halos: MILESTONES.map(make),
-    }
-  }, [])
+  const materials = useMemo(() => ({
+    ambient: new THREE.MeshBasicMaterial(onGlass),
+    cores: MILESTONES.map(() => new THREE.MeshBasicMaterial({ color: INK, ...onGlass })),
+    ring: new THREE.MeshBasicMaterial({ color: ACCENT, ...onGlass }),
+  }), [])
   useLayoutEffect(() => () => {
     materials.ambient.dispose()
-    for (const m of [...materials.cores, ...materials.halos]) m.dispose()
+    materials.ring.dispose()
+    for (const m of materials.cores) m.dispose()
   }, [materials])
 
   /*
    * The ambient stars are one instanced mesh, not forty: they never move or
    * change on their own, so a draw call each would buy nothing. Their
-   * faintness goes into each instance's colour — ink mixed toward the page, so
-   * a faint star is a pale one, which on a light page reads as fainter — and
-   * leaves the material's opacity free for the fade.
+   * faintness goes into each instance's colour — ink mixed toward the white
+   * frost, so a faint star is one closer to the glass — and leaves the
+   * material's opacity free for the fade.
    */
   const ambientRef = useRef()
   useLayoutEffect(() => {
     const mesh = ambientRef.current
     if (!mesh) return
     const m = new THREE.Matrix4()
-    const page = new THREE.Color(PAGE)
     const ink = new THREE.Color(INK)
-    const c = new THREE.Color()
+    const tint = new THREE.Color()
     plan.ambient.forEach((s, i) => {
       m.makeScale(s.radius, s.radius, 1).setPosition(s.x, -s.y, 0)
       mesh.setMatrixAt(i, m)
-      mesh.setColorAt(i, c.copy(page).lerp(ink, s.alpha))
+      mesh.setColorAt(i, tint.copy(PAPER).lerp(ink, s.alpha))
     })
     mesh.count = plan.ambient.length
     mesh.instanceMatrix.needsUpdate = true
@@ -138,9 +175,18 @@ export default function Constellation({ layout, present }) {
     [plan],
   )
   const nameRef = useRef()
+  /*
+   * The milestone opened to its one line: on hover, on focus, or toggled by a
+   * tap, since a finger has no hover. React state is fine here — it changes on
+   * a pointer event, not per frame.
+   */
+  const [opened, setOpened] = useState(null)
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const instant = prefersReducedMotion()
+    const breath = instant
+      ? BREATH_LOW
+      : BREATH_LOW + (BREATH_HIGH - BREATH_LOW) * (0.5 - 0.5 * Math.cos((state.clock.elapsedTime * 2 * Math.PI) / BREATH_SECONDS))
     const step = Math.min(delta, MAX_STEP)
     if (present) {
       elapsed.current = instant ? Infinity : elapsed.current + step
@@ -160,7 +206,7 @@ export default function Constellation({ layout, present }) {
       if (group) group.scale.setScalar(local === 0 ? 0.0001 : easeOutBack(local))
       const shown = clamp01((t - starAt(i)) / (STAR_POP * 0.7)) * fade
       materials.cores[i].opacity = shown
-      materials.halos[i].opacity = shown * HALO_ALPHA
+      if (star.id === CURRENT_ID) materials.ring.opacity = shown * breath
 
       const label = labelRefs.current[i]
       if (label) label.style.opacity = String(clamp01((t - labelAt(i)) / LABEL_FADE) * fade)
@@ -206,7 +252,7 @@ export default function Constellation({ layout, present }) {
 
         {plan.stars.map((star, i) => (
           <group key={star.id} position={[star.x, -star.y, 0]} ref={(g) => { starRefs.current[i] = g }} scale={0.0001}>
-            <mesh geometry={circle} material={materials.halos[i]} scale={HALO_RADIUS} renderOrder={CONTENT_ORDER} />
+            {star.id === CURRENT_ID && <mesh geometry={ring} material={materials.ring} renderOrder={CONTENT_ORDER} />}
             <mesh geometry={circle} material={materials.cores[i]} scale={CORE_RADIUS} renderOrder={CONTENT_ORDER} />
           </group>
         ))}
@@ -237,25 +283,45 @@ export default function Constellation({ layout, present }) {
           pointerEvents="none"
           zIndexRange={[9, 0]}
         >
-          <div className={`constellation constellation--${layout.layout}${plan.compact ? ' constellation--compact' : ''}`}>
+          {/*
+            * drei centres its child on the anchor, the window's top-left pixel,
+            * so the layer is zero-sized and each label is placed at its star's
+            * pixel position from there.
+            */}
+          <div className="relative h-0 w-0">
             {plan.stars.map((star, i) => {
               const m = MILESTONES[i]
               return (
-                <div
+                <button
+                  type="button"
                   key={m.id}
                   ref={(el) => { labelRefs.current[i] = el }}
-                  className={`milestone milestone--${star.label}`}
+                  className={`absolute m-0 cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 text-(--stage-ink) pointer-events-auto focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--ink) ${LABEL_SIDE[star.label]} ${opened === m.id ? 'z-2' : ''}`}
                   style={{ left: star.x, top: star.y, opacity: 0 }}
+                  aria-expanded={m.note ? opened === m.id : undefined}
+                  onMouseEnter={() => setOpened(m.id)}
+                  onMouseLeave={() => setOpened((o) => (o === m.id ? null : o))}
+                  onFocus={() => setOpened(m.id)}
+                  onBlur={() => setOpened((o) => (o === m.id ? null : o))}
+                  onClick={() => setOpened((o) => (o === m.id ? null : m.id))}
                 >
-                  <div className="milestone__year">{m.year}</div>
-                  <div className="milestone__title">{m.title}</div>
-                  {m.subtitle && <div className="milestone__sub">{m.subtitle}</div>}
-                </div>
+                  <span className={`mb-0.5 block tracking-[0.14em] text-(--stage-muted) ${stacked ? 'text-[9px]' : 'text-[10px]'}`}>{m.year}</span>
+                  <span className={`block font-medium ${stacked ? 'text-[11px]' : 'text-[13px]'}`}>{m.title}</span>
+                  {m.subtitle && !stacked && !plan.compact && (
+                    <span className="mt-px block text-[11px] font-normal text-(--stage-muted)">{m.subtitle}</span>
+                  )}
+                  {m.note && opened === m.id && (
+                    /* On paper under the label, above the others, so opening it never reflows the placed labels. */
+                    <span className={`absolute top-[calc(100%+8px)] z-1 block w-55 whitespace-normal rounded-[10px] border border-(--rule) bg-white px-2.75 py-2 text-left text-xs leading-[1.45] text-(--stage-ink) shadow-[0_10px_24px_-16px_rgba(23,24,28,0.35)] ${NOTE_SIDE[star.label]}`}>
+                      {m.note}
+                    </span>
+                  )}
+                </button>
               )
             })}
             <div
               ref={nameRef}
-              className={`constellation__name constellation__name--${plan.name.kind}`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[11px] uppercase tracking-[0.22em] text-(--stage-muted)"
               style={{ left: plan.name.x, top: plan.name.y, opacity: 0 }}
             >
               {plan.name.text}
