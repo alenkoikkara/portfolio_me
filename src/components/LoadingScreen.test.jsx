@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, act, fireEvent } from '@testing-library/react'
-import LoadingScreen, { GREETINGS, WORD_STEP, LIFT_MS, GREETED_KEY } from './LoadingScreen'
+import LoadingScreen, { GREETINGS, WORD_STEP, MIN_WORDS, LIFT_MS, GREETED_KEY } from './LoadingScreen'
 import useDeviceStore from '../scene/useDeviceStore'
 import useStoryStore from '../story/useStoryStore'
 
@@ -12,7 +12,7 @@ import useStoryStore from '../story/useStoryStore'
  * read from the file, so the component is tested against the real markup.
  */
 const BOOT = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
-  .match(/<div id="boot"[\s\S]*?<div class="boot__line"><span><\/span><\/div>\s*<\/div>/)[0]
+  .match(/<div id="boot"[\s\S]*?<div class="boot__words"><\/div>\s*<\/div>/)[0]
 
 const advance = (ms) => act(() => { vi.advanceTimersByTime(ms) })
 /*
@@ -38,10 +38,10 @@ afterEach(() => {
 })
 
 describe('the loading screen', () => {
-  it('is painted by index.html itself, before any script: the name and a line', () => {
+  it('is painted by index.html itself, before any script: bare paper, waiting for the words', () => {
     expect(boot().getAttribute('role')).toBe('status')
-    expect(boot().textContent).toContain('alen koikkara')
-    expect(boot().querySelector('.boot__line')).toBeTruthy()
+    expect(boot().textContent.trim()).toBe('')
+    expect(boot().querySelector('.boot__words')).toBeTruthy()
   })
 
   it('says hello in each language in turn, each tagged with its language', () => {
@@ -54,9 +54,20 @@ describe('the loading screen', () => {
     }
   })
 
+  it('stays for two words even when the scene is ready at once', () => {
+    useDeviceStore.setState({ sceneReady: true })
+    render(<LoadingScreen />)
+    advance(20)
+    words(MIN_WORDS - 1)
+    expect(lifting()).toBe(false)
+    words(1)
+    expect(lifting()).toBe(true)
+  })
+
   it('leaves at the end of the word showing once the scene is ready — not after all four', () => {
     render(<LoadingScreen />)
     advance(20)
+    words(MIN_WORDS - 1)
     advance(WORD_STEP / 2)
     act(() => useDeviceStore.setState({ sceneReady: true }))
     // Mid-word: it finishes the word first.
@@ -109,7 +120,7 @@ describe('the loading screen', () => {
     render(<LoadingScreen />)
     advance(20)
     expect(useStoryStore.getState().started).toBe(false)
-    words(1)
+    words(MIN_WORDS)
     expect(useStoryStore.getState().started).toBe(true)
     expect(useStoryStore.getState().soundOn).toBe(false)
     expect(useDeviceStore.getState().curtainUp).toBe(true)

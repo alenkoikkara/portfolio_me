@@ -16,7 +16,9 @@ export const GREETINGS = [
  * One word's turn, in ms. The fade is longer than half of it, so the outgoing
  * word is still dissolving as the next arrives: a crossfade, never a gap.
  */
-export const WORD_STEP = 900
+export const WORD_STEP = 1000
+/** Words shown before it may leave, however soon the scene is ready: two seconds. */
+export const MIN_WORDS = 2
 const WORD_FADE = 700
 /** The screen's own fade on the way out; matches `.boot`'s transition in index.html. */
 export const LIFT_MS = 600
@@ -42,13 +44,13 @@ function markGreeted() {
 }
 
 /**
- * The loading screen. Its ground, the name and the line are static HTML in
+ * The loading screen. Its ground is static HTML in
  * index.html, painted before any of this runs; this adopts that element
  * (`#boot`), writes the hellos into it and lifts it.
  *
- * It leaves as soon as it can: at the end of whichever word is showing once
- * the device has drawn its first frame (`sceneReady`) — never mid-word,
- * which reads as a glitch. A click, tap or key skips the words at once (the
+ * It stays for at least `MIN_WORDS` words, then leaves as soon as it can: at
+ * the end of whichever word is showing once the device has drawn its first
+ * frame (`sceneReady`) — never mid-word, which reads as a glitch. A click, tap or key skips the words at once (the
  * visible answer to a click while loading), and then it leaves the moment the
  * scene is ready; so does a second load in the same session, or a visitor who
  * asked for less motion, neither of whom sees the words at all.
@@ -79,7 +81,7 @@ export default function LoadingScreen() {
   useEffect(() => {
     if (!wordsRunning) return undefined
     const next = setTimeout(() => {
-      if (useDeviceStore.getState().sceneReady) setLifting(true)
+      if (useDeviceStore.getState().sceneReady && shown + 1 >= MIN_WORDS) setLifting(true)
       else setShown((n) => n + 1)
     }, WORD_STEP)
     return () => clearTimeout(next)

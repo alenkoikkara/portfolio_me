@@ -484,15 +484,18 @@ the camera came back to the desk.
 ### Loading and the intro
 
 **The loader is static HTML** (`#boot` in `index.html`, styled inline there):
-the name and a thin progress line on the paper, painted before any script —
+bare paper — the name and progress line were removed by the user's choice —
+painted before any script —
 measured at about 30 ms on a cached load. `LoadingScreen.jsx` adopts that
 element rather than rendering its own, portalling the greeting — hello,
-नमस्ते, こんにちは, hej, in ink — into its words slot and lifting it, so the
-line keeps moving through the hand-off. `LoadingScreen.test.jsx` reads
+नमस्ते, こんにちは, hej, in ink — into its words slot and lifting it, so
+nothing flickers through the hand-off. `LoadingScreen.test.jsx` reads
 `#boot` from `index.html` itself, so the two cannot drift. A `<noscript>`
 block there gives the name, a bio and the links.
 
-It leaves as soon as it can. At the end of whichever word is showing once the
+It stays two seconds at least — two words of a second each (`MIN_WORDS`,
+`WORD_STEP`), by the user's choice — then leaves as soon as it can: at the
+end of whichever word is showing once the
 scene is ready — **the decision is made only inside the word's own timer**,
 since watching `sceneReady` from an effect cut a word off mid-fade. A click,
 tap or key drops the words at once (the visible answer to a click while
@@ -524,7 +527,8 @@ lazily, after the first render): the first at about 1.8 s. A click on a key
 still coming up jumps the intro to its end and then acts. Measured on the
 GPU, cached, first visit of a session: static paint 28 ms, scene ready
 216 ms, greeting lifts 967 ms, **first clickable key 2.32 s**, intro done
-3.99 s. `window.__landed` (dev) says which keys are live.
+3.99 s — measured with the old one-word minimum; the two-second greeting now
+puts each of the last three about a second later. `window.__landed` (dev) says which keys are live.
 
 `landingTime` measures each track against its own range of motion, and the
 optimiser's `resample` runs at a 1e-6 tolerance: at the default the settling

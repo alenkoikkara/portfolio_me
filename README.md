@@ -29,7 +29,7 @@ Hosted on Cloudflare.
 - **Liquid Glass in WebGL.** The about view's pane and the photography hints
   refract the scene behind them in a shader, because CSS `backdrop-filter`
   can only blur.
-- **Interactive in about two seconds.** A static loader paints from the HTML
+- **Interactive within seconds.** A static loader paints from the HTML
   before any script runs; each key takes clicks the moment its own intro
   animation lands, read from the model's keyframes.
 - **The wall loads only what you are looking at**: thumbnails queued from the

@@ -14,10 +14,10 @@
       href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap"
     />
     <!--
-      The loading screen, painted before any JavaScript runs: the name and a
-      thin line on the paper. LoadingScreen.jsx adopts it — writes the hellos
-      into its words slot and lifts it once the scene has drawn — rather than
-      rendering one of its own, so the line keeps moving through the hand-off.
+      The loading screen, painted before any JavaScript runs: bare paper.
+      LoadingScreen.jsx adopts it — writes the hellos into its words slot and
+      lifts it once the scene has drawn — rather than rendering one of its own,
+      so nothing flickers through the hand-off.
     -->
     <style>
       .boot {
@@ -28,7 +28,6 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
         background: #faf9f6;
         color: #17181c;
         font-family: "Satoshi", ui-sans-serif, system-ui, sans-serif;
@@ -36,27 +35,12 @@
         transition: opacity 600ms cubic-bezier(0.45, 0, 0.25, 1);
       }
       .boot--lifting { opacity: 0; pointer-events: none; }
-      .boot__name { margin: 0; color: #646670; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; }
       .boot__words { display: grid; place-items: center; height: 64px; }
-      .boot__line { width: 120px; height: 1px; overflow: hidden; background: #e4e2dc; }
-      .boot__line > span {
-        display: block;
-        height: 100%;
-        background: #17181c;
-        transform: scaleX(0.04);
-        transform-origin: left;
-        animation: boot-line 5s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
-      }
-      .boot--lifting .boot__line > span { transform: scaleX(1); animation: none; transition: transform 300ms ease-out; }
-      @keyframes boot-line { to { transform: scaleX(0.85); } }
-      @media (prefers-reduced-motion: reduce) { .boot__line > span { animation-duration: 1ms; } }
     </style>
   </head>
   <body>
     <div id="boot" class="boot" role="status" aria-label="Loading">
-      <p class="boot__name">alen koikkara</p>
       <div class="boot__words"></div>
-      <div class="boot__line"><span></span></div>
     </div>
     <noscript>
       <style>.boot { display: none; }</style>
