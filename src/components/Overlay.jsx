@@ -5,6 +5,8 @@ import { formatSettings } from '../data/exif'
 import ContactPanel from './ContactPanel'
 import WritingPanel from './WritingPanel'
 import { isTouch } from '../story/environment'
+import { PROJECTS } from '../data/projects'
+import { PHONE_WIDTH } from '../scene/cameraFov'
 import { FOCUS_FILL_HEIGHT, FOCUS_FILL_WIDTH } from '../scene/galleryLayout'
 
 /**
@@ -198,6 +200,8 @@ export default function Overlay() {
         </button>
       )}
 
+      <ProjectCase />
+
       {/* Navigation hint — in the words of the input in hand: a finger has no arrow keys. */}
       <div className="overlay-hint">
         {isBrowsing && !touch && <span>← → navigate</span>}
@@ -207,5 +211,47 @@ export default function Overlay() {
         {isBrowsing && <span>{touch ? 'tap × to close' : 'esc close'}</span>}
       </div>
     </div>
+  )
+}
+
+/**
+ * The case for the project on screen, as a panel on the screen rather than a
+ * label in the world: what it is, and — once it is projecting — what Alen
+ * did, with what, when, what came of it, and where to see it. The questions a
+ * juror asks of every project, answered beside the projection.
+ *
+ * Projecting, it sits in the margin beside the projected page on a desktop
+ * and across the foot of a phone. Browsing on a phone it names the one
+ * cartridge in view above it; a desktop names it with the chip beside the
+ * device instead (Stage.jsx).
+ */
+export function ProjectCase() {
+  const mode = useDeviceStore((s) => s.mode)
+  const focusedIndex = useDeviceStore((s) => s.focusedIndex)
+  const project = PROJECTS[focusedIndex]
+  const phone = typeof window !== 'undefined' && window.innerWidth < PHONE_WIDTH
+  const projecting = mode === 'PROJECTING'
+  if (!project || !(projecting || (phone && mode === 'BROWSING'))) return null
+
+  return (
+    <section className={`project-case ${projecting ? 'project-case--open' : 'project-case--name'}`} aria-label={project.title}>
+      <h2 className="project-case__title">{project.title}</h2>
+      <p className="project-case__outcome">{project.outcome}</p>
+      {projecting && (
+        <>
+          <dl className="project-case__facts">
+            <div><dt>role</dt><dd>{project.role}</dd></div>
+            <div><dt>stack</dt><dd>{project.stack.join(' · ')}</dd></div>
+            <div><dt>when</dt><dd>{project.timeline}</dd></div>
+            <div><dt>result</dt><dd>{project.result}</dd></div>
+          </dl>
+          {project.url && (
+            <a className="project-case__link" href={project.url} target="_blank" rel="noopener noreferrer">
+              {project.url.includes('github.com') ? 'code ↗' : 'visit ↗'}
+            </a>
+          )}
+        </>
+      )}
+    </section>
   )
 }

@@ -7,6 +7,7 @@ import { SOCIAL_LINKS } from './contact'
  * Each `url` falls back to the Medium profile until the post's own address is
  * filled in, and `date` is shown only once it is.
  */
+// TO FILL: each post's own URL and its date, as it should read ("Mar 2025").
 export const POSTS = [
   { title: 'Memento', date: null, url: null },
   { title: 'MIME types in NGINX', date: null, url: null },

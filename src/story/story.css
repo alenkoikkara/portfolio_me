@@ -115,6 +115,21 @@
   transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/*
+ * Over something dark — a print, the device up close — a piece of the corner
+ * turns white, as the gallery's hints do: HudGlass.jsx measures what is behind
+ * each and tags it. Retinting the variables reaches the piece and anything in it.
+ */
+.story-hud [data-tone='light'] {
+  --stage-ink: #ffffff;
+  --stage-muted: rgba(255, 255, 255, 0.8);
+}
+
+.story-hud__caption {
+  color: var(--stage-muted);
+  transition: color 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .story-hud__day {
   margin-left: 8px;
 }
@@ -146,6 +161,7 @@
   color: var(--stage-ink);
   font-weight: 500;
   margin-right: 8px;
+  transition: color 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes story-hud-in {
@@ -173,6 +189,9 @@
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: color-mix(in srgb, var(--sky-bottom) 92%, transparent);
+  /* Its own light panel, so always the fixed ink, whatever the line above is. */
+  --stage-ink: var(--ink);
+  --stage-muted: var(--ink-muted);
   color: var(--stage-muted);
   white-space: nowrap;
   pointer-events: auto;

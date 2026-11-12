@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef } from 'react'
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Html, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -28,6 +28,33 @@ const BREATH_HIGH = 1
 const BREATH_SECONDS = 2.5
 const CURRENT_ID = MILESTONES[MILESTONES.length - 1].id
 const LINE_ALPHA = 0.3
+
+/*
+ * Each label on whichever side of its star constellationLayout.js found clear.
+ * The 12 px offsets (8.4 on the diagonals) must match its `LABEL_OFFSET`, or a
+ * label lands somewhere other than the room it was given.
+ */
+const LABEL_SIDE = {
+  below: '[transform:translate(-50%,12px)] text-center',
+  above: '[transform:translate(-50%,calc(-100%-12px))] text-center',
+  right: '[transform:translate(12px,-50%)] text-left',
+  left: '[transform:translate(calc(-100%-12px),-50%)] text-right',
+  'below-right': '[transform:translate(8.4px,8.4px)] text-left',
+  'below-left': '[transform:translate(calc(-100%-8.4px),8.4px)] text-right',
+  'above-right': '[transform:translate(8.4px,calc(-100%-8.4px))] text-left',
+  'above-left': '[transform:translate(calc(-100%-8.4px),calc(-100%-8.4px))] text-right',
+}
+/* A milestone's note hangs from the label's edge nearest its star. */
+const NOTE_SIDE = {
+  below: 'left-1/2 -translate-x-1/2',
+  above: 'left-1/2 -translate-x-1/2',
+  right: 'left-0',
+  left: 'right-0',
+  'below-right': 'left-0',
+  'below-left': 'right-0',
+  'above-right': 'left-0',
+  'above-left': 'right-0',
+}
 
 /*
  * The reveal, in seconds from the moment the about key is pressed. The glass
@@ -84,6 +111,8 @@ const onGlass = { transparent: true, opacity: 0, depthTest: false, depthWrite: f
  */
 export default function Constellation({ layout, present }) {
   const plan = useMemo(() => constellationLayout(layout, MILESTONES), [layout])
+  // A narrow band: smaller type and no subtitle — two lines fit, three do not.
+  const stacked = layout.layout === 'stacked'
 
   const materials = useMemo(() => ({
     ambient: new THREE.MeshBasicMaterial(onGlass),
@@ -146,6 +175,12 @@ export default function Constellation({ layout, present }) {
     [plan],
   )
   const nameRef = useRef()
+  /*
+   * The milestone opened to its one line: on hover, on focus, or toggled by a
+   * tap, since a finger has no hover. React state is fine here — it changes on
+   * a pointer event, not per frame.
+   */
+  const [opened, setOpened] = useState(null)
 
   useFrame((state, delta) => {
     const instant = prefersReducedMotion()
@@ -248,25 +283,45 @@ export default function Constellation({ layout, present }) {
           pointerEvents="none"
           zIndexRange={[9, 0]}
         >
-          <div className={`constellation constellation--${layout.layout}${plan.compact ? ' constellation--compact' : ''}`}>
+          {/*
+            * drei centres its child on the anchor, the window's top-left pixel,
+            * so the layer is zero-sized and each label is placed at its star's
+            * pixel position from there.
+            */}
+          <div className="relative h-0 w-0">
             {plan.stars.map((star, i) => {
               const m = MILESTONES[i]
               return (
-                <div
+                <button
+                  type="button"
                   key={m.id}
                   ref={(el) => { labelRefs.current[i] = el }}
-                  className={`milestone milestone--${star.label}`}
+                  className={`absolute m-0 cursor-pointer whitespace-nowrap border-0 bg-transparent p-0 text-(--stage-ink) pointer-events-auto focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--ink) ${LABEL_SIDE[star.label]} ${opened === m.id ? 'z-2' : ''}`}
                   style={{ left: star.x, top: star.y, opacity: 0 }}
+                  aria-expanded={m.note ? opened === m.id : undefined}
+                  onMouseEnter={() => setOpened(m.id)}
+                  onMouseLeave={() => setOpened((o) => (o === m.id ? null : o))}
+                  onFocus={() => setOpened(m.id)}
+                  onBlur={() => setOpened((o) => (o === m.id ? null : o))}
+                  onClick={() => setOpened((o) => (o === m.id ? null : m.id))}
                 >
-                  <div className="milestone__year">{m.year}</div>
-                  <div className="milestone__title">{m.title}</div>
-                  {m.subtitle && <div className="milestone__sub">{m.subtitle}</div>}
-                </div>
+                  <span className={`mb-0.5 block tracking-[0.14em] text-(--stage-muted) ${stacked ? 'text-[9px]' : 'text-[10px]'}`}>{m.year}</span>
+                  <span className={`block font-medium ${stacked ? 'text-[11px]' : 'text-[13px]'}`}>{m.title}</span>
+                  {m.subtitle && !stacked && !plan.compact && (
+                    <span className="mt-px block text-[11px] font-normal text-(--stage-muted)">{m.subtitle}</span>
+                  )}
+                  {m.note && opened === m.id && (
+                    /* On paper under the label, above the others, so opening it never reflows the placed labels. */
+                    <span className={`absolute top-[calc(100%+8px)] z-1 block w-55 whitespace-normal rounded-[10px] border border-(--rule) bg-white px-2.75 py-2 text-left text-xs leading-[1.45] text-(--stage-ink) shadow-[0_10px_24px_-16px_rgba(23,24,28,0.35)] ${NOTE_SIDE[star.label]}`}>
+                      {m.note}
+                    </span>
+                  )}
+                </button>
               )
             })}
             <div
               ref={nameRef}
-              className={`constellation__name constellation__name--${plan.name.kind}`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[11px] uppercase tracking-[0.22em] text-(--stage-muted)"
               style={{ left: plan.name.x, top: plan.name.y, opacity: 0 }}
             >
               {plan.name.text}

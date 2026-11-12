@@ -2,7 +2,6 @@ import React, { useRef } from 'react'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import AboutContent from './about/AboutContent'
-import './about/about.css'
 
 /** The column arrives once the glass has started to come up, and leaves at once. */
 const FADE_IN_DELAY = 0.22
@@ -79,13 +78,19 @@ export default function AboutPanel({ layout, present }) {
         // Below the overlay's title and close button, which sit over the scene.
         zIndexRange={[10, 0]}
       >
+        {/*
+          * drei centres whatever it is given on the anchor point. A zero-sized
+          * anchor with the column hung off it puts the anchor where
+          * aboutLayout.js means it: the column's left edge beside the device,
+          * or its top centre beneath it.
+          */}
         <div
-          className={`about-anchor about-anchor--${panel.anchor}`}
+          className="relative h-0 w-0"
           ref={anchorRef}
           style={{ opacity: 0 }}
         >
           <div
-            className="about-column"
+            className={`absolute left-0 top-0 box-border overflow-y-auto ${panel.anchor === 'side' ? '-translate-y-1/2' : '-translate-x-1/2'}`}
             ref={columnRef}
             style={{ width: panel.width, maxHeight: panel.maxHeight, pointerEvents: 'none' }}
           >

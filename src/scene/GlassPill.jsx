@@ -186,9 +186,11 @@ const fragmentShader = /* glsl */ `
  *
  * `show` fades it in and out; it costs nothing at zero. `radius` (CSS px)
  * rounds its corners by that much instead, for an element taller than a line:
- * a capsule around a block of text reads as a stadium, not glass.
+ * a capsule around a block of text reads as a stadium, not glass. Each of
+ * the element's children is tagged `data-tone` for what is behind it, or
+ * each match of `parts` instead, for words nested deeper than one level.
  */
-export default function GlassPill({ selector, show, radius = 0 }) {
+export default function GlassPill({ selector, show, radius = 0, parts = null }) {
   const gl = useThree((s) => s.gl)
 
   const texture = useRef(null)
@@ -200,7 +202,8 @@ export default function GlassPill({ selector, show, radius = 0 }) {
   // glass's lean follows the pill as a whole, the words each follow their own.
   const tone = useRef(0)
   const toneTarget = useRef(0)
-  // Each word's span across the row, in device px, refreshed every frame.
+  // Each word's span across its row, and that row, in device px (y up from the
+  // bottom), refreshed every frame.
   const words = useRef([])
   const frame = useRef(0)
   const row = useRef(new Uint8Array(0))
@@ -267,9 +270,14 @@ export default function GlassPill({ selector, show, radius = 0 }) {
     const s = shape.current
 
     tone.current += (toneTarget.current - tone.current) * (1 - Math.exp(-TONE_RATE * step))
-    words.current = Array.from(el.children, (child) => {
+    words.current = Array.from(parts ? el.querySelectorAll(parts) : el.children, (child) => {
       const r = child.getBoundingClientRect()
-      return { el: child, x0: (r.left - bounds.left) * dpr, x1: (r.right - bounds.left) * dpr }
+      return {
+        el: child,
+        x0: (r.left - bounds.left) * dpr,
+        x1: (r.right - bounds.left) * dpr,
+        y: canvas.height - (r.top - bounds.top + r.height / 2) * dpr,
+      }
     })
 
     const u = material.uniforms
@@ -319,10 +327,11 @@ export default function GlassPill({ selector, show, radius = 0 }) {
   }
 
   /*
-   * How light is what the words sit on: one row of pixels across the middle of
-   * the pill, read back before the glass draws over it. A single row, a few
-   * times a second, keeps the stall of reading back from the GPU negligible;
-   * the words only need to know which side of the middle the content is.
+   * How light is what the words sit on: one row of pixels across the pill at
+   * each line's middle — one row for a pill, one per line for a pane — read
+   * back before the glass draws over it. A row or two, a few times a second,
+   * keeps the stall of reading back from the GPU negligible; the words only
+   * need to know which side of the middle the content is.
    */
   const measure = (renderer) => {
     const s = shape.current
@@ -331,39 +340,54 @@ export default function GlassPill({ selector, show, radius = 0 }) {
     const canvas = renderer.domElement
     const x0 = Math.max(0, Math.floor(s.x - s.w))
     const x1 = Math.min(canvas.width, Math.ceil(s.x + s.w))
-    const y = Math.min(canvas.height - 1, Math.max(0, Math.round(s.y)))
     const width = x1 - x0
     if (width <= 0) return
     if (row.current.length !== width * 4) row.current = new Uint8Array(width * 4)
     const px = row.current
-    ctx.readPixels(x0, y, width, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px)
-    const t = y / canvas.height
-    const lumAt = (i) => {
-      // Over the sky wherever the canvas is not opaque, as the eye sees it.
-      const rest = 1 - px[i + 3] / 255
-      const r = px[i] / 255 + skyAt('r', t) * rest
-      const g = px[i + 1] / 255 + skyAt('g', t) * rest
-      const b = px[i + 2] / 255 + skyAt('b', t) * rest
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const clampY = (y) => Math.min(canvas.height - 1, Math.max(0, Math.round(y)))
+
+    /** The average luminance of each span along the row at `y`, as the eye sees it. */
+    const readRow = (y) => {
+      ctx.readPixels(x0, y, width, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px)
+      const t = y / canvas.height
+      // Taken now: the next row read reuses the same buffer.
+      const lum = new Float32Array(width)
+      for (let x = 0; x < width; x++) {
+        const i = x * 4
+        // Over the sky wherever the canvas is not opaque, as the eye sees it.
+        const rest = 1 - px[i + 3] / 255
+        const r = px[i] / 255 + skyAt('r', t) * rest
+        const g = px[i + 1] / 255 + skyAt('g', t) * rest
+        const b = px[i + 2] / 255 + skyAt('b', t) * rest
+        lum[x] = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      }
+      return (from, to) => {
+        const a = Math.max(0, Math.floor(from - x0))
+        const b = Math.min(width, Math.ceil(to - x0))
+        if (b <= a) return null
+        let sum = 0
+        for (let x = a; x < b; x++) sum += lum[x]
+        return sum / (b - a)
+      }
     }
-    const average = (from, to) => {
-      const a = Math.max(0, Math.floor(from - x0))
-      const b = Math.min(width, Math.ceil(to - x0))
-      if (b <= a) return null
-      let sum = 0
-      for (let x = a; x < b; x++) sum += lumAt(x * 4)
-      return sum / (b - a)
-    }
+
     // Each word against what is behind it, not the pill's average: a pill
     // half over a dark print and half over the page needs both.
     const flip = (current, luminance) =>
       luminance === null ? current
         : luminance < LIGHT_TEXT_BELOW ? 'light'
           : luminance > DARK_TEXT_ABOVE ? 'dark' : current
+    const middle = clampY(s.y)
+    const rows = new Map()
+    const rowAt = (y) => {
+      if (!rows.has(y)) rows.set(y, readRow(y))
+      return rows.get(y)
+    }
     for (const word of words.current) {
+      const average = rowAt(clampY(word.y))
       word.el.dataset.tone = flip(word.el.dataset.tone ?? 'dark', average(word.x0, word.x1))
     }
-    toneTarget.current = flip(toneTarget.current === 1 ? 'light' : 'dark', average(x0, x1)) === 'light' ? 1 : 0
+    toneTarget.current = flip(toneTarget.current === 1 ? 'light' : 'dark', rowAt(middle)(x0, x1)) === 'light' ? 1 : 0
   }
 
   return (

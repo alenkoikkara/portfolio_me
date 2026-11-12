@@ -52,6 +52,19 @@ const CAM_OPEN_TARGET = [0, 0.008, -0.1]
 const CAM_PROJECT_POS = [0, 0.7, -0.12]
 const CAM_PROJECT_TARGET = [0, 0.008, -0.14]
 
+/*
+ * The same two poses on a phone, much nearer: from 70 cm a cartridge was a
+ * tenth of a phone's width and the projected page a postage stamp. Browsing
+ * frames the one cartridge shown at about 60% of the width, with the device's
+ * top edge below it; projecting fills the width with the preview, the device
+ * under it. Still all but overhead, a hair in front of the target, for the
+ * same reason as the desktop's.
+ */
+const PHONE_OPEN_POS = [0, 0.14, -0.096]
+const PHONE_OPEN_TARGET = [0, 0.008, -0.1]
+const PHONE_PROJECT_POS = [0, 0.45, -0.104]
+const PHONE_PROJECT_TARGET = [0, 0.008, -0.11]
+
 /** Modes framed for the projector rather than the carousel. */
 const PROJECT_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 const CAM_EASE = 5
@@ -460,6 +473,13 @@ export default function Device({ slotAnchorRef }) {
     const to = new THREE.Vector3(from.x, 0, from.z).normalize().multiplyScalar(Math.cos(elevation)).setY(Math.sin(elevation))
     return new THREE.Quaternion().setFromUnitVectors(from, to)
   }, [restTilt, camScratch])
+  const phone = size.width < PHONE_WIDTH
+  useEffect(() => {
+    camScratch.openPos.set(...(phone ? PHONE_OPEN_POS : CAM_OPEN_POS))
+    camScratch.openTarget.set(...(phone ? PHONE_OPEN_TARGET : CAM_OPEN_TARGET))
+    camScratch.projectPos.set(...(phone ? PHONE_PROJECT_POS : CAM_PROJECT_POS))
+    camScratch.projectTarget.set(...(phone ? PHONE_PROJECT_TARGET : CAM_PROJECT_TARGET))
+  }, [phone, camScratch])
   useEffect(() => {
     camScratch.restPos.set(...CAM_REST_POS).sub(camScratch.restTarget).applyQuaternion(restTurn).multiplyScalar(restScale).add(camScratch.restTarget)
   }, [restScale, restTurn, camScratch])

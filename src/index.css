@@ -115,13 +115,18 @@
  * the room lights to go down before fading in. Appearing immediately would put
  * light text on the still-light background for the length of that transition.
  */
+/* Centred on its anchor vertically; on a wrapper, since the chip's own rise animates transform. */
+.overlay-chip-anchor {
+  transform: translateY(-50%);
+}
+
 .overlay-chip {
   pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: baseline;
   gap: 2px;
-  white-space: nowrap;
+  width: 240px;
   animation: overlay-rise 420ms cubic-bezier(0.4, 0, 0.2, 1) 460ms both;
 }
 
@@ -153,25 +158,94 @@
   transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.overlay-chip-link {
-  margin-top: 5px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-  text-decoration: none;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.overlay-chip-link--visible {
-  opacity: 1;
+/*
+ * The case for the projecting project (ProjectCase in Overlay.jsx): in the
+ * margin beside the projected page, on the dark stage, so it reads the
+ * stage's light ink; across the foot of a phone.
+ */
+.project-case {
   pointer-events: auto;
+  position: absolute;
+  color: var(--stage-ink);
+  animation: overlay-rise 420ms cubic-bezier(0.4, 0, 0.2, 1) 300ms both;
 }
 
-.overlay-chip-link--visible:hover {
+.project-case--open {
+  /* Inside the margin beside the projected page on a 1440 px window: that page spans 63% of the width. */
+  right: 24px;
+  bottom: 64px;
+  width: 228px;
+  /* No card: the words sit straight on the projector's dark veil. */
+}
+
+.project-case--name {
+  top: 112px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+}
+
+.project-case__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.project-case__outcome {
+  margin-top: 2px;
+  color: var(--stage-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.project-case__facts {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.project-case__facts > div {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+}
+
+.project-case__facts dt {
+  color: var(--stage-muted);
+  letter-spacing: 0.04em;
+}
+
+.project-case__facts dd {
+  margin: 0;
+}
+
+.project-case__link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: opacity 200ms ease;
+}
+
+.project-case__link:hover {
   opacity: 0.65;
+}
+
+.project-case a:focus-visible {
+  outline: 2px solid var(--stage-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .project-case--open {
+    left: 16px;
+    right: 16px;
+    bottom: 56px;
+    width: auto;
+  }
 }
 
 /* Close button */
@@ -357,6 +431,13 @@
   color: var(--stage-ink);
   outline: none;
   animation: dialog-in 500ms both cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Contact has no card: its words sit straight on the page beside the device. */
+.dialog.contact {
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .dialog__eyebrow {

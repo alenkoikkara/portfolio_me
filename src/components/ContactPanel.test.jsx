@@ -1,6 +1,7 @@
 import React from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
+import { AVAILABILITY } from '../data/contact'
 // The stores the panel under test is using: a fresh module graph per test.
 let useDeviceStore
 let useStoryStore
@@ -30,7 +31,7 @@ describe('the contact panel', () => {
     const dialog = screen.getByRole('dialog', { name: 'say hello' })
     expect(dialog.getAttribute('aria-modal')).toBe('true')
     expect(screen.getByRole('link', { name: 'LinkedIn' }).getAttribute('rel')).toContain('noopener')
-    expect(screen.getByText(/Open to backend/)).toBeTruthy()
+    expect(screen.getByText(AVAILABILITY, { exact: false })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Email' })).toBeNull()
   })
 

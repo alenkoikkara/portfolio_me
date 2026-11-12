@@ -6,7 +6,6 @@ import useDeviceStore from '../scene/useDeviceStore'
 import deviceFade from '../scene/deviceFade'
 import SkyDriver, { envIntensityFor } from '../story/scene/SkyDriver'
 import ShadowCatcher from '../story/scene/ShadowCatcher'
-import Blinds from '../story/scene/Blinds'
 import TrainPass from '../story/scene/TrainPass'
 import CursorGlint from '../story/scene/CursorGlint'
 import { isMobile } from '../story/environment'
@@ -106,12 +105,10 @@ export default function LightingSetup() {
       {/*
         * Not on a phone at all, not merely switched off. A light at zero
         * intensity is still a light every lit material loops over in its
-        * shader; and at a phone's halved shadow map the blinds' thin stripes
-        * alias into a sparkle rather than reading as light through slats.
+        * shader.
         */}
       {!MOBILE && (
         <>
-          <Blinds />
           <TrainPass />
           <CursorGlint />
         </>

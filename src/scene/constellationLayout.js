@@ -14,7 +14,7 @@ import { CONSTELLATIONS } from './about/constellations.generated'
 /** The most milestones a figure exists for. */
 export const MAX_MILESTONES = Math.max(...Object.keys(CONSTELLATIONS).map(Number))
 
-/** Gap between a star and its label, in CSS px — must match `.milestone--*` in about.css. */
+/** Gap between a star and its label, in CSS px — must match `LABEL_SIDE` in Constellation.jsx. */
 export const LABEL_OFFSET = 12
 /** A star's clearance: its halo, plus a little air. */
 const STAR_CLEARANCE = 10
@@ -24,7 +24,7 @@ const NAME_ROW = { side: 36, stacked: 26 }
 /*
  * Label sizes, estimated from their text so a label is never given room it
  * does not need, nor too little: rough per-character widths for the year,
- * title and subtitle at their CSS sizes (about.css). The browser check in
+ * title and subtitle at their CSS sizes (Constellation.jsx). The browser check in
  * Verifying changes measures the real ones.
  */
 const TYPE = {

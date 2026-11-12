@@ -14,5 +14,5 @@ export const SOCIAL_LINKS = {
  */
 export const CONTACT_EMAIL = 'alendennis77@gmail.com'
 
-/** One line on what Alen is open to, under the address. */
-export const AVAILABILITY = 'Open to backend & GenAI roles, Chicago or remote'
+/** One line on what Alen is open to, under the address. TO CONFIRM: the checklist's example wording. */
+export const AVAILABILITY = 'Open to freelance work, Chicago or remote'

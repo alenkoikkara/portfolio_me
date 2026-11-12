@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef } from 'react'
 import Cartridge from './Cartridge'
 import useDeviceStore from './useDeviceStore'
 import { PROJECTS } from '../data/projects'
+import { PHONE_WIDTH } from './cameraFov'
 
 /* ─── Layout constants ─── */
 // The open camera looks straight down, so "above the device" on screen is -Z:
@@ -17,6 +18,8 @@ const SIDE_FAN = 0.12
 // Let the camera settle before the strip fades in, then stagger outwards.
 const FADE_IN_DELAY_MS = 350
 const STAGGER_MS = 60
+/** How far a finger must travel sideways, in CSS px, for a swipe rather than a tap. */
+const SWIPE_PX = 40
 
 /** Modes in which one cartridge is out of the strip, travelling or seated. */
 const ACTIVE_MODES = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
@@ -60,6 +63,32 @@ export default function Carousel() {
   const mode = useDeviceStore((s) => s.mode)
   const focusedIndex = useDeviceStore((s) => s.focusedIndex)
   const insert = useDeviceStore((s) => s.insert)
+  const focus = useDeviceStore((s) => s.focus)
+  /*
+   * On a phone the strip is one cartridge at a time — its neighbours, at the
+   * edges of a narrow window, were slivers to mis-tap — browsed by a swipe.
+   */
+  const phone = typeof window !== 'undefined' && window.innerWidth < PHONE_WIDTH
+  useEffect(() => {
+    if (!phone || mode !== 'BROWSING') return undefined
+    let start = null
+    const down = (e) => { start = { x: e.clientX, y: e.clientY } }
+    const up = (e) => {
+      if (!start) return
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+      start = null
+      if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy)) return
+      const { focusedIndex: at } = useDeviceStore.getState()
+      focus(dx < 0 ? at + 1 : at - 1)
+    }
+    window.addEventListener('pointerdown', down)
+    window.addEventListener('pointerup', up)
+    return () => {
+      window.removeEventListener('pointerdown', down)
+      window.removeEventListener('pointerup', up)
+    }
+  }, [phone, mode, focus])
 
   // The mode as of the previous render. Handing the focused cartridge between
   // the strip and the travelling copy must be instant in both directions: the
@@ -97,8 +126,8 @@ export default function Carousel() {
         if (offset > n / 2)  offset -= n
         if (offset < -n / 2) offset += n
 
-        // Only render the focused cartridge and immediate neighbours (3 total)
-        if (Math.abs(offset) > 1) return null
+        // Only the focused cartridge and its neighbours — on a phone, only the focused.
+        if (Math.abs(offset) > (phone ? 0 : 1)) return null
 
         const isActiveCartridge = ACTIVE_MODES.has(mode) && i === focusedIndex
         const pose = slotPose(i, focusedIndex, n)

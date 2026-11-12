@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 /**
- * Start the models downloading with the HTML.
+ * Start the device's model downloading with the HTML.
+ *
+ * Only the device's: the cartridge model is not needed until the projects
+ * key, and is fetched once the intro has played (CartridgeWarmup in
+ * Stage.jsx), off the page's first load.
  *
  * They are imported from a module, so without this the browser only learns
  * they exist after the JS chunk has downloaded, parsed and mounted — the
@@ -19,7 +23,7 @@ function preloadModels() {
     enforce: 'post',
     apply: 'build',
     transformIndexHtml(html, ctx) {
-      const models = Object.keys(ctx.bundle || {}).filter((f) => f.endsWith('.glb'))
+      const models = Object.keys(ctx.bundle || {}).filter((f) => f.endsWith('.glb') && f.includes('device'))
       return {
         html,
         tags: models.map((file) => ({

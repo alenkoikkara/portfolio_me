@@ -13,6 +13,12 @@ const VEILED = new Set(['INSERTING', 'PROJECTING', 'EJECTING'])
 /** Corner radius, CSS px: a pane rather than a capsule, around two lines of text. */
 const RADIUS = 14
 
+/*
+ * Each piece of the corner takes its own tone: the pane is wide, and one line
+ * can run from over a dark print onto the bare page.
+ */
+const PARTS = '.stage-title, .story-hud__clock, .key-help, .story-hud__title, .story-hud__caption'
+
 /**
  * Liquid Glass behind the story's corner — the name, the clock and the
  * chapter's caption (StoryHUD.jsx) — once the day has begun, everywhere but
@@ -21,5 +27,5 @@ const RADIUS = 14
 export default function HudGlass() {
   const started = useStoryStore((s) => s.started)
   const veiled = useDeviceStore((s) => VEILED.has(s.mode))
-  return <GlassPill selector="[data-hud-glass]" show={started && !veiled} radius={RADIUS} />
+  return <GlassPill selector="[data-hud-glass]" show={started && !veiled} radius={RADIUS} parts={PARTS} />
 }

@@ -50,7 +50,8 @@ use, is already a devDependency.)
 The site is being readied for an Awwwards submission against
 `hichord-awwwards-checklist.md` (the user's, Nov 2026), which merges an
 external readiness review with the story plan below. It overrides the story
-plan where they disagree. **Stage 1 (usability blockers) is in**; Stages 2–5
+plan where they disagree. **Stage 1 (usability blockers) is in, and Stage 2
+(content) is in code** — its copy awaits Alen (see below); Stages 3–5
 are not yet. Its decisions that shaped what is here:
 
 - **The story's music is switched off, not deleted** — chords per chapter,
@@ -63,6 +64,16 @@ are not yet. Its decisions that shaped what is here:
   reads "lab" until the model is re-exported — the legends are geometry).
 - **The day's sky stays** (the checklist allows Day in Chicago Phases 1–2);
   `#faf9f6` is the paper token under it and the loader's ground.
+- **Projects are cases, not screenshots.** Each cartridge is a project with a
+  role, stack, timeline and result (`data/projects.js`), Alen's own
+  engineering first, each in its own `CART_COLORS` pastel. Projecting, the
+  case is a panel on the screen (`ProjectCase` in `Overlay.jsx`), not the
+  world-anchored chip, which ran off the bottom of the projector's framing;
+  the chip now names the focused cartridge beside the device only while
+  browsing on a desktop. A project with no screenshot projects a title card
+  drawn at runtime (`scene/projectCard.js`) — never a made-up screenshot.
+  The roles, timelines and results were drafted from the repositories and
+  live sites and await Alen's word.
 - **Model-track items wait for a Blender session:** legends 2.5× larger, "lab"
   → "sound", social keys graphite. Do not fake them in code without asking.
 
@@ -104,8 +115,7 @@ keeps the room alive without anything shouting.
   the sun and sky out so the wall lights itself — eased as before, and
   `sky.light` carries the result to the shadows. **Browsing the carousel no
   longer dims anything:** it is the projects chapter's midday, and a dark veil
-  there would hide the very light the chapter is about. Phase 6's blinds are
-  meant to take over the projector's dimming.
+  there would hide the very light the chapter is about.
 - **Chapters (`src/story/chapters.js`) are the sections read as hours**, and
   `useStoryStore.js` is the story: which chapter, and the clock's current spin
   (from where, to where, since when). `bridge.js` is its only input — one
@@ -164,15 +174,11 @@ keeps the room alive without anything shouting.
   data: `songFromQuery` accepts every section letter exactly once and
   nothing else.
 - **The polish (Phase 6), each piece small and each skippable:**
-  - **Blinds** (`story/scene/Blinds.jsx`): in the projects chapter, slats that
-    draw nothing but cast shadows hang between the sun and the device, so
-    thin stripes fall across the desk; they close as a cartridge seats. One
-    instanced mesh (a mesh that draws nothing still costs a draw call per
-    pass), and `raycast` off, or slats in front of the keys would swallow their
-    clicks. First drafted at 22 slats tilted 1.3 rad across 36 cm, the stripes
-    read as heavy bars over the whole window; 16 slats at 1.45 rad across 24 cm
-    are hairlines around the device. **The projector's dark veil stays** — on a
-    bright 12:40 sky the preview needs it; the blinds close over it.
+  - **No blinds.** Phase 6 hung shadow-casting slats between the sun and the
+    device in the projects chapter; seen from the carousel's overhead camera
+    their stripes lay as heavy bars across the whole strip, against the
+    checklist's "the carousel stays white", and the user had them removed. The
+    projector's dark veil does the dimming.
   - **Shutter and grain:** opening a print plays `playShutter` (peaks about
     −10 dBFS, just under a key click); the photography chapter's film grain is
     the `.sky__grain` layer, still on a phone but without its flicker.
@@ -201,10 +207,9 @@ keeps the room alive without anything shouting.
     so the ray finds it): measured on a 375 × 812 window, the smallest is
     92 × 91 px, and ten taps on ten keys did ten things. The hints are
     worded for the input in hand (`isTouch`, `(hover: none)`): "tap × to
-    close", no arrow-key hints, no `?` list. The shadow map halves to 1024, and the blinds,
-    the train and the glint are **not mounted** at all (`environment.js`): a
-    light at zero intensity is still one every lit material loops over, and at
-    1024 the blinds' stripes alias into a sparkle.
+    close", no arrow-key hints, no `?` list. The shadow map halves to 1024, and the
+    train and the glint are **not mounted** at all (`environment.js`): a
+    light at zero intensity is still one every lit material loops over.
 - **The ink never changes.** `--ink`, `--ink-muted`, `--rule`, `--accent` and
   `--accent-deep` are fixed tokens in `story.css`, and `story/palette.js`
   holds the canvas's copies — change one, change both. Amber (`--accent`) is
@@ -434,7 +439,10 @@ tried first; it made the pill a grey lozenge, which is what it is not.
 `Stage.jsx`): `data-hud-glass` on `StoryHUD`'s wrapper, whose padding is the
 glass and whose position is shifted out by it so the words stay put. Two
 lines of text in a capsule read as a stadium, so it passes `radius` for a
-rounded pane instead. It fades out under the projector's veil
+rounded pane instead. Its words adapt like the pill's, one piece at a time
+(`parts`: name, clock, `?`, title, caption) and a row of pixels read per
+line, since the pane is two lines and a line can run off a dark print onto
+the page. It fades out under the projector's veil
 (`INSERTING`, `PROJECTING`, `EJECTING`): the veil is DOM behind the canvas
 and the glass composites the sky's own gradient, so there it would glow
 white on a dark room.
@@ -576,11 +584,13 @@ address back to `/`. An address with no section yet falls to home, which
 | The epilogue: a visit played back, share links | `src/story/dom/SongPrompt.jsx` |
 | Chords and the small keys' notes | `src/story/chords.js` |
 | Reduced motion and phone detection, for the polish | `src/story/environment.js` |
-| Blinds, the L train, the cursor glint | `src/story/scene/Blinds.jsx`, `TrainPass.jsx`, `CursorGlint.jsx` |
+| The L train, the cursor glint | `src/story/scene/TrainPass.jsx`, `CursorGlint.jsx` |
 | How long the device's intro lasts; when each part lands | `src/scene/intro.js` |
 | DOM overlay: arrows, description, keyboard | `src/components/Overlay.jsx` |
 | Loading screen: adopts the static `#boot`, the hellos, the hand-off | `src/components/LoadingScreen.jsx`, `index.html` |
-| Project catalogue | `src/data/projects.js` |
+| Project catalogue: the cases, the cartridge pastels | `src/data/projects.js` |
+| A title card for a project with no screenshot | `src/scene/projectCard.js` |
+| The case beside a projection; a phone's cartridge name | `ProjectCase` in `src/components/Overlay.jsx` |
 | Photography wall, culling, focus | `src/scene/Gallery.jsx` |
 | One print (mesh, textures, springs) | `src/scene/Print.jsx` |
 | Wall packing, camera distance, pan bounds | `src/scene/galleryLayout.js` |
@@ -597,7 +607,7 @@ address back to `/`. An address with no section yet falls to home, which
 | About view arithmetic: bio and constellation placement, depths, text scale | `src/scene/aboutLayout.js` |
 | The constellation: stars, milestone path and its reveal | `src/scene/Constellation.jsx` |
 | Where each star and label goes, in pixels | `src/scene/constellationLayout.js` |
-| About copy, its styles, and the milestones | `src/scene/about/AboutContent.jsx`, `about.css`, `timeline.js` |
+| About copy and the milestones | `src/scene/about/AboutContent.jsx`, `timeline.js` |
 | Real constellation figures, 1–10 stars (generated) | `src/scene/about/constellations.generated.js` |
 
 Unused, kept only as history — do not extend, and check before assuming it runs:
@@ -656,10 +666,31 @@ Unused, kept only as history — do not extend, and check before assuming it run
 
 ### Add a project
 
-Append to `PROJECTS` in `src/data/projects.js` (`id`, `title`, `subtitle`, `color`,
-`inkColor`, `preview`, `url`), drop a tall screenshot at `public/previews/<id>.webp`
-or run `npm run previews`, and stop. Carousel spacing, fan, focus wrapping and the
-overlay all read the array length; nothing else needs editing.
+Append to `ENTRIES` in `src/data/projects.js` (`id`, `title`, `outcome`, `role`,
+`stack`, `timeline`, `result`, `label`, `preview`, `url` — the header there says
+what each is). For a site, drop a tall screenshot at `public/previews/<id>.webp`
+or run `npm run previews`; for work with no page to show, leave `preview` null
+and the title card is drawn from the fields. Carousel spacing, fan, focus
+wrapping and the overlay all read the array length; nothing else needs editing.
+
+**The title card** (`projectCard.js`) is a 900 × 1350 canvas handed out as a
+data URL, so the label and the projector load it exactly as they would a
+screenshot. Its top 4:3 is what the label crops to, so the title block there is
+set large; the details below are only ever projected and are set at half,
+since at full size they came up billboard-sized beside the screenshots. A
+bigger canvas instead would cost its square in GPU memory.
+
+**On a phone** the carousel is one cartridge at a time, browsed by a swipe
+(`SWIPE_PX` in `Carousel.jsx`), and the open and projecting camera poses come
+far nearer (`PHONE_*` in `Device.jsx`): from 70 cm a cartridge was a tenth of
+the width. Measured: the focused cartridge about 60% of a 390 px width, the
+projected page the full width.
+
+**The cartridge model is not on the first load.** Only the device's model is
+preloaded (`vite.config.js`); the cartridge's is fetched by the post-intro
+shader warm-up in `Stage.jsx`, which now times its 1.5 s from the cartridge's
+first draw rather than the intro's end. The cartridges have a Suspense of
+their own, or that fetch would blank the device.
 
 ### Add a post
 
@@ -687,6 +718,12 @@ every build, so a stale model cannot ship; the photo manifest has no such
 protection, and a photo added without running the script simply will not be on the
 wall. It is left out of the build on purpose — re-encoding every original on every
 build would be slow, and the originals change far less often than the code.
+
+**The year is read from the file too** (`readYear` in `exif.js`, from the
+capture time) and lands in the manifest as `year`; `photos.js` can still give
+one by hand, and places are only ever by hand. The GPS that most of the photos
+carry is deliberately not read: shipping it would publish where each was
+taken, and turning it into place names would send it to a geocoder.
 
 **Camera settings are read from the file, not written by hand.** The script parses
 each original's EXIF (`exif-reader`) and stores the raw numbers — camera, ISO,
@@ -722,6 +759,13 @@ a wall where everything deeper also leans the same way reads as a pattern.
 
 ### Edit the about panel
 
+The bio is set straight on the frost (the column in `AboutPanel.jsx`) at
+15 px / 400 — a white card under it was tried and removed by the user's
+choice — and each
+milestone is a button that opens its `note` (in `timeline.js`) on hover, focus
+or tap, as a small paper note over the figure so the placed labels never
+reflow.
+
 The words are in `src/scene/about/AboutContent.jsx` and nothing else is — edit
 them there without touching the scene. The milestones are in
 `src/scene/about/timeline.js`, oldest first, and that is all there is to
@@ -732,7 +776,9 @@ star, the bio, the figure's name or off the screen, on any of the windows it
 checks. To change which constellation stands for a count, edit `CHOICES` in
 `scripts/prepare-constellations.mjs` and run `npm run constellations`; then run
 the tests, because a figure with tightly packed stars may not leave its labels
-room. Styles are in `about.css`, beside it, and
+room. Styles are Tailwind classes in the components themselves — the bio's
+in `AboutContent.jsx`, the labels' in `Constellation.jsx`, whose `LABEL_SIDE`
+offsets must match `LABEL_OFFSET` in `constellationLayout.js` — and
 every colour reads a `--stage-*` variable, so keep it that way: the panel sits
 on the light page, and a hard-coded or OS-dark-mode colour can put pale text on
 it. The typeface is the site's own, inherited. If the column grows taller than a

@@ -29,7 +29,7 @@
 import { mkdir, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readExposure, formatExposure } from '../src/data/exif.js'
+import { readExposure, readYear, formatExposure } from '../src/data/exif.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC_DIR = join(ROOT, 'src', 'assets', 'photography')
@@ -107,8 +107,11 @@ async function main() {
     // A malformed EXIF block is treated like a missing one: the photo still
     // goes on the wall, just without its settings line.
     let exposure = null
+    let year = null
     try {
-      exposure = meta.exif ? readExposure(exifReader(meta.exif)) : null
+      const exif = meta.exif ? exifReader(meta.exif) : null
+      exposure = exif ? readExposure(exif) : null
+      year = exif ? readYear(exif) : null
     } catch {
       exposure = null
     }
@@ -120,6 +123,8 @@ async function main() {
       thumb: `/photos/thumb/${id}.webp`,
       aspect: Number((width / height).toFixed(4)),
       ...(exposure && { exposure }),
+      // From the capture time; photos.js may still give a year by hand.
+      ...(year && { year }),
     })
     console.log(`  ${id}  ${width}×${height}  aspect ${(width / height).toFixed(2)}  ${formatExposure(exposure) || '(no camera settings)'}`)
   }
